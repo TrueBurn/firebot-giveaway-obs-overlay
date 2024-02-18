@@ -1,0 +1,53 @@
+﻿@using FirebotGiveawayObsOverlay.WebApp.Helpers
+
+@page "/setup"
+@rendermode InteractiveServer
+
+<PageTitle>Setup</PageTitle>
+
+<h3>Setup</h3>
+
+<hr />
+
+<div class="mb-3">
+    <label class="form-label">Give Away duration</label>
+    <input type="number" required
+           placeholder="Set duration in minutes"
+           class="form-control"
+           @bind="giveawayDuration"
+           @bind:event="oninput"
+           @bind:after="SetGiveawayDuration" />
+</div>
+
+<div class="mb-3">
+    <label class="form-label">Firebot file path</label>
+    <input 
+        type="text" required
+        placeholder="Set the path where to find the Firebot files" 
+        class="form-control"
+        min="1"
+        max="300"
+        step="1"
+           @bind="firebotFilePath"
+           @bind:event="oninput"
+           @bind:after="SetFirebotFilePath" />
+</div>
+
+@code {
+
+    private int giveawayDuration = GiveAwayHelpers.GetGiveawayDuration();
+    private string firebotFilePath = GiveAwayHelpers.GetFireBotFileFolder();
+
+    private void SetGiveawayDuration()
+    {
+        GiveAwayHelpers.SetGiveawayDuration(giveawayDuration);
+    }
+
+    private void SetFirebotFilePath()
+    {
+        GiveAwayHelpers.SetFireBotFileFolder(firebotFilePath);
+    }
+
+
+
+}

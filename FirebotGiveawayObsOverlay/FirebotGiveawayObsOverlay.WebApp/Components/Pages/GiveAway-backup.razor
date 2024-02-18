@@ -1,0 +1,184 @@
+﻿@* @using FirebotGiveawayObsOverlay.WebApp.Components.Layout
+@using FirebotGiveawayObsOverlay.WebApp.Helpers
+@using FirebotGiveawayObsOverlay.WebApp.Extensions
+@using System.Timers
+
+@layout NoMenuLayout
+@page "/giveaway-backup"
+@rendermode InteractiveServer
+
+<PageTitle>Give Away</PageTitle>
+
+<div class="container">
+    <h1 class="title">
+        Prize: <span class="pinkSpan">@prize</span>
+    </h1>
+    @{
+        if (!string.IsNullOrEmpty(winner))
+        {
+            <h2 class="title-timer">Winner: <span class="pinkSpan">@winner</span></h2>
+        }
+    }
+    <h2 class="title-timer">@counterTimeSpan.ToGiveawayTime()</h2>
+    <div class="row">
+        @if (entries.Any())
+        {
+            int entriesPerColumn = 5;
+            var columnCount = (int)Math.Ceiling((double)entries.Count() / entriesPerColumn);
+
+            for (int i = 0; i < columnCount; i++)
+            {
+                <div class="col">
+                    <div class="card">
+                        <ul class="entries">
+                            @for (int j = i * entriesPerColumn; j < Math.Min((i + 1) * entriesPerColumn, entries.Count()); j++)
+                            {
+                                <li class="entry">@entries[j]</li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col">
+                <div class="card">
+                    <p>No entries to display.</p>
+                </div>
+            </div>            
+        }
+    </div>
+
+    <div class="timer-actions-toggle">
+        <Button Color="ButtonColor.Primary" @onclick="(async () => { await ShowOffcanvasAsync(); })">Show Timer Actions</Button>
+    </div>    
+
+    <Offcanvas @ref="offcanvas">
+        <BodyTemplate>
+            <button @onclick="StartTimer" class="btn btn-success" disabled=@startTimerDisabled>Start</button>
+            <button @onclick="PauseTimer" class="btn btn-info" disabled=@pauseTimerDisabled>Pause</button>
+            <button @onclick="ResumeTimer" class="btn btn-info" disabled=@resumeTimerDisabled>Resume</button>
+            <button @onclick="ResetTimer" class="btn btn-warning" disabled=@resetTimerDisabled>Reset</button>
+        </BodyTemplate>
+    </Offcanvas>
+
+</div>
+
+
+@code {
+
+    private const string DISABLED = "disabled";
+
+    private string prize = FileBotFileReader.GetPrizeAsync();
+    private string winner = FileBotFileReader.GetWinnerAsync();
+    private string[] entries = FileBotFileReader.GetEntriesAsync();
+
+    private Timer aTimer = new Timer();
+    private double counter;
+    private TimeSpan counterTimeSpan = TimeSpan.FromSeconds(0);
+
+    private string? startTimerDisabled = null;
+    private string? pauseTimerDisabled = DISABLED;
+    private string? resumeTimerDisabled = DISABLED;
+    private string? resetTimerDisabled = DISABLED;  
+
+    private void StartTimer()
+    {
+        counter = Math.Ceiling((DateTime.UtcNow.AddMinutes(GiveAwayHelpers.GetGiveawayDuration()) - DateTime.UtcNow).TotalSeconds);
+
+        aTimer = new Timer(1000);
+        aTimer.Elapsed += new ElapsedEventHandler(CountDownTimer);
+        aTimer.Start();
+
+        startTimerDisabled = DISABLED;
+        pauseTimerDisabled = null;
+        resumeTimerDisabled = DISABLED;
+        resetTimerDisabled = null;
+
+    }
+
+    private void PauseTimer()
+    {
+        aTimer.Enabled = false;
+
+        startTimerDisabled = DISABLED;
+        pauseTimerDisabled = DISABLED;
+        resumeTimerDisabled = null;
+        resetTimerDisabled = DISABLED;
+    }
+
+    private void ResumeTimer()
+    {
+        aTimer.Enabled = true;
+
+        startTimerDisabled = DISABLED;
+        pauseTimerDisabled = null;
+        resumeTimerDisabled = DISABLED;
+        resetTimerDisabled = null;
+    }
+
+    private void ResetTimer()
+    {
+        aTimer.Enabled = false;
+        aTimer.Stop();
+        aTimer.Dispose();
+        counterTimeSpan = TimeSpan.FromSeconds(0);
+
+        startTimerDisabled = null;
+        pauseTimerDisabled = DISABLED;
+        resumeTimerDisabled = DISABLED;
+        resetTimerDisabled = DISABLED;
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void CountDownTimer(object? source, ElapsedEventArgs e)
+    {
+        if (counter > 0)
+        {
+            counter -= 1;
+            counterTimeSpan = TimeSpan.FromSeconds(counter);
+            UpdateGiveAwayDetails();
+        }
+        else
+        {
+            aTimer.Enabled = false;
+        }
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateGiveAwayDetails()
+    {
+        prize = FileBotFileReader.GetPrizeAsync();
+        winner = FileBotFileReader.GetWinnerAsync();
+        // entries = FileBotFileReader.GetEntries().OrderBy(x => Guid.NewGuid()).Take(10).ToArray();
+        entries = FileBotFileReader.GetEntriesAsync().Take(20).ToArray();
+    }
+
+    public void Dispose()
+    {
+        aTimer.Dispose();
+    }
+
+
+    #region Bootstrap
+
+    private Offcanvas offcanvas = default!;
+    private Placement placement = Placement.Bottom;
+
+    private async Task ShowOffcanvasAsync()
+    {
+        this.placement = placement;
+        await offcanvas?.ShowAsync();
+    }
+
+    private async Task HideOffcanvasAsync()
+    {
+        await offcanvas?.HideAsync();
+    }
+
+    #endregion Bootstrap
+
+}
+ *@
