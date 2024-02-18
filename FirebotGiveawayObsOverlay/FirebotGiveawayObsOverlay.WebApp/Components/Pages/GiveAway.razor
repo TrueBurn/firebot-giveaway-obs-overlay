@@ -9,43 +9,46 @@
 
 <PageTitle>Give Away</PageTitle>
 
-<div class="container">
-    <h1 class="title">
-        Prize: <span class="pinkSpan">@prize</span>
-    </h1>
-    <h2 class="title-timer">@counterTimeSpan.ToGiveawayTime()</h2>
-    <div class="row">
-        @{
-            if (doesGiveawayHaveWinner)
-            {
-                <h2 class="title-timer">Winner: <span class="pinkSpan">@winner</span></h2>
-            } 
-            else
-            {
-                if (entries.Any())
+@if (isGiveAwayRunning)
+{
+    <div class="container">
+        <h1 class="title">
+            <span class="pinkSpan">@prize</span>
+        </h1>
+        <h2 class="title-timer">@counterTimeSpan.ToGiveawayTime()</h2>
+        <div class="row">
+            @{
+                if (doesGiveawayHaveWinner)
                 {
-                    <div class="card">
-                        <ul class="entries">
-                            @foreach (var entry in entries)
-                            {
-                                <li class="entry bungee-spice-regular">@entry</li>
-                            }
-                        </ul>
-                    </div>
+                    <h2 class="title-timer">Winner: <span class="pinkSpan">@winner</span></h2>
                 }
                 else
                 {
-                    <div class="col">
+                    if (entries.Any())
+                    {
                         <div class="card">
-                            <p>No entries to display.</p>
+                            <ul class="entries">
+                                @foreach (var entry in entries)
+                                {
+                                    <li class="entry">@entry</li>
+                                }
+                            </ul>
                         </div>
-                    </div>
+                    }
+                    else
+                    {
+                        <div class="col">
+                            <div class="card">
+                                <p>No entries to display.</p>
+                            </div>
+                        </div>
+                    }
                 }
             }
-        }
-    </div>
+        </div>
 
-</div>
+    </div>
+}
 
 
 @code {
@@ -100,7 +103,7 @@
 
     private void EnsureCountdownTimerIsRunning()
     {
-        if (!countdownTimer.Enabled)
+        if (!countdownTimer.Enabled && !doesGiveawayHaveEntries)
         {
             StartCountdownTimer();
         }
