@@ -15,12 +15,15 @@
         <h1 class="title">
             <span class="pinkSpan">@prize</span>
         </h1>
-        <h2 class="title-timer">@counterTimeSpan.ToGiveawayTime()</h2>
+        @if (!doesGiveawayHaveWinner)
+        {
+            <h2 class="title-timer">@counterTimeSpan.ToGiveawayTime()</h2>
+        }
         <div class="row">
             @{
                 if (doesGiveawayHaveWinner)
                 {
-                    <h2 class="title-timer">Winner: <span class="pinkSpan">@winner</span></h2>
+                    <h2 class="title-winner">Winner: <span class="pinkSpan">@winner</span></h2>
                 }
                 else
                 {

@@ -95,6 +95,19 @@ a {
     color: white;
 }
 
+.title-winner {
+    font-size: 3rem;
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: -0.05em;
+    margin: 0;
+    color: white;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 600px;
+}
+
 .entry {
     font-size: 2rem;
 }

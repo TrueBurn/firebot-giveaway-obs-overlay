@@ -37,10 +37,17 @@ public static class FireBotFileReader
     private static async Task<string> GetFireBotFileAsync(string fileName)
     {
         string filePath = Path.Combine(_fireBotFileFolder, fileName);
-        if (File.Exists(filePath))
+        try
         {
-            return await File.ReadAllTextAsync(filePath);
+            if (File.Exists(filePath))
+            {
+                return await File.ReadAllTextAsync(filePath);
+            }
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }        
         return string.Empty;
     }
 
