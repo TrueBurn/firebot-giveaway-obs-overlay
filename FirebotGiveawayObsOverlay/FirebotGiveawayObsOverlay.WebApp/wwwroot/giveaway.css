@@ -1,3 +1,8 @@
+:root {
+    --bg-blue-light: hsl(183 97% 83%);
+    --bg-blue-dark: hsl(185 77% 53%);
+}
+
 * {
     background-color: transparent;
     margin: 0;
@@ -120,8 +125,14 @@ a {
     font-size: 4rem;
 }
 
-.pinkSpan {
-    color: hsl(280 100% 70%);
+.primarySpan {
+    /*color: hsl(280 100% 70%);*/
+    color: var(--bg-blue-dark);
+}
+
+.secondarySpan {
+    /*color: hsl(280 100% 70%);*/
+    color: var(--bg-blue-light);
 }
 
 .cardRow {

@@ -11,12 +11,12 @@
 
 <div class="container">
     <h1 class="title">
-        Prize: <span class="pinkSpan">@prize</span>
+        Prize: <span class="primarySpan">@prize</span>
     </h1>
     @{
         if (!string.IsNullOrEmpty(winner))
         {
-            <h2 class="title-timer">Winner: <span class="pinkSpan">@winner</span></h2>
+            <h2 class="title-timer">Winner: <span class="primarySpan">@winner</span></h2>
         }
     }
     <h2 class="title-timer">@counterTimeSpan.ToGiveawayTime()</h2>
