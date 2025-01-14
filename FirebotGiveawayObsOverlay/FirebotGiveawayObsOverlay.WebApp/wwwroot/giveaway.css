@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600&display=swap');
+
 :root {
     --bg-blue-light: hsl(183 97% 83%);
     --bg-blue-dark: hsl(185 77% 53%);
@@ -40,55 +42,66 @@ a {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 3rem;
-    padding: 4rem 1rem;
-    background-image: linear-gradient(to bottom, #3f3e41, #070708);
-    border-radius: 10%;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    padding: 1.5rem 2rem;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.85) 0%, rgba(15, 25, 35, 0.95) 100%);
+    border-radius: 1.5rem;
+    min-height: auto;
+    border: 2px solid rgba(0, 255, 255, 0.15);
+    position: relative;
+    overflow: hidden;
+    /* Rainbow glow effect */
+    box-shadow: 
+        0 0 20px rgba(0, 255, 255, 0.2),
+        0 0 40px rgba(238, 130, 238, 0.1),
+        0 0 60px rgba(255, 192, 203, 0.1);
 }
 
-@media (min-width: 640px) {
-    .container {
-        max-width: 640px;
-        min-height: 640px;
-    }
+/* Animated gradient border */
+.container::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(45deg, 
+        #ff3d00,
+        #ff00c8,
+        #00fff9,
+        #ff3d00
+    );
+    z-index: -1;
+    animation: animatedBorder 4s linear infinite;
+    opacity: 0.3;
+    border-radius: 1.5rem;
 }
 
-@media (min-width: 768px) {
-    .container {
-        max-width: 768px;
-        min-height: 768px;
-    }
-}
-
-@media (min-width: 1024px) {
-    .container {
-        max-width: 1024px;
-        min-height: 1024px;
-    }
-}
-
-@media (min-width: 1280px) {
-    .container {
-        max-width: 1280px;
-        min-height: 1280px;
-    }
-}
-
-@media (min-width: 1536px) {
-    .container {
-        max-width: 1536px;
-        min-height: 1536px;
-    }
+/* Tech pattern with more vibrant colors */
+.container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px) 0 0 / 20px 20px,
+        linear-gradient(0deg, rgba(238, 130, 238, 0.03) 1px, transparent 1px) 0 0 / 20px 20px;
+    pointer-events: none;
 }
 
 .title {
-    font-size: 3rem;
-    line-height: 1;
-    font-weight: 600;
-    letter-spacing: -0.025em;
+    font-size: 3.5rem;
+    line-height: 1.2;
     margin: 0;
+    text-align: center;
     color: white;
+    font-family: 'Orbitron', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    position: relative;
 }
 
 .title-timer {
@@ -101,16 +114,113 @@ a {
 }
 
 .title-winner {
-    font-size: 3rem;
-    line-height: 1;
-    font-weight: 600;
-    letter-spacing: -0.05em;
-    margin: 0;
+    font-size: 2.5rem;
+    line-height: 1.2;
+    margin-top: 0.25rem;
+    text-align: center;
     color: white;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    max-width: 600px;
+    font-family: 'Orbitron', sans-serif;
+    position: relative;
+    animation: winnerEntrance 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+/* Add shine effect to "Winner:" text */
+.title-winner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.2) 50%,
+        transparent 100%
+    );
+    animation: shine 3s linear infinite;
+}
+
+/* Style winner name specially */
+.title-winner .secondarySpan {
+    background: linear-gradient(45deg,
+        #00fff9 0%,
+        #ff00c8 25%,
+        #ffe100 50%,
+        #ff00c8 75%,
+        #00fff9 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: winnerGradient 4s linear infinite;
+    text-shadow: 
+        0 0 15px rgba(0, 255, 255, 0.6),
+        0 0 30px rgba(0, 255, 255, 0.3);
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+/* Winner animations */
+@keyframes winnerEntrance {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes shine {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes winnerGradient {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Optional: Add celebratory particles when winner is shown */
+.title-winner::after {
+    content: '✨';
+    position: absolute;
+    top: -10px;
+    right: -20px;
+    font-size: 1.5rem;
+    animation: sparkle 1.5s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+    0% {
+        transform: scale(0) rotate(0deg);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.2) rotate(180deg);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0) rotate(360deg);
+        opacity: 0;
+    }
 }
 
 .entry {
@@ -126,13 +236,23 @@ a {
 }
 
 .primarySpan {
-    /*color: hsl(280 100% 70%);*/
-    color: var(--bg-blue-dark);
+    background: linear-gradient(45deg, 
+        #00fff9 0%,
+        #ff00c8 50%,
+        #00fff9 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: gradientText 8s linear infinite;
+    text-shadow: 
+        0 0 10px rgba(0, 255, 255, 0.5),
+        0 0 20px rgba(0, 255, 255, 0.3);
 }
 
 .secondarySpan {
-    /*color: hsl(280 100% 70%);*/
-    color: var(--bg-blue-light);
+    color: #00fff9;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
 }
 
 .cardRow {
@@ -189,5 +309,109 @@ ul.entries {
     background: -webkit-linear-gradient(white, hsl(280 100% 70%));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+}
+
+.title-entries {
+    font-size: 2.2rem;
+    text-align: center;
+    margin-top: 0.25rem;
+    line-height: 1.2;
+    color: white;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+    opacity: 0.9;
+}
+
+/* Animations */
+@keyframes animatedBorder {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes gradientText {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* Make text pop with colored shadow on hover */
+.title:hover .primarySpan {
+    animation: textPop 0.5s ease forwards;
+}
+
+@keyframes textPop {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+/* Entry count animation */
+.entry-count-animate {
+    display: inline-block;
+    animation: countPop 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+    animation-fill-mode: both;
+}
+
+@keyframes countPop {
+    0% {
+        transform: scale(1);
+        filter: hue-rotate(0deg);
+    }
+    50% {
+        transform: scale(1.3);
+        filter: hue-rotate(45deg);
+        text-shadow: 
+            0 0 20px rgba(0, 255, 255, 0.8),
+            0 0 40px rgba(0, 255, 255, 0.4);
+    }
+    100% {
+        transform: scale(1);
+        filter: hue-rotate(0deg);
+    }
+}
+
+/* Make the Entries text subtle */
+.title-entries {
+    font-size: 2.2rem;
+    text-align: center;
+    margin-top: 0.25rem;
+    line-height: 1.2;
+    color: white;
+    font-family: 'Orbitron', sans-serif;
+    letter-spacing: 1px;
+}
+
+/* Style the number differently from the word "Entries" */
+.title-entries span {
+    display: inline-block;
+    margin-right: 0.5rem;
+    font-weight: 600;
+    background: linear-gradient(45deg, 
+        #00fff9 0%,
+        #ff00c8 50%,
+        #00fff9 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 
+        0 0 10px rgba(0, 255, 255, 0.5),
+        0 0 20px rgba(0, 255, 255, 0.3);
 }
 

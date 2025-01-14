@@ -1,0 +1,219 @@
+﻿@using FirebotGiveawayObsOverlay.WebApp.Components.Layout
+@using FirebotGiveawayObsOverlay.WebApp.Helpers
+@using FirebotGiveawayObsOverlay.WebApp.Extensions
+@using System.Timers
+
+@layout NoMenuLayout
+@page "/giveaway/backup"
+@rendermode InteractiveServer
+
+<PageTitle>Give Away</PageTitle>
+
+@if (isGiveAwayRunning)
+{
+    <div class="container">
+        <h1 class="title">
+            <span class="primarySpan">@prize</span>
+        </h1>
+        @if (!doesGiveawayHaveWinner)
+        {
+            <h2 class="title-timer">@counterTimeSpan.ToGiveawayTime()</h2>
+        }
+        <div class="row">
+            @{
+                if (doesGiveawayHaveWinner)
+                {
+                    <h2 class="title-winner">Winner: <span class="secondarySpan">@winner</span></h2>
+                }
+                else
+                {
+                    if (entries.Any())
+                    {
+                        <div class="card">
+                            <ul class="entries">
+                                @foreach (var entry in entries)
+                                {
+                                    <li class="entry">@entry</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="col">
+                            <div class="card">
+                                <p>No entries to display.</p>
+                            </div>
+                        </div>
+                    }
+                }
+            }
+        </div>
+
+    </div>
+}
+
+
+@code {
+
+    #region props
+
+    private const string DISABLED = "disabled";
+
+    private string prize = string.Empty;
+    private string winner = string.Empty;
+    private string[] entries = [];
+
+    private Timer countdownTimer = new Timer(1000);
+    private Timer fileScanTimer = new Timer(1000);
+    private double counter;
+    private TimeSpan counterTimeSpan = TimeSpan.FromSeconds(0);
+
+    private bool isGiveAwayRunning = false;
+    private bool doesGiveawayHaveWinner = false;
+    private bool doesGiveawayHaveEntries = false;
+
+    #endregion props
+
+    #region startup
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetLatestGiveAwayDetails();
+
+        fileScanTimer.Elapsed += new ElapsedEventHandler(HandleFileScanTimer);
+        countdownTimer.Elapsed += new ElapsedEventHandler(HandleCountdownTimer);
+
+        StartFileScanTimer();
+    }
+
+    private void StartFileScanTimer()
+    {        
+        fileScanTimer.Start();
+    }
+
+    private void StartCountdownTimer()
+    {
+        if (counter == 0)
+        {
+            counter = Math.Ceiling((DateTime.UtcNow.AddMinutes(GiveAwayHelpers.GetGiveawayDuration()) - DateTime.UtcNow).TotalSeconds);
+        }
+
+        countdownTimer.Start();
+    }
+
+    #endregion startup
+
+    private void EnsureCountdownTimerIsRunning()
+    {
+        if (!countdownTimer.Enabled && !doesGiveawayHaveEntries)
+        {
+            StartCountdownTimer();
+        }
+    }
+
+    private void ResetCountdownTimer()
+    {
+        countdownTimer.Stop();
+        counter = 0;
+        counterTimeSpan = TimeSpan.FromSeconds(0);
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void PauseCountdownTimer()
+    {
+        if (countdownTimer.Enabled)
+        {
+            countdownTimer.Stop();
+        }        
+    }
+
+    private void ResumeCountdownTimer()
+    {
+        if (!countdownTimer.Enabled)
+        {
+            countdownTimer.Start();
+        }
+    }
+
+    #region event handlers
+
+    public async void HandleFileScanTimer(object? source, ElapsedEventArgs e)
+    {
+        await GetLatestGiveAwayDetails();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void HandleCountdownTimer(object? source, ElapsedEventArgs e)
+    {
+        if (counter > 0)
+        {
+            counter -= 1;
+            counterTimeSpan = TimeSpan.FromSeconds(counter);
+        }
+        else
+        {
+            countdownTimer.Enabled = false;
+        }
+    }
+
+    #endregion event handlers
+
+    private async Task GetLatestGiveAwayDetails()
+    {
+
+        Task<string> getPrizeTask = FireBotFileReader.GetPrizeAsync();
+        Task<string[]> getEntriesTask = FireBotFileReader.GetEntriesAsync();
+        Task<string> getWinnerTask = FireBotFileReader.GetWinnerAsync();
+
+        await Task.WhenAll(getPrizeTask, getEntriesTask, getWinnerTask).ConfigureAwait(false);
+
+        prize = getPrizeTask.Result;
+        if (counter % 3 == 0)
+        {
+            entries = getEntriesTask.Result.OrderBy(x => Guid.NewGuid()).Take(5).ToArray();
+        }        
+        // entries = getEntriesTask.Result.Take(20).ToArray();
+        winner = getWinnerTask.Result;
+
+        isGiveAwayRunning = !string.IsNullOrWhiteSpace(prize);
+        doesGiveawayHaveEntries = entries.Any();
+        doesGiveawayHaveWinner = !string.IsNullOrWhiteSpace(winner);
+
+        UpdateTimersUsingGiveAwayDetails();
+
+    }
+
+    private void UpdateTimersUsingGiveAwayDetails()
+    {
+
+        if (isGiveAwayRunning)
+        {
+            EnsureCountdownTimerIsRunning();
+        }
+        else
+        {
+            ResetCountdownTimer();
+        }
+
+        if (doesGiveawayHaveWinner)
+        {
+            PauseCountdownTimer();
+        }
+        else
+        {
+            ResumeCountdownTimer();
+        }
+
+        // HAndle UI based on the entries
+
+    }
+
+    public void Dispose()
+    {
+        countdownTimer.Dispose();
+        fileScanTimer.Dispose();
+    }
+
+}
