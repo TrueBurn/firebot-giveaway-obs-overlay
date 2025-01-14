@@ -27,8 +27,8 @@ app.Lifetime.ApplicationStarted.Register(() =>
     int giveawayDuration = app.Configuration.GetValue<int>("AppSettings:GiveawayDuration", 69);
     GiveAwayHelpers.SetGiveawayDuration(giveawayDuration);
 
-    // Launch browser
-    string url = "http://localhost:5243/giveaway";
+    // Launch browser with correct port
+    string url = "http://localhost:5000/giveaway";
     try
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

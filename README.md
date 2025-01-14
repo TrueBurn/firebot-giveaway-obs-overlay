@@ -30,7 +30,7 @@ The application can be configured through the `appsettings.json` file:
 ## OBS Integration
 
 1. In OBS Studio, add a new Browser Source
-2. Set the URL to `http://localhost:5243/giveaway`
+2. Set the URL to `http://localhost:5000/giveaway`
 3. Recommended dimensions:
    - Width: 800px
    - Height: 200px
