@@ -14,7 +14,12 @@
 
 @if (isGiveAwayRunning)
 {
-    <div class="container @(doesGiveawayHaveWinner ? "has-winner" : "")" style="--prize-width: @(prizeSectionWidth)%; --info-width: @(100 - prizeSectionWidth)%;">
+    <div class="container @(doesGiveawayHaveWinner ? "has-winner" : "")" 
+         style="--prize-width: @(prizeSectionWidth)%; 
+                --info-width: @(100 - prizeSectionWidth)%;
+                --prize-font-size: @(prizeFontSize)rem;
+                --timer-font-size: @(timerFontSize)rem;
+                --entries-font-size: @(entriesFontSize)rem;">
         <div class="prize-section">
             <h1 class="title">
                 <span class="primarySpan">@prize</span>
@@ -61,6 +66,9 @@
     private int previousEntryCount = 0;
 
     private int prizeSectionWidth = GiveAwayHelpers.GetPrizeSectionWidth();
+    private double prizeFontSize = GiveAwayHelpers.GetPrizeFontSize();
+    private double timerFontSize = GiveAwayHelpers.GetTimerFontSize();
+    private double entriesFontSize = GiveAwayHelpers.GetEntriesFontSize();
 
     protected override async Task OnInitializedAsync()
     {
@@ -163,8 +171,11 @@
             ResetTimer();
         }
 
-        // Update the prize section width from settings
+        // Update the prize section width and font sizes from settings
         prizeSectionWidth = GiveAwayHelpers.GetPrizeSectionWidth();
+        prizeFontSize = GiveAwayHelpers.GetPrizeFontSize();
+        timerFontSize = GiveAwayHelpers.GetTimerFontSize();
+        entriesFontSize = GiveAwayHelpers.GetEntriesFontSize();
     }
     
     private void ResetTimer()

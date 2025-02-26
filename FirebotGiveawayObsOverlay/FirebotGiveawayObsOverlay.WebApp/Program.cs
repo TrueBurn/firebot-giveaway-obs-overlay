@@ -37,6 +37,14 @@ app.Lifetime.ApplicationStarted.Register(() =>
     // Initialize prize section width from configuration
     int prizeSectionWidth = app.Configuration.GetValue<int>("AppSettings:PrizeSectionWidthPercent", 75);
     GiveAwayHelpers.SetPrizeSectionWidth(prizeSectionWidth);
+    
+    // Initialize font size settings from configuration
+    double prizeFontSize = app.Configuration.GetValue<double>("AppSettings:PrizeFontSizeRem", 3.5);
+    double timerFontSize = app.Configuration.GetValue<double>("AppSettings:TimerFontSizeRem", 3.0);
+    double entriesFontSize = app.Configuration.GetValue<double>("AppSettings:EntriesFontSizeRem", 2.5);
+    GiveAwayHelpers.SetPrizeFontSize(prizeFontSize);
+    GiveAwayHelpers.SetTimerFontSize(timerFontSize);
+    GiveAwayHelpers.SetEntriesFontSize(entriesFontSize);
 
     // Launch browser with correct port
     string url = "http://localhost:5000/giveaway";

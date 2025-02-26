@@ -40,6 +40,9 @@ a {
 .container {
     --prize-width: 75%;
     --info-width: 25%;
+    --prize-font-size: 3.5rem;
+    --timer-font-size: 3.0rem;
+    --entries-font-size: 3.0rem;
     width: 1200px;
     height: 300px;
     display: flex;
@@ -111,33 +114,49 @@ a {
     width: var(--info-width);
     position: relative;
     height: 100%;
+    padding: 0 0.5rem;
 }
 
 .title {
-    font-size: 5rem;
-    line-height: 1.3;
+    font-size: var(--prize-font-size);
+    font-weight: 600;
     margin: 0;
+    line-height: 1.2;
+    letter-spacing: 0.05em;
     text-align: left;
     font-family: 'Orbitron', sans-serif;
     text-transform: uppercase;
-    letter-spacing: 2px;
     position: relative;
     word-wrap: break-word;
     overflow-wrap: break-word;
     max-width: 100%;
 }
 
+/* Restore the gradient styling for the prize text */
+.primarySpan {
+    background: linear-gradient(45deg, 
+        #00fff9 0%,
+        #ff00c8 50%,
+        #00fff9 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 
+        0 0 10px rgba(0, 255, 255, 0.5),
+        0 0 20px rgba(0, 255, 255, 0.3);
+}
+
 .title-timer {
-    font-size: 4.5rem;
-    line-height: 1;
+    font-size: var(--timer-font-size);
     font-weight: 600;
-    letter-spacing: -0.025em;
     margin: 0;
-    text-align: center;
+    line-height: 1.2;
+    letter-spacing: 0.05em;
     font-family: 'Orbitron', sans-serif;
 }
 
-/* Style for the numbers in the timer */
+/* Style for the timer numbers - reduce blur effect */
 .timer-numbers {
     background: linear-gradient(45deg, 
         #00fff9 0%,
@@ -150,6 +169,7 @@ a {
     text-shadow: 
         0 0 5px rgba(0, 255, 255, 0.4),
         0 0 10px rgba(0, 255, 255, 0.2);
+    display: inline-block;
 }
 
 /* Style for the units (m and s) in the timer */
@@ -308,15 +328,25 @@ a {
     font-size: 2rem;
 }
 
-.title {
-    font-size: 5rem;
+.title-entries {
+    font-size: var(--entries-font-size);
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.2;
+    letter-spacing: 0.05em;
+    text-align: center;
+    font-family: 'Orbitron', sans-serif;
+    color: white;
+    white-space: nowrap;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
 }
 
-.title-timer {
-    font-size: 4.5rem;
-}
-
-.primarySpan {
+/* Style for the entry count number - keep the gradient and animation */
+.entry-count-animate {
     background: linear-gradient(45deg, 
         #00fff9 0%,
         #ff00c8 50%,
@@ -326,20 +356,53 @@ a {
     background-clip: text;
     color: transparent;
     text-shadow: 
-        0 0 10px rgba(0, 255, 255, 0.5),
-        0 0 20px rgba(0, 255, 255, 0.3);
+        0 0 5px rgba(0, 255, 255, 0.4),
+        0 0 10px rgba(0, 255, 255, 0.2);
+    display: inline-block;
+    animation: entryCountPulse 0.5s ease-in-out;
 }
 
-.title-entries {
-    font-size: 2.5rem;
-    text-align: center;
-    margin-top: 1rem;
-    line-height: 1.2;
+/* Add animation for entry count changes */
+@keyframes entryCountPulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+        text-shadow: 
+            0 0 10px rgba(0, 255, 255, 0.6),
+            0 0 20px rgba(0, 255, 255, 0.4);
+    }
+    100% {
+        transform: scale(1);
+        text-shadow: 
+            0 0 5px rgba(0, 255, 255, 0.4),
+            0 0 10px rgba(0, 255, 255, 0.2);
+    }
+}
+
+/* Style for the regular entry count (not animating) */
+.title-entries span:first-child:not(.entry-count-animate) {
+    background: linear-gradient(45deg, 
+        #00fff9 0%,
+        #ff00c8 50%,
+        #00fff9 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 
+        0 0 5px rgba(0, 255, 255, 0.4),
+        0 0 10px rgba(0, 255, 255, 0.2);
+    display: inline-block;
+}
+
+/* Style for the "Entries" text - make it match the "m" and "s" in the timer */
+.title-entries span + span,
+.title-entries:not(:has(span)) {
     color: white;
-    font-family: 'Orbitron', sans-serif;
-    letter-spacing: 1px;
-    font-weight: 400;
-    opacity: 0.9;
+    text-shadow: none;
+    margin-left: 0.2rem;
 }
 
 /* Animations */
@@ -379,51 +442,6 @@ a {
     100% {
         transform: scale(1);
     }
-}
-
-/* Entry count animation */
-.entry-count-animate {
-    display: inline-block;
-    animation: countPop 0.5s cubic-bezier(0.19, 1, 0.22, 1);
-    animation-fill-mode: both;
-}
-
-@keyframes countPop {
-    0% {
-        transform: scale(1);
-        filter: hue-rotate(0deg);
-    }
-    50% {
-        transform: scale(1.3);
-        filter: hue-rotate(45deg);
-        text-shadow: 
-            0 0 20px rgba(0, 255, 255, 0.8),
-            0 0 40px rgba(0, 255, 255, 0.4);
-    }
-    100% {
-        transform: scale(1);
-        filter: hue-rotate(0deg);
-    }
-}
-
-/* Make the entry count number match the timer number size */
-.title-entries span {
-    display: inline-block;
-    margin-right: 0.5rem;
-    font-weight: 600;
-    font-size: 1.8em;
-    background: linear-gradient(45deg, 
-        #00fff9 0%,
-        #ff00c8 50%,
-        #00fff9 100%
-    );
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    text-shadow: 
-        0 0 5px rgba(0, 255, 255, 0.4),
-        0 0 10px rgba(0, 255, 255, 0.2);
-    vertical-align: middle;
 }
 
 /* Winner celebration styles */
