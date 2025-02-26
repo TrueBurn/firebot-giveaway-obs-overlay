@@ -496,7 +496,7 @@ a {
     box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
     animation: winnerOverlayFadeIn 1s ease-out forwards;
     padding: 2rem 4rem;
-    min-width: 60%;
+    min-width: 100%;
 }
 
 @keyframes winnerOverlayFadeIn {
