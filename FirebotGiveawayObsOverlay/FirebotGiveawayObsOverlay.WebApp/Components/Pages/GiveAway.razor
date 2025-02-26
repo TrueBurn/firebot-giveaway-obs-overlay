@@ -193,14 +193,14 @@
         }
     }
 
-    // Format timer to have colored numbers and white units with better spacing
+    // Format timer to have colored numbers with colon separator
     private MarkupString FormatTimer(TimeSpan time)
     {
         if (time.TotalMinutes >= 1)
         {
-            return new MarkupString($"<span class='timer-numbers'>{time.Minutes:D2}</span><span class='timer-units'>m</span><span class='timer-numbers'>{time.Seconds:D2}</span><span class='timer-units'>s</span>");
+            return new MarkupString($"<span class='timer-numbers'>{time.Minutes:D2}</span><span class='timer-separator'>:</span><span class='timer-numbers'>{time.Seconds:D2}</span>");
         }
-        return new MarkupString($"<span class='timer-numbers'>{time.Seconds:D2}</span><span class='timer-units'>s</span>");
+        return new MarkupString($"<span class='timer-numbers'>{time.Seconds:D2}</span>");
     }
 
     public void Dispose()

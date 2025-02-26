@@ -172,13 +172,17 @@ a {
     display: inline-block;
 }
 
-/* Style for the units (m and s) in the timer */
-.timer-units {
+/* Style for the timer separator (colon) */
+.timer-separator {
     color: white;
-    font-weight: 400;
-    opacity: 0.9;
     margin: 0 0.2rem;
-    font-size: 0.8em;
+    display: inline-block;
+    font-weight: 600;
+}
+
+/* Remove the timer units styling since we're not using them anymore */
+.timer-units {
+    display: none;
 }
 
 /* Add timer expiration animation */
@@ -216,7 +220,7 @@ a {
         0 0 10px rgba(255, 0, 0, 0.5);
 }
 
-.timer-flash .timer-units {
+.timer-flash .timer-separator {
     color: #ff3333 !important;
 }
 
