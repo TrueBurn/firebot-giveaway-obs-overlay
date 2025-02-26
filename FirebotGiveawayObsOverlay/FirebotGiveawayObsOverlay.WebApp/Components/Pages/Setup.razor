@@ -55,12 +55,33 @@
         @bind:after="SetFirebotFilePath" />
 </div>
 
+<div class="mb-3">
+    <label class="form-label">Layout Settings</label>
+    <div class="d-flex gap-2 align-items-center">
+        <div class="flex-grow-1">
+            <label class="form-label">Prize Section Width (%)</label>
+            <input type="range" 
+                   class="form-range" 
+                   min="50" 
+                   max="90" 
+                   step="5"
+                   @bind="prizeSectionWidth" 
+                   @bind:event="oninput"
+                   @bind:after="SetPrizeSectionWidth" />
+        </div>
+        <div style="width: 50px; text-align: center;">
+            <span class="badge bg-primary">@prizeSectionWidth%</span>
+        </div>
+    </div>
+</div>
+
 @code {
     private string firebotFilePath = GiveAwayHelpers.GetFireBotFileFolder();
     private int countdownMinutes;
     private int countdownSeconds;
     private string resetMessage = "";
     private bool resetSuccess = false;
+    private int prizeSectionWidth = GiveAwayHelpers.GetPrizeSectionWidth();
 
     protected override void OnInitialized()
     {
@@ -92,5 +113,10 @@
             resetMessage = $"Error: {ex.Message}";
             resetSuccess = false;
         }
+    }
+
+    private void SetPrizeSectionWidth()
+    {
+        GiveAwayHelpers.SetPrizeSectionWidth(prizeSectionWidth);
     }
 }

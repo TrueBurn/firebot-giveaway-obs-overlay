@@ -33,6 +33,10 @@ app.Lifetime.ApplicationStarted.Register(() =>
     int countdownMinutes = app.Configuration.GetValue<int>("AppSettings:CountdownMinutes", 60);
     int countdownSeconds = app.Configuration.GetValue<int>("AppSettings:CountdownSeconds", 0);
     GiveAwayHelpers.SetCountdownTime(countdownMinutes, countdownSeconds);
+    
+    // Initialize prize section width from configuration
+    int prizeSectionWidth = app.Configuration.GetValue<int>("AppSettings:PrizeSectionWidthPercent", 75);
+    GiveAwayHelpers.SetPrizeSectionWidth(prizeSectionWidth);
 
     // Launch browser with correct port
     string url = "http://localhost:5000/giveaway";

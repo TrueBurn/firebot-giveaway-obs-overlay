@@ -14,7 +14,7 @@
 
 @if (isGiveAwayRunning)
 {
-    <div class="container @(doesGiveawayHaveWinner ? "has-winner" : "")">
+    <div class="container @(doesGiveawayHaveWinner ? "has-winner" : "")" style="--prize-width: @(prizeSectionWidth)%; --info-width: @(100 - prizeSectionWidth)%;">
         <div class="prize-section">
             <h1 class="title">
                 <span class="primarySpan">@prize</span>
@@ -26,15 +26,12 @@
                 @FormatTimer(counterTimeSpan)
             </h2>
             
-            @if (entries.Any())
-            {
-                <h2 class="title-entries">
-                    <span class="@(previousEntryCount != entries.Length ? "entry-count-animate" : "")">
-                        @entries.Length
-                    </span>
-                    Entries
-                </h2>
-            }
+            <h2 class="title-entries">
+                <span class="@(previousEntryCount != entries.Length ? "entry-count-animate" : "")">
+                    @entries.Length
+                </span>
+                Entries
+            </h2>
         </div>
         
         @if (doesGiveawayHaveWinner)
@@ -62,6 +59,8 @@
     private bool isGiveAwayRunning = false;
     private bool doesGiveawayHaveWinner = false;
     private int previousEntryCount = 0;
+
+    private int prizeSectionWidth = GiveAwayHelpers.GetPrizeSectionWidth();
 
     protected override async Task OnInitializedAsync()
     {
@@ -120,29 +119,52 @@
 
         await Task.WhenAll(getPrizeTask, getEntriesTask, getWinnerTask).ConfigureAwait(false);
 
-        prize = getPrizeTask.Result;
+        string newPrize = getPrizeTask.Result;
         var newEntries = getEntriesTask.Result;
+        
+        // Check if prize status has changed
+        bool hadPrizeBefore = isGiveAwayRunning;
+        bool hasPrizeNow = !string.IsNullOrWhiteSpace(newPrize);
         
         // Update previous count before setting new entries
         previousEntryCount = entries.Length;
         entries = newEntries;
         
-        winner = getWinnerTask.Result;
-
-        isGiveAwayRunning = !string.IsNullOrWhiteSpace(prize);
-        doesGiveawayHaveWinner = !string.IsNullOrWhiteSpace(winner);
+        string newWinner = getWinnerTask.Result;
+        
+        // Check if winner status has changed
+        bool hadWinnerBefore = doesGiveawayHaveWinner;
+        bool hasWinnerNow = !string.IsNullOrWhiteSpace(newWinner);
+        
+        // Update prize, winner and status flags
+        prize = newPrize;
+        winner = newWinner;
+        isGiveAwayRunning = hasPrizeNow;
+        doesGiveawayHaveWinner = hasWinnerNow;
         
         // If giveaway has a winner, pause the countdown timer
         if (doesGiveawayHaveWinner && countdownTimer.Enabled)
         {
             countdownTimer.Stop();
         }
-        
-        // If giveaway is not running, reset the timer
-        if (!isGiveAwayRunning)
+        // If winner was cleared and giveaway is still running, reset and start the timer
+        else if (hadWinnerBefore && !doesGiveawayHaveWinner && isGiveAwayRunning)
         {
             ResetTimer();
         }
+        // If prize was added (and there was no prize before), reset and start the timer
+        else if (!hadPrizeBefore && hasPrizeNow && !doesGiveawayHaveWinner)
+        {
+            ResetTimer();
+        }
+        // If giveaway is not running, reset the timer
+        else if (!isGiveAwayRunning)
+        {
+            ResetTimer();
+        }
+
+        // Update the prize section width from settings
+        prizeSectionWidth = GiveAwayHelpers.GetPrizeSectionWidth();
     }
     
     private void ResetTimer()
