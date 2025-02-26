@@ -18,22 +18,29 @@ The application can be configured through the `appsettings.json` file:
 {
   "AppSettings": {
     "FireBotFileFolder": "G:\\Giveaway",    // Directory where Firebot stores giveaway files
-    "GiveawayDuration": 60                  // Default giveaway duration in seconds
+    "CountdownMinutes": 59,                 // Default countdown minutes
+    "CountdownSeconds": 59,                 // Default countdown seconds
+    "PrizeSectionWidthPercent": 75,         // Width percentage for prize section
+    "PrizeFontSizeRem": 4.5,                // Font size for prize text
+    "TimerFontSizeRem": 3.0,                // Font size for timer
+    "EntriesFontSizeRem": 3.0               // Font size for entries counter
   }
 }
 ```
 
 ### Configuration Options:
 - `FireBotFileFolder`: Set this to the directory where Firebot stores your giveaway files
-- `GiveawayDuration`: Default duration for giveaways in seconds (can be modified through the Setup page)
+- `CountdownMinutes` and `CountdownSeconds`: Default duration for giveaways
+- `PrizeSectionWidthPercent`: Controls the layout width distribution (50-90%)
+- `PrizeFontSizeRem`, `TimerFontSizeRem`, `EntriesFontSizeRem`: Font size settings
 
 ## OBS Integration
 
 1. In OBS Studio, add a new Browser Source
-2. Set the URL to `http://localhost:5000/giveaway`
+2. Set the URL to `http://localhost:5243/giveaway`
 3. Recommended dimensions:
-   - Width: 800px
-   - Height: 200px
+   - Width: 1200px
+   - Height: 300px
 4. Important Browser Source settings:
    - Enable "Refresh browser when scene becomes active"
    - Enable "Shutdown source when not visible" for better performance
@@ -44,9 +51,19 @@ The application can be configured through the `appsettings.json` file:
 - 🎮 Warframe-inspired design
 - ✨ Animated effects and transitions
 - 🎯 Real-time entry counter with animations
-- 🏆 Celebratory winner announcement
-- 🎨 Gradient color schemes
-- 📱 Responsive layout
+- 🏆 Celebratory winner announcement with animated trophies
+- 🎨 Gradient color schemes with animated borders
+- 📱 Responsive layout with customizable dimensions
+- ⏱️ Configurable countdown timer
+- 🔧 Easy setup page for all customization options
+
+## Setup Page Options
+
+The setup page allows you to configure:
+- Countdown timer duration
+- Firebot file path
+- Layout proportions
+- Font sizes for all elements
 
 ## Development
 
@@ -54,6 +71,7 @@ The project is built using:
 - ASP.NET Core 8.0
 - Blazor Server
 - Bootstrap 5.1
+- CSS animations
 
 ## License
 
