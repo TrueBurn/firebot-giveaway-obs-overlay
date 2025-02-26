@@ -14,7 +14,7 @@
 
 @if (isGiveAwayRunning)
 {
-    <div class="container">
+    <div class="container @(doesGiveawayHaveWinner ? "has-winner" : "")">
         <div class="prize-section">
             <h1 class="title">
                 <span class="primarySpan">@prize</span>
@@ -22,27 +22,30 @@
         </div>
         
         <div class="info-section">
-            @if (doesGiveawayHaveWinner)
+            <h2 class="title-timer @(timerExpired ? "timer-flash" : "")">
+                @FormatTimer(counterTimeSpan)
+            </h2>
+            
+            @if (entries.Any())
             {
-                <h2 class="title-winner">Winner: <span class="secondarySpan">@winner</span></h2>
-            }
-            else
-            {
-                <h2 class="title-timer @(timerExpired ? "timer-flash" : "")">
-                    @FormatTimer(counterTimeSpan)
+                <h2 class="title-entries">
+                    <span class="@(previousEntryCount != entries.Length ? "entry-count-animate" : "")">
+                        @entries.Length
+                    </span>
+                    Entries
                 </h2>
-                
-                @if (entries.Any())
-                {
-                    <h2 class="title-entries">
-                        <span class="@(previousEntryCount != entries.Length ? "entry-count-animate" : "")">
-                            @entries.Length
-                        </span>
-                        Entries
-                    </h2>
-                }
             }
         </div>
+        
+        @if (doesGiveawayHaveWinner)
+        {
+            <div class="winner-overlay">
+                <h2 class="title-winner">
+                    <span class="winner-label">Winner:</span>
+                    <span class="secondarySpan">@winner</span>
+                </h2>
+            </div>
+        }
     </div>
 }
 
