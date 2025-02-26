@@ -1,4 +1,6 @@
 ﻿@using FirebotGiveawayObsOverlay.WebApp.Helpers
+@using FirebotGiveawayObsOverlay.WebApp.Services
+@inject TimerService TimerService
 
 @page "/setup"
 @rendermode InteractiveServer
@@ -10,13 +12,36 @@
 <hr />
 
 <div class="mb-3">
-    <label class="form-label">Give Away duration</label>
-    <input type="number" required
-           placeholder="Set duration in minutes"
-           class="form-control"
-           @bind="giveawayDuration"
-           @bind:event="oninput"
-           @bind:after="SetGiveawayDuration" />
+    <label class="form-label">Countdown Timer</label>
+    <div class="d-flex gap-2">
+        <div class="flex-grow-1">
+            <label class="form-label">Minutes</label>
+            <input type="number" required
+                   placeholder="Minutes"
+                   class="form-control"
+                   min="0"
+                   max="99"
+                   @bind="countdownMinutes"
+                   @bind:event="oninput"
+                   @bind:after="SetCountdownTime" />
+        </div>
+        <div class="flex-grow-1">
+            <label class="form-label">Seconds</label>
+            <input type="number" required
+                   placeholder="Seconds"
+                   class="form-control"
+                   min="0"
+                   max="59"
+                   @bind="countdownSeconds"
+                   @bind:event="oninput"
+                   @bind:after="SetCountdownTime" />
+        </div>
+    </div>
+</div>
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="ResetGiveawayTimer">Reset Timer</button>
+    <span class="ms-2 @(resetSuccess ? "text-success" : "text-danger")">@resetMessage</span>
 </div>
 
 <div class="mb-3">
@@ -25,22 +50,23 @@
         type="text" required
         placeholder="Set the path where to find the Firebot files" 
         class="form-control"
-        min="1"
-        max="300"
-        step="1"
-           @bind="firebotFilePath"
-           @bind:event="oninput"
-           @bind:after="SetFirebotFilePath" />
+        @bind="firebotFilePath"
+        @bind:event="oninput"
+        @bind:after="SetFirebotFilePath" />
 </div>
 
 @code {
-
-    private int giveawayDuration = GiveAwayHelpers.GetGiveawayDuration();
     private string firebotFilePath = GiveAwayHelpers.GetFireBotFileFolder();
+    private int countdownMinutes;
+    private int countdownSeconds;
+    private string resetMessage = "";
+    private bool resetSuccess = false;
 
-    private void SetGiveawayDuration()
+    protected override void OnInitialized()
     {
-        GiveAwayHelpers.SetGiveawayDuration(giveawayDuration);
+        var (minutes, seconds) = GiveAwayHelpers.GetCountdownTime();
+        countdownMinutes = minutes;
+        countdownSeconds = seconds;
     }
 
     private void SetFirebotFilePath()
@@ -48,6 +74,23 @@
         GiveAwayHelpers.SetFireBotFileFolder(firebotFilePath);
     }
 
+    private void SetCountdownTime()
+    {
+        GiveAwayHelpers.SetCountdownTime(countdownMinutes, countdownSeconds);
+    }
 
-
+    private void ResetGiveawayTimer()
+    {
+        try
+        {
+            TimerService.ResetTimer();
+            resetMessage = "Timer reset successfully!";
+            resetSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            resetMessage = $"Error: {ex.Message}";
+            resetSuccess = false;
+        }
+    }
 }

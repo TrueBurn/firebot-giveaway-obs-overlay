@@ -2,17 +2,18 @@
 
 public static class GiveAwayHelpers
 {
+    private static int _countdownMinutes = 60;
+    private static int _countdownSeconds = 0;
 
-    private static int _giveawayDuration = 69;
-
-    public static void SetGiveawayDuration(int duration)
+    public static void SetCountdownTime(int minutes, int seconds)
     {
-        _giveawayDuration = duration;
+        _countdownMinutes = minutes;
+        _countdownSeconds = seconds;
     }
 
-    public static int GetGiveawayDuration()
+    public static (int minutes, int seconds) GetCountdownTime()
     {
-        return _giveawayDuration;
+        return (_countdownMinutes, _countdownSeconds);
     }
 
     public static void SetFireBotFileFolder(string folderPath)
@@ -24,6 +25,4 @@ public static class GiveAwayHelpers
     {
         return FireBotFileReader.GetFireBotFileFolder();
     }
-
-
 }

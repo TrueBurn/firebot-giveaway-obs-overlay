@@ -1,5 +1,6 @@
 using FirebotGiveawayObsOverlay.WebApp.Components;
 using FirebotGiveawayObsOverlay.WebApp.Helpers;
+using FirebotGiveawayObsOverlay.WebApp.Services;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -9,6 +10,9 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Services
     .AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Add TimerService as a singleton
+builder.Services.AddSingleton<TimerService>();
 
 WebApplication app = builder.Build();
 
@@ -24,8 +28,11 @@ app.Lifetime.ApplicationStarted.Register(() =>
 {
     string fileBotFileFolder = app.Configuration.GetValue("AppSettings:FireBotFileFolder", "G:\\Giveaway") ?? "G:\\Giveaway";
     GiveAwayHelpers.SetFireBotFileFolder(fileBotFileFolder);
-    int giveawayDuration = app.Configuration.GetValue<int>("AppSettings:GiveawayDuration", 69);
-    GiveAwayHelpers.SetGiveawayDuration(giveawayDuration);
+    
+    // Initialize countdown timer settings from configuration
+    int countdownMinutes = app.Configuration.GetValue<int>("AppSettings:CountdownMinutes", 60);
+    int countdownSeconds = app.Configuration.GetValue<int>("AppSettings:CountdownSeconds", 0);
+    GiveAwayHelpers.SetCountdownTime(countdownMinutes, countdownSeconds);
 
     // Launch browser with correct port
     string url = "http://localhost:5000/giveaway";

@@ -1,33 +1,46 @@
 ﻿@using FirebotGiveawayObsOverlay.WebApp.Components.Layout
 @using FirebotGiveawayObsOverlay.WebApp.Helpers
 @using FirebotGiveawayObsOverlay.WebApp.Extensions
+@using FirebotGiveawayObsOverlay.WebApp.Services
 @using System.Timers
+@inject TimerService TimerService
 
 @layout NoMenuLayout
 @page "/giveaway"
 @rendermode InteractiveServer
+@implements IDisposable
 
 <PageTitle>Give Away</PageTitle>
 
 @if (isGiveAwayRunning)
 {
     <div class="container">
-        <div class="tech-frame">
+        <div class="prize-section">
             <h1 class="title">
                 <span class="primarySpan">@prize</span>
             </h1>
+        </div>
+        
+        <div class="info-section">
             @if (doesGiveawayHaveWinner)
             {
                 <h2 class="title-winner">Winner: <span class="secondarySpan">@winner</span></h2>
             }
-            else if (entries.Any())
+            else
             {
-                <h2 class="title-entries primarySpan">
-                    <span class="@(previousEntryCount != entries.Length ? "entry-count-animate" : "")">
-                        @entries.Length
-                    </span>
-                    Entries
+                <h2 class="title-timer @(timerExpired ? "timer-flash" : "")">
+                    @FormatTimer(counterTimeSpan)
                 </h2>
+                
+                @if (entries.Any())
+                {
+                    <h2 class="title-entries">
+                        <span class="@(previousEntryCount != entries.Length ? "entry-count-animate" : "")">
+                            @entries.Length
+                        </span>
+                        Entries
+                    </h2>
+                }
             }
         </div>
     </div>
@@ -38,6 +51,10 @@
     private string winner = string.Empty;
     private string[] entries = [];
     private Timer fileScanTimer = new Timer(1000);
+    private Timer countdownTimer = new Timer(1000);
+    private double counter;
+    private TimeSpan counterTimeSpan = TimeSpan.FromMinutes(59).Add(TimeSpan.FromSeconds(59));
+    private bool timerExpired = false;
 
     private bool isGiveAwayRunning = false;
     private bool doesGiveawayHaveWinner = false;
@@ -47,7 +64,18 @@
     {
         await GetLatestGiveAwayDetails();
         fileScanTimer.Elapsed += new ElapsedEventHandler(HandleFileScanTimer);
+        countdownTimer.Elapsed += new ElapsedEventHandler(HandleCountdownTimer);
         StartFileScanTimer();
+        StartCountdownTimer();
+
+        // Subscribe to timer reset events
+        TimerService.OnTimerReset += HandleTimerReset;
+    }
+
+    private void HandleTimerReset()
+    {
+        ResetTimer();
+        InvokeAsync(StateHasChanged);
     }
 
     private void StartFileScanTimer()
@@ -55,9 +83,29 @@
         fileScanTimer.Start();
     }
 
+    private void StartCountdownTimer()
+    {
+        counter = counterTimeSpan.TotalSeconds;
+        countdownTimer.Start();
+    }
+
     public async void HandleFileScanTimer(object? source, ElapsedEventArgs e)
     {
         await GetLatestGiveAwayDetails();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async void HandleCountdownTimer(object? source, ElapsedEventArgs e)
+    {
+        if (counter > 0)
+        {
+            counter -= 1;
+            counterTimeSpan = TimeSpan.FromSeconds(counter);
+        }
+        else
+        {
+            timerExpired = true;
+        }
         await InvokeAsync(StateHasChanged);
     }
 
@@ -80,10 +128,51 @@
 
         isGiveAwayRunning = !string.IsNullOrWhiteSpace(prize);
         doesGiveawayHaveWinner = !string.IsNullOrWhiteSpace(winner);
+        
+        // If giveaway has a winner, pause the countdown timer
+        if (doesGiveawayHaveWinner && countdownTimer.Enabled)
+        {
+            countdownTimer.Stop();
+        }
+        
+        // If giveaway is not running, reset the timer
+        if (!isGiveAwayRunning)
+        {
+            ResetTimer();
+        }
+    }
+    
+    private void ResetTimer()
+    {
+        countdownTimer.Stop();
+        var (minutes, seconds) = GiveAwayHelpers.GetCountdownTime();
+        counter = TimeSpan.FromMinutes(minutes).Add(TimeSpan.FromSeconds(seconds)).TotalSeconds;
+        counterTimeSpan = TimeSpan.FromSeconds(counter);
+        timerExpired = false;
+        
+        // Restart the timer if a giveaway is running and there's no winner
+        if (isGiveAwayRunning && !doesGiveawayHaveWinner)
+        {
+            countdownTimer.Start();
+        }
+    }
+
+    // Format timer to have colored numbers and white units with better spacing
+    private MarkupString FormatTimer(TimeSpan time)
+    {
+        if (time.TotalMinutes >= 1)
+        {
+            return new MarkupString($"<span class='timer-numbers'>{time.Minutes:D2}</span><span class='timer-units'>m</span><span class='timer-numbers'>{time.Seconds:D2}</span><span class='timer-units'>s</span>");
+        }
+        return new MarkupString($"<span class='timer-numbers'>{time.Seconds:D2}</span><span class='timer-units'>s</span>");
     }
 
     public void Dispose()
     {
         fileScanTimer.Dispose();
+        countdownTimer.Dispose();
+        
+        // Unsubscribe from timer reset events
+        TimerService.OnTimerReset -= HandleTimerReset;
     }
 }
