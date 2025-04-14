@@ -38,7 +38,15 @@
 
 ## Pending Tasks
 
-No pending tasks at this time.
+### [2025-04-15 00:33:00] - Button-Based Twitch Authentication
+- ✅ Researched Twitch OAuth authentication flows
+- ✅ Identified Device Code Grant Flow as the most appropriate solution
+- ✅ Designed architecture for button-based authentication
+- ✅ Created detailed implementation plan with tasks and subtasks
+- ⏳ Implement Device Code Grant Flow for simplified Twitch authentication
+- ⏳ Create TwitchAuthService component
+- ⏳ Update TwitchSettings model
+- ⏳ Modify UI to include "Login with Twitch" button
 
 ## Future Enhancement Ideas
 

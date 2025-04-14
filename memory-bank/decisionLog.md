@@ -107,3 +107,21 @@
 - Establishes a pattern for handling all background events that trigger UI updates
 - May need similar updates in future components that subscribe to background events
 - Improves application stability when settings are changed externally
+
+## [2025-04-15 00:34:00] - Button-Based Twitch Authentication with Device Code Grant Flow
+
+**Decision:** Implement a button-based Twitch authentication solution using the Device Code Grant Flow with pre-registered application credentials.
+
+**Rationale:**
+- Simplifies the user experience by eliminating the need to register an application and manually enter credentials
+- Device Code Grant Flow is specifically designed for desktop applications without a suitable browser
+- Allows for a single pre-registered application with embedded client ID
+- Provides a more streamlined authentication process for streamers
+- Maintains security best practices for OAuth authentication
+
+**Implications:**
+- Requires creating a new TwitchAuthService component
+- Needs updates to the TwitchSettings model to support both simple and advanced authentication modes
+- UI changes required to add a "Login with Twitch" button
+- Must implement secure token storage and management
+- Requires pre-registering an application on the Twitch Developer Console

@@ -18,7 +18,14 @@
 
 ## Pending Tasks
 
-No pending tasks at this time.
+### April 15, 2025 - Button-Based Twitch Authentication
+- ⏳ Implement Device Code Grant Flow for simplified Twitch authentication
+- ⏳ Create TwitchAuthService component to handle authentication flow
+- ⏳ Update TwitchSettings to support both simple and advanced authentication modes
+- ⏳ Modify UI to include "Login with Twitch" button
+- ⏳ Implement secure token storage and management
+- ⏳ Add browser-based authentication option
+- ⏳ Update documentation with new authentication instructions
 
 ## Future Enhancement Ideas
 
