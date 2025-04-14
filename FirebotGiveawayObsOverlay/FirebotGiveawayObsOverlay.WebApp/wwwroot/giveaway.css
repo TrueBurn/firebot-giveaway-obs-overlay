@@ -491,7 +491,7 @@ a {
     justify-content: center;
     align-items: center;
     z-index: 10;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgb(0, 0, 0); /* Solid black background instead of transparent */
     border-radius: 15px;
     box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
     animation: winnerOverlayFadeIn 1s ease-out forwards;
@@ -561,49 +561,7 @@ a {
     }
 }
 
-/* Add trophy emojis on both sides of the winner with synchronized animations */
-.winner-overlay .title-winner::before,
-.winner-overlay .title-winner::after {
-    content: '🏆';
-    font-size: 3rem;
-    position: absolute;
-    top: 50%;
-    animation: 2s infinite alternate;
-}
-
-.winner-overlay .title-winner::before {
-    left: -60px;
-    transform: translateY(-50%);
-    animation-name: leftTrophyPulseAndTilt;
-}
-
-.winner-overlay .title-winner::after {
-    right: -60px;
-    transform: translateY(-50%);
-    animation-name: rightTrophyPulseAndTilt;
-}
-
-@keyframes leftTrophyPulseAndTilt {
-    0% {
-        transform: translateY(-50%) scale(1) rotate(0deg);
-        filter: brightness(1);
-    }
-    100% {
-        transform: translateY(-50%) scale(1.1) rotate(5deg);
-        filter: brightness(1.3);
-    }
-}
-
-@keyframes rightTrophyPulseAndTilt {
-    0% {
-        transform: translateY(-50%) scale(1) rotate(0deg);
-        filter: brightness(1);
-    }
-    100% {
-        transform: translateY(-50%) scale(1.1) rotate(-5deg);
-        filter: brightness(1.3);
-    }
-}
+/* Trophy emojis removed as requested */
 
 @keyframes gradient {
     0% {
