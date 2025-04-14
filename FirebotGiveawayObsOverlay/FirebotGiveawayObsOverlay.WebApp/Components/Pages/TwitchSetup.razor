@@ -1,0 +1,318 @@
+@using FirebotGiveawayObsOverlay.WebApp.Models
+@using FirebotGiveawayObsOverlay.WebApp.Services
+@using Microsoft.Extensions.Options
+@using System.ComponentModel.DataAnnotations
+@using System.Text
+@using System.Text.Json
+@inject IOptions<TwitchSettings> TwitchOptions
+@inject TwitchService TwitchService
+@inject IConfiguration Configuration
+@inject IWebHostEnvironment Environment
+
+@page "/twitch-setup"
+@rendermode InteractiveServer
+
+<PageTitle>Twitch Setup</PageTitle>
+
+<h3>Twitch Integration Setup</h3>
+
+<hr />
+
+<EditForm Model="@twitchSettings" OnValidSubmit="SaveSettings">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3 form-check">
+        <InputCheckbox @bind-Value="twitchSettings.Enabled" class="form-check-input" id="enabled" />
+        <label class="form-check-label" for="enabled">Enable Twitch Integration</label>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Channel Name</label>
+        <InputText @bind-Value="twitchSettings.Channel" class="form-control" placeholder="Your Twitch channel name" />
+        <ValidationMessage For="@(() => twitchSettings.Channel)" />
+        <div class="form-text">Enter your Twitch channel name without the @@ symbol</div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Client ID</label>
+        <InputText @bind-Value="twitchSettings.ClientId" class="form-control" placeholder="Twitch API Client ID" />
+        <ValidationMessage For="@(() => twitchSettings.ClientId)" />
+        <div class="form-text">
+            Get your Client ID from the <a href="https://dev.twitch.tv/console/apps" target="_blank">Twitch Developer Console</a>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Client Secret</label>
+        <InputText @bind-Value="twitchSettings.ClientSecret" class="form-control" type="password" placeholder="Twitch API Client Secret" />
+        <ValidationMessage For="@(() => twitchSettings.ClientSecret)" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Redirect URI</label>
+        <InputText @bind-Value="twitchSettings.RedirectUri" class="form-control" placeholder="OAuth Redirect URI" />
+        <ValidationMessage For="@(() => twitchSettings.RedirectUri)" />
+        <div class="form-text">Usually http://localhost:3000/auth/callback for local development</div>
+    </div>
+
+    <div class="mb-4">
+        <h5>Command Settings</h5>
+        
+        <div class="mb-3">
+            <label class="form-label">Join Command</label>
+            <InputText @bind-Value="twitchSettings.Commands.Join" class="form-control" placeholder="!join" />
+            <ValidationMessage For="@(() => twitchSettings.Commands.Join)" />
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">Start Giveaway Command</label>
+            <InputText @bind-Value="twitchSettings.Commands.StartGiveaway" class="form-control" placeholder="!startgiveaway" />
+            <ValidationMessage For="@(() => twitchSettings.Commands.StartGiveaway)" />
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">Draw Winner Command</label>
+            <InputText @bind-Value="twitchSettings.Commands.DrawWinner" class="form-control" placeholder="!drawwinner" />
+            <ValidationMessage For="@(() => twitchSettings.Commands.DrawWinner)" />
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <h5>Follower Requirements</h5>
+        
+        <div class="mb-3 form-check">
+            <InputCheckbox @bind-Value="twitchSettings.RequireFollower" class="form-check-input" id="requireFollower" />
+            <label class="form-check-label" for="requireFollower">Require users to be followers</label>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">Minimum Follow Age (days)</label>
+            <InputNumber @bind-Value="twitchSettings.FollowerMinimumAgeDays" class="form-control" min="0" />
+            <ValidationMessage For="@(() => twitchSettings.FollowerMinimumAgeDays)" />
+            <div class="form-text">Set to 0 for no minimum age requirement</div>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <button type="button" class="btn btn-info me-2" @onclick="TestConnection" disabled="@isTestingConnection">
+            @if (isTestingConnection)
+            {
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span> Testing...</span>
+            }
+            else
+            {
+                <span>Test Connection</span>
+            }
+        </button>
+        
+        @if (!string.IsNullOrEmpty(connectionTestResult))
+        {
+            <span class="@(connectionTestSuccess ? "text-success" : "text-danger")">
+                @connectionTestResult
+            </span>
+        }
+    </div>
+
+    <div class="d-flex justify-content-between">
+        <a href="/setup" class="btn btn-secondary">Back to Setup</a>
+        <button type="submit" class="btn btn-primary" disabled="@isSaving">
+            @if (isSaving)
+            {
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span> Saving...</span>
+            }
+            else
+            {
+                <span>Save Settings</span>
+            }
+        </button>
+    </div>
+</EditForm>
+
+@code {
+    private TwitchSettings twitchSettings = new();
+    private bool isSaving = false;
+    private bool isTestingConnection = false;
+    private string connectionTestResult = string.Empty;
+    private bool connectionTestSuccess = false;
+
+    protected override void OnInitialized()
+    {
+        // Clone the settings to avoid modifying the original
+        twitchSettings = new TwitchSettings
+        {
+            Enabled = TwitchOptions.Value.Enabled,
+            Channel = TwitchOptions.Value.Channel,
+            ClientId = TwitchOptions.Value.ClientId,
+            ClientSecret = TwitchOptions.Value.ClientSecret,
+            RedirectUri = TwitchOptions.Value.RedirectUri,
+            RequireFollower = TwitchOptions.Value.RequireFollower,
+            FollowerMinimumAgeDays = TwitchOptions.Value.FollowerMinimumAgeDays,
+            Commands = new CommandSettings
+            {
+                Join = TwitchOptions.Value.Commands.Join,
+                StartGiveaway = TwitchOptions.Value.Commands.StartGiveaway,
+                DrawWinner = TwitchOptions.Value.Commands.DrawWinner
+            }
+        };
+    }
+
+    private async Task TestConnection()
+    {
+        if (string.IsNullOrWhiteSpace(twitchSettings.Channel) || 
+            string.IsNullOrWhiteSpace(twitchSettings.ClientId) || 
+            string.IsNullOrWhiteSpace(twitchSettings.ClientSecret))
+        {
+            connectionTestResult = "Please fill in Channel, Client ID, and Client Secret before testing";
+            connectionTestSuccess = false;
+            return;
+        }
+
+        isTestingConnection = true;
+        connectionTestResult = string.Empty;
+        
+        try
+        {
+            var result = await TwitchService.TestConnectionAsync(twitchSettings);
+            connectionTestResult = result ? "Connection successful!" : "Connection failed. Please check your credentials.";
+            connectionTestSuccess = result;
+        }
+        catch (Exception ex)
+        {
+            connectionTestResult = $"Error: {ex.Message}";
+            connectionTestSuccess = false;
+        }
+        finally
+        {
+            isTestingConnection = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveSettings()
+    {
+        if (!ValidateSettings())
+        {
+            return;
+        }
+
+        isSaving = true;
+
+        try
+        {
+            // Get the path to appsettings.json
+            string appSettingsPath = Path.Combine(Environment.ContentRootPath, "appsettings.json");
+            
+            // Read the current appsettings.json
+            string json = await File.ReadAllTextAsync(appSettingsPath);
+            var jsonDocument = JsonDocument.Parse(json);
+            
+            // Create a new JSON object with the updated settings
+            using var stream = new MemoryStream();
+            using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
+            {
+                writer.WriteStartObject();
+                
+                // Copy all properties except TwitchSettings
+                foreach (var property in jsonDocument.RootElement.EnumerateObject())
+                {
+                    if (property.Name != "TwitchSettings")
+                    {
+                        property.WriteTo(writer);
+                    }
+                }
+                
+                // Write the updated TwitchSettings
+                writer.WritePropertyName("TwitchSettings");
+                writer.WriteStartObject();
+                
+                writer.WriteBoolean("Enabled", twitchSettings.Enabled);
+                writer.WriteString("Channel", twitchSettings.Channel);
+                writer.WriteString("ClientId", twitchSettings.ClientId);
+                writer.WriteString("ClientSecret", twitchSettings.ClientSecret);
+                writer.WriteString("RedirectUri", twitchSettings.RedirectUri);
+                writer.WriteBoolean("RequireFollower", twitchSettings.RequireFollower);
+                writer.WriteNumber("FollowerMinimumAgeDays", twitchSettings.FollowerMinimumAgeDays);
+                
+                writer.WritePropertyName("Commands");
+                writer.WriteStartObject();
+                writer.WriteString("Join", twitchSettings.Commands.Join);
+                writer.WriteString("StartGiveaway", twitchSettings.Commands.StartGiveaway);
+                writer.WriteString("DrawWinner", twitchSettings.Commands.DrawWinner);
+                writer.WriteEndObject(); // End Commands
+                
+                writer.WriteEndObject(); // End TwitchSettings
+                
+                writer.WriteEndObject(); // End root
+            }
+            
+            // Convert to string and save back to appsettings.json
+            var jsonString = Encoding.UTF8.GetString(stream.ToArray());
+            await File.WriteAllTextAsync(appSettingsPath, jsonString);
+            
+            // If Twitch is enabled, try to connect
+            if (twitchSettings.Enabled)
+            {
+                try
+                {
+                    await TwitchService.ConnectAsync();
+                }
+                catch (Exception ex)
+                {
+                    connectionTestResult = $"Settings saved, but failed to connect: {ex.Message}";
+                    connectionTestSuccess = false;
+                }
+            }
+            else
+            {
+                // If Twitch is disabled, disconnect
+                TwitchService.Disconnect();
+            }
+            
+            connectionTestResult = "Settings saved successfully!";
+            connectionTestSuccess = true;
+        }
+        catch (Exception ex)
+        {
+            connectionTestResult = $"Error saving settings: {ex.Message}";
+            connectionTestSuccess = false;
+        }
+        finally
+        {
+            isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    private bool ValidateSettings()
+    {
+        // If Twitch is enabled, validate required fields
+        if (twitchSettings.Enabled)
+        {
+            if (string.IsNullOrWhiteSpace(twitchSettings.Channel))
+            {
+                connectionTestResult = "Channel name is required when Twitch integration is enabled";
+                connectionTestSuccess = false;
+                return false;
+            }
+            
+            if (string.IsNullOrWhiteSpace(twitchSettings.ClientId))
+            {
+                connectionTestResult = "Client ID is required when Twitch integration is enabled";
+                connectionTestSuccess = false;
+                return false;
+            }
+            
+            if (string.IsNullOrWhiteSpace(twitchSettings.ClientSecret))
+            {
+                connectionTestResult = "Client Secret is required when Twitch integration is enabled";
+                connectionTestSuccess = false;
+                return false;
+            }
+        }
+        
+        return true;
+    }
+}

@@ -1,0 +1,264 @@
+using FirebotGiveawayObsOverlay.WebApp.Models;
+using Microsoft.Extensions.Options;
+using System;
+using System.Threading.Tasks;
+using TwitchLib.Api;
+using TwitchLib.Client;
+using TwitchLib.Client.Events;
+using TwitchLib.Client.Models;
+using TwitchLib.Communication.Clients;
+using TwitchLib.Communication.Events;
+using TwitchLib.Communication.Models;
+
+namespace FirebotGiveawayObsOverlay.WebApp.Services;
+
+public class TwitchService : IDisposable
+{
+    private readonly TwitchClient _client;
+    private readonly TwitchSettings _settings;
+    private readonly TwitchAPI? _api;
+    private bool _isConnected;
+
+    public event EventHandler<OnMessageReceivedArgs>? MessageReceived;
+    public event EventHandler<OnUserJoinedArgs>? UserJoined;
+    public event EventHandler<OnUserLeftArgs>? UserLeft;
+    public event EventHandler<OnConnectedArgs>? Connected;
+    public event EventHandler<OnDisconnectedEventArgs>? Disconnected;
+
+    public TwitchService(IOptions<TwitchSettings> settings)
+    {
+        _settings = settings.Value;
+
+        var clientOptions = new ClientOptions
+        {
+            MessagesAllowedInPeriod = 750,
+            ThrottlingPeriod = TimeSpan.FromSeconds(30)
+        };
+
+        var webSocketClient = new WebSocketClient(clientOptions);
+        _client = new TwitchClient(webSocketClient);
+        
+        // Initialize Twitch API if credentials are provided
+        if (!string.IsNullOrEmpty(_settings.ClientId) && !string.IsNullOrEmpty(_settings.ClientSecret))
+        {
+            _api = new TwitchAPI();
+            _api.Settings.ClientId = _settings.ClientId;
+            _api.Settings.Secret = _settings.ClientSecret;
+        }
+
+        // Set up event handlers
+        _client.OnMessageReceived += Client_OnMessageReceived;
+        _client.OnUserJoined += Client_OnUserJoined;
+        _client.OnUserLeft += Client_OnUserLeft;
+        _client.OnConnected += Client_OnConnected;
+        _client.OnDisconnected += Client_OnDisconnected;
+    }
+
+    public async Task ConnectAsync()
+    {
+        if (_isConnected)
+            return;
+
+        try
+        {
+            // Create credentials for the bot
+            var credentials = new ConnectionCredentials(_settings.Channel, _settings.ClientSecret);
+            _client.Initialize(credentials, _settings.Channel);
+            _client.Connect();
+
+            _isConnected = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error connecting to Twitch: {ex.Message}");
+            throw;
+        }
+    }
+
+    public void Disconnect()
+    {
+        if (!_isConnected)
+            return;
+
+        _client.Disconnect();
+        _isConnected = false;
+    }
+
+    public void SendMessage(string message)
+    {
+        if (!_isConnected)
+            throw new InvalidOperationException("Cannot send message: Not connected to Twitch chat");
+
+        _client.SendMessage(_settings.Channel, message);
+    }
+
+    public bool IsConnected => _isConnected;
+
+    #region Event Handlers
+
+    private void Client_OnMessageReceived(object? sender, OnMessageReceivedArgs e)
+    {
+        MessageReceived?.Invoke(this, e);
+    }
+
+    private void Client_OnUserJoined(object? sender, OnUserJoinedArgs e)
+    {
+        UserJoined?.Invoke(this, e);
+    }
+
+    private void Client_OnUserLeft(object? sender, OnUserLeftArgs e)
+    {
+        UserLeft?.Invoke(this, e);
+    }
+
+    private void Client_OnConnected(object? sender, OnConnectedArgs e)
+    {
+        Console.WriteLine($"Connected to Twitch channel: {_settings.Channel}");
+        Connected?.Invoke(this, e);
+    }
+
+    private void Client_OnDisconnected(object? sender, OnDisconnectedEventArgs e)
+    {
+        Console.WriteLine("Disconnected from Twitch");
+        _isConnected = false;
+        Disconnected?.Invoke(this, e);
+    }
+
+    #endregion
+
+    public void Dispose()
+    {
+        if (_isConnected)
+        {
+            Disconnect();
+        }
+
+        // Unsubscribe from events
+        _client.OnMessageReceived -= Client_OnMessageReceived;
+        _client.OnUserJoined -= Client_OnUserJoined;
+        _client.OnUserLeft -= Client_OnUserLeft;
+        _client.OnConnected -= Client_OnConnected;
+        _client.OnDisconnected -= Client_OnDisconnected;
+    }
+
+    /// <summary>
+    /// Tests the connection to Twitch using the provided settings
+    /// </summary>
+    /// <param name="settings">The Twitch settings to test</param>
+    /// <returns>True if connection was successful, false otherwise</returns>
+    public async Task<bool> TestConnectionAsync(TwitchSettings settings)
+    {
+        try
+        {
+            // Create a temporary client for testing
+            var clientOptions = new ClientOptions
+            {
+                MessagesAllowedInPeriod = 750,
+                ThrottlingPeriod = TimeSpan.FromSeconds(30)
+            };
+
+            var webSocketClient = new WebSocketClient(clientOptions);
+            var testClient = new TwitchClient(webSocketClient);
+            
+            // Create credentials for the bot
+            var credentials = new ConnectionCredentials(settings.Channel, settings.ClientSecret);
+            testClient.Initialize(credentials, settings.Channel);
+            
+            // Set up a task completion source to track connection status
+            var connectionTcs = new TaskCompletionSource<bool>();
+            
+            // Set up event handlers
+            testClient.OnConnected += (sender, e) =>
+            {
+                connectionTcs.TrySetResult(true);
+            };
+            
+            testClient.OnConnectionError += (sender, e) =>
+            {
+                connectionTcs.TrySetResult(false);
+            };
+            
+            // Connect to Twitch
+            testClient.Connect();
+            
+            // Wait for connection result with a timeout
+            var connectionTask = connectionTcs.Task;
+            var timeoutTask = Task.Delay(TimeSpan.FromSeconds(10));
+            
+            var completedTask = await Task.WhenAny(connectionTask, timeoutTask);
+            
+            // Disconnect the test client
+            testClient.Disconnect();
+            
+            // If the connection task completed, return its result
+            if (completedTask == connectionTask)
+            {
+                return await connectionTask;
+            }
+            
+            // If we timed out, return false
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error testing Twitch connection: {ex.Message}");
+            return false;
+        }
+    }
+    
+    /// <summary>
+    /// Checks if a user is a follower of the channel and meets the minimum age requirement
+    /// </summary>
+    /// <param name="username">The username to check</param>
+    /// <returns>A tuple containing (isFollower, meetsMinimumAge)</returns>
+    public async Task<(bool isFollower, bool meetsMinimumAge)> CheckFollowerStatusAsync(string username)
+    {
+        // If API is not initialized or follower check is not required, return true for both
+        if (_api == null || !_settings.RequireFollower)
+        {
+            return (true, true);
+        }
+
+        try
+        {
+            // Get user ID from username
+            var users = await _api.Helix.Users.GetUsersAsync(logins: new List<string> { username });
+            if (users.Users.Length == 0)
+            {
+                return (false, false);
+            }
+            
+            var userId = users.Users[0].Id;
+            
+            // Get broadcaster ID
+            var broadcasters = await _api.Helix.Users.GetUsersAsync(logins: new List<string> { _settings.Channel });
+            if (broadcasters.Users.Length == 0)
+            {
+                return (false, false);
+            }
+            
+            var broadcasterId = broadcasters.Users[0].Id;
+            
+            // Check if user follows the channel
+            var follows = await _api.Helix.Users.GetUsersFollowsAsync(fromId: userId, toId: broadcasterId);
+            
+            if (follows.Follows.Length == 0)
+            {
+                return (false, false);
+            }
+            
+            // Check if the follow meets the minimum age requirement
+            var followDate = follows.Follows[0].FollowedAt;
+            var followAge = DateTime.UtcNow - followDate;
+            var meetsMinimumAge = followAge.TotalDays >= _settings.FollowerMinimumAgeDays;
+            
+            return (true, meetsMinimumAge);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error checking follower status: {ex.Message}");
+            // In case of error, default to allowing the user to join
+            return (true, true);
+        }
+    }
+}

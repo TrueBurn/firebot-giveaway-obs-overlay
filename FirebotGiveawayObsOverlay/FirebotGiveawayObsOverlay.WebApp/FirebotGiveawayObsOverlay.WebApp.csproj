@@ -6,4 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="TwitchLib.Api" Version="3.9.0" />
+    <PackageReference Include="TwitchLib.Client" Version="3.3.1" />
+  </ItemGroup>
+
 </Project>

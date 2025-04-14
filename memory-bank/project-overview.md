@@ -14,11 +14,13 @@ The project is a .NET web application with the following structure:
     - **Pages**: Page components including the main giveaway display
   - **Extensions**: Extension methods
   - **Helpers**: Helper classes including GiveAwayHelpers
-  - **Services**: Services including TimerService
+  - **Services**: Services including TimerService, TwitchService, and GiveawayService
+  - **Models**: Data models including TwitchSettings
   - **wwwroot**: Static assets
     - **giveaway.css**: Styling for the giveaway overlay
     - **app.css**: General application styling
     - **bootstrap/**: Bootstrap framework files
+- **FirebotGiveawayObsOverlay.Tests**: Unit tests for the application
 
 ## Key Components
 
@@ -49,7 +51,38 @@ A service that reads giveaway information from files:
 
 Manages the countdown timer for the giveaway.
 
+### TwitchService
+
+Connects to Twitch chat and handles communication:
+- Establishes and maintains connection to Twitch chat
+- Handles authentication using the streamer's credentials
+- Parses incoming messages
+- Emits events for message and command handling
+
+### CommandHandler
+
+Processes commands from Twitch chat:
+- Parses command syntax
+- Validates user permissions
+- Routes commands to appropriate handlers
+
+### GiveawayService
+
+Manages the giveaway state and operations:
+- Handles giveaway state (active/inactive)
+- Manages entries (add, remove, list)
+- Selects random winners
+- Updates the appropriate files
+
 ## Recent Modifications
+
+### Twitch Chat Integration (April 14, 2025)
+
+1. Added direct Twitch chat integration using TwitchLib
+2. Implemented command handling for giveaway management
+3. Created a configuration UI for Twitch settings
+4. Added support for follower-only giveaways
+5. Created comprehensive documentation and unit tests
 
 ### Winner Overlay Improvements (April 14, 2025)
 
@@ -62,11 +95,13 @@ Manages the countdown timer for the giveaway.
 - It monitors files for changes to update the giveaway status
 - It includes animations and styling for an engaging viewer experience
 - The winner overlay appears when a winner is selected
+- It can connect directly to Twitch chat for real-time interaction
 
 ## Future Considerations
 
 Potential improvements could include:
 - Additional customization options for colors and fonts
-- Integration with Twitch API for direct interaction
 - Support for multiple simultaneous giveaways
 - Enhanced animations and visual effects
+- Configurable overlay size and position
+- Mobile-responsive design for monitoring on different devices

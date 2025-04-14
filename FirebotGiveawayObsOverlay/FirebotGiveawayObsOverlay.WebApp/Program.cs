@@ -1,5 +1,6 @@
 using FirebotGiveawayObsOverlay.WebApp.Components;
 using FirebotGiveawayObsOverlay.WebApp.Helpers;
+using FirebotGiveawayObsOverlay.WebApp.Models;
 using FirebotGiveawayObsOverlay.WebApp.Services;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -11,8 +12,14 @@ builder.Services
     .AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Add TimerService as a singleton
+// Configure Twitch settings
+builder.Services.Configure<TwitchSettings>(builder.Configuration.GetSection("TwitchSettings"));
+
+// Add services as singletons
 builder.Services.AddSingleton<TimerService>();
+builder.Services.AddSingleton<TwitchService>();
+builder.Services.AddSingleton<GiveawayService>();
+builder.Services.AddSingleton<CommandHandler>();
 
 WebApplication app = builder.Build();
 
@@ -24,7 +31,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.Lifetime.ApplicationStarted.Register(() =>
+app.Lifetime.ApplicationStarted.Register(async () =>
 {
     string fileBotFileFolder = app.Configuration.GetValue("AppSettings:FireBotFileFolder", "G:\\Giveaway") ?? "G:\\Giveaway";
     GiveAwayHelpers.SetFireBotFileFolder(fileBotFileFolder);
@@ -45,6 +52,22 @@ app.Lifetime.ApplicationStarted.Register(() =>
     GiveAwayHelpers.SetPrizeFontSize(prizeFontSize);
     GiveAwayHelpers.SetTimerFontSize(timerFontSize);
     GiveAwayHelpers.SetEntriesFontSize(entriesFontSize);
+    
+    // Initialize Twitch connection if enabled
+    bool enableTwitch = app.Configuration.GetValue<bool>("TwitchSettings:Enabled", false);
+    if (enableTwitch)
+    {
+        try
+        {
+            var twitchService = app.Services.GetRequiredService<TwitchService>();
+            await twitchService.ConnectAsync();
+            Console.WriteLine("Connected to Twitch chat successfully.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to connect to Twitch: {ex.Message}");
+        }
+    }
 
     // Launch browser with correct port
     string url = "http://localhost:5000/giveaway";
