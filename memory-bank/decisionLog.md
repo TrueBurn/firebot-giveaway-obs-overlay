@@ -91,3 +91,19 @@
 - Required updates to mock setup in test files
 - Needed to implement OnChange callback simulation in tests
 - Improved test coverage for dynamic configuration scenarios
+
+## [2025-04-14 23:55:41] - UI Thread Marshaling for Settings Change Events
+
+**Decision:** Modify all Blazor components that handle settings change events to use `InvokeAsync()` when calling `StateHasChanged()`.
+
+**Rationale:**
+- Prevents "The current thread is not associated with the Dispatcher" exceptions
+- Properly marshals UI updates from background threads to the UI thread
+- Maintains the dynamic configuration update capability while ensuring thread safety
+- Follows Blazor best practices for component state updates
+
+**Implications:**
+- Required updates to `Setup.razor` and `TwitchSetup.razor` components
+- Establishes a pattern for handling all background events that trigger UI updates
+- May need similar updates in future components that subscribe to background events
+- Improves application stability when settings are changed externally

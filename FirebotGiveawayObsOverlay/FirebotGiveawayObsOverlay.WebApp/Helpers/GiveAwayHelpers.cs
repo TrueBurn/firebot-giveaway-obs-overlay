@@ -1,4 +1,6 @@
-﻿namespace FirebotGiveawayObsOverlay.WebApp.Helpers;
+﻿using Serilog;
+
+namespace FirebotGiveawayObsOverlay.WebApp.Helpers;
 
 public static class GiveAwayHelpers
 {
@@ -62,6 +64,7 @@ public static class GiveAwayHelpers
 
     public static void SetFireBotFileFolder(string folderPath)
     {
+        Log.Information("GiveAwayHelpers.SetFireBotFileFolder called with path: {Path}", folderPath);
         FireBotFileReader.SetFireBotFileFolder(folderPath);
     }
 

@@ -189,7 +189,7 @@
             timerFontSize = settings.Fonts.TimerFontSizeRem;
             entriesFontSize = settings.Fonts.EntriesFontSizeRem;
             
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);
         }
     }
 

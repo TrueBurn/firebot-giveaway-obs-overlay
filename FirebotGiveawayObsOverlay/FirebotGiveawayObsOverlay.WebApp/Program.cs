@@ -27,9 +27,28 @@ try
     // Add Serilog to the application
     builder.Host.UseSerilog();
 
+    // Log the environment
+    Log.Information("Building application in environment: {Environment}", builder.Environment.EnvironmentName);
+
     // Set up dynamic configuration
     string appSettingsPath = Path.Combine(builder.Environment.ContentRootPath, "appsettings.json");
+    Log.Information("Adding dynamic configuration for: {Path}", appSettingsPath);
     builder.Configuration.AddDynamicJsonFile(appSettingsPath);
+    
+    // Also add dynamic configuration for appsettings.Development.json if in Development environment
+    if (builder.Environment.IsDevelopment())
+    {
+        string devSettingsPath = Path.Combine(builder.Environment.ContentRootPath, "appsettings.Development.json");
+        if (File.Exists(devSettingsPath))
+        {
+            Log.Information("Adding dynamic configuration for: {Path}", devSettingsPath);
+            builder.Configuration.AddDynamicJsonFile(devSettingsPath);
+        }
+        else
+        {
+            Log.Warning("Development settings file not found: {Path}", devSettingsPath);
+        }
+    }
 
     // Add services to the container.
     builder.Services
@@ -63,7 +82,15 @@ try
     {
         // Get the settings service
         var settingsService = app.Services.GetRequiredService<ISettingsService>();
-
+    
+        // Log the current environment and FireBotFileFolder path
+        Log.Information("Current environment: {Environment}", app.Environment.EnvironmentName);
+        Log.Information("FireBotFileFolder path: {Path}", settingsService.CurrentSettings.FireBotFileFolder);
+        
+        // Check if the folder exists
+        bool folderExists = Directory.Exists(settingsService.CurrentSettings.FireBotFileFolder);
+        Log.Information("FireBotFileFolder exists: {Exists}", folderExists);
+        
         // Initialize FireBotFileReader with the current settings
         GiveAwayHelpers.SetFireBotFileFolder(settingsService.CurrentSettings.FireBotFileFolder);
 

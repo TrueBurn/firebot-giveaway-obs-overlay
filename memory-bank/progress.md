@@ -18,7 +18,9 @@
 
 ## In Progress Tasks
 
-No tasks currently in progress.
+### [2025-04-14 23:56:08] - Thread Safety Improvements
+- ✅ Fixed threading issue in Blazor components when handling settings changes
+- ⏳ Review other potential threading issues in the application
 
 ## Completed Tasks
 
@@ -69,3 +71,8 @@ No pending tasks at this time.
 - Corrected implementation of DynamicConfigurationSource in Program.cs
 - Fixed structure issues in TwitchSetup.razor
 - Updated test files to use IOptionsMonitor instead of IOptions
+
+### [2025-04-14 23:56:08] - Memory Bank Update for Thread Safety Fix
+- Updated activeContext.md with new open question about threading issues
+- Added new architectural decision to decisionLog.md regarding UI thread marshaling
+- Updated progress.md with information about the threading issue fix

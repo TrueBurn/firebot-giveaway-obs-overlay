@@ -1,4 +1,6 @@
-﻿namespace FirebotGiveawayObsOverlay.WebApp.Helpers;
+﻿using Serilog;
+
+namespace FirebotGiveawayObsOverlay.WebApp.Helpers;
 
 public static class FireBotFileReader
 {
@@ -10,6 +12,7 @@ public static class FireBotFileReader
 
     public static void SetFireBotFileFolder(string folderPath)
     {
+        Log.Information("Setting FireBotFileFolder path to: {Path}", folderPath);
         _fireBotFileFolder = folderPath;
     }
 
@@ -37,17 +40,25 @@ public static class FireBotFileReader
     private static async Task<string> GetFireBotFileAsync(string fileName)
     {
         string filePath = Path.Combine(_fireBotFileFolder, fileName);
+        Log.Information("Attempting to read file: {FilePath}", filePath);
+        
         try
         {
             if (File.Exists(filePath))
             {
-                return await File.ReadAllTextAsync(filePath);
+                string content = await File.ReadAllTextAsync(filePath);
+                Log.Information("Successfully read file: {FilePath}, Content length: {Length}", filePath, content.Length);
+                return content;
+            }
+            else
+            {
+                Log.Warning("File does not exist: {FilePath}", filePath);
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
-        }        
+            Log.Error(ex, "Error reading file: {FilePath}", filePath);
+        }
         return string.Empty;
     }
 

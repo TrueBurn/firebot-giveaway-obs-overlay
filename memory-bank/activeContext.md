@@ -21,7 +21,9 @@ The current focus is on architectural improvements, specifically implementing th
 
 - What level of logging detail is appropriate for different components of the application?
 - Should we consider implementing a more robust validation mechanism for settings?
+- How should we handle other potential threading issues in the application?
 
 [2025-04-14 22:22:18] - Initial creation of activeContext.md from existing project-overview.md
 [2025-04-14 22:54:00] - Updated current focus to reflect IOptions pattern and Serilog integration work
 [2025-04-14 23:26:15] - Updated open questions after resolving build errors
+[2025-04-14 23:55:17] - Added threading issue question after fixing Dispatcher-related exception

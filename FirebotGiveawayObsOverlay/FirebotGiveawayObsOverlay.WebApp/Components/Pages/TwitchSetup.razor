@@ -186,7 +186,7 @@
                 }
             };
             
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);
         }
     }
 
@@ -218,7 +218,7 @@
         finally
         {
             isTestingConnection = false;
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);
         }
     }
 
@@ -266,7 +266,7 @@
         finally
         {
             isSaving = false;
-            StateHasChanged();
+            InvokeAsync(StateHasChanged);
         }
     }
 
