@@ -1,5 +1,6 @@
 using FirebotGiveawayObsOverlay.WebApp.Models;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,15 +11,24 @@ namespace FirebotGiveawayObsOverlay.WebApp.Services
 {
     public class GiveawayService
     {
-        private readonly string _fireBotFileFolder;
+        private readonly IOptionsMonitor<AppSettings> _settings;
+        private readonly ILogger<GiveawayService> _logger;
         private readonly HashSet<string> _participants = new(StringComparer.OrdinalIgnoreCase);
         private bool _giveawayActive = false;
         private string _currentPrize = string.Empty;
         private readonly Random _random = new();
 
-        public GiveawayService(IConfiguration configuration)
+        public GiveawayService(
+            IOptionsMonitor<AppSettings> settings,
+            ILogger<GiveawayService> logger)
         {
-            _fireBotFileFolder = configuration.GetValue("AppSettings:FireBotFileFolder", "G:\\Giveaway") ?? "G:\\Giveaway";
+            _settings = settings;
+            _logger = logger;
+            
+            // Subscribe to settings changes
+            _settings.OnChange(updatedSettings => {
+                _logger.LogInformation("Giveaway service detected settings change");
+            });
         }
 
         /// <summary>
@@ -121,7 +131,9 @@ namespace FirebotGiveawayObsOverlay.WebApp.Services
         {
             try
             {
-                File.WriteAllText(Path.Combine(_fireBotFileFolder, "prize.txt"), _currentPrize);
+                string filePath = Path.Combine(_settings.CurrentValue.FireBotFileFolder, "prize.txt");
+                File.WriteAllText(filePath, _currentPrize);
+                _logger.LogInformation("Updated prize file: {FilePath}", filePath);
             }
             catch (Exception ex)
             {
@@ -133,7 +145,9 @@ namespace FirebotGiveawayObsOverlay.WebApp.Services
         {
             try
             {
-                File.WriteAllText(Path.Combine(_fireBotFileFolder, "winner.txt"), winner);
+                string filePath = Path.Combine(_settings.CurrentValue.FireBotFileFolder, "winner.txt");
+                File.WriteAllText(filePath, winner);
+                _logger.LogInformation("Updated winner file: {FilePath}", filePath);
             }
             catch (Exception ex)
             {
@@ -145,7 +159,9 @@ namespace FirebotGiveawayObsOverlay.WebApp.Services
         {
             try
             {
-                File.WriteAllLines(Path.Combine(_fireBotFileFolder, "giveaway.txt"), _participants);
+                string filePath = Path.Combine(_settings.CurrentValue.FireBotFileFolder, "giveaway.txt");
+                File.WriteAllLines(filePath, _participants);
+                _logger.LogInformation("Updated entries file: {FilePath} with {Count} entries", filePath, _participants.Count);
             }
             catch (Exception ex)
             {

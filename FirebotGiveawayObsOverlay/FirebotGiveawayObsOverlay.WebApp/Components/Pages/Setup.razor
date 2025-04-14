@@ -1,6 +1,9 @@
 ﻿@using FirebotGiveawayObsOverlay.WebApp.Helpers
+@using FirebotGiveawayObsOverlay.WebApp.Models
 @using FirebotGiveawayObsOverlay.WebApp.Services
 @inject TimerService TimerService
+@inject ISettingsService SettingsService
+@implements IDisposable
 
 @page "/setup"
 @rendermode InteractiveServer
@@ -145,30 +148,60 @@
 </div>
 
 @code {
-    private string firebotFilePath = GiveAwayHelpers.GetFireBotFileFolder();
+    private string firebotFilePath;
     private int countdownMinutes;
     private int countdownSeconds;
     private string resetMessage = "";
     private bool resetSuccess = false;
-    private int prizeSectionWidth = GiveAwayHelpers.GetPrizeSectionWidth();
-    private double prizeFontSize = GiveAwayHelpers.GetPrizeFontSize();
-    private double timerFontSize = GiveAwayHelpers.GetTimerFontSize();
-    private double entriesFontSize = GiveAwayHelpers.GetEntriesFontSize();
+    private int prizeSectionWidth;
+    private double prizeFontSize;
+    private double timerFontSize;
+    private double entriesFontSize;
 
     protected override void OnInitialized()
     {
-        var (minutes, seconds) = GiveAwayHelpers.GetCountdownTime();
-        countdownMinutes = minutes;
-        countdownSeconds = seconds;
+        // Initialize from settings service
+        var settings = SettingsService.CurrentSettings;
+        
+        firebotFilePath = settings.FireBotFileFolder;
+        countdownMinutes = settings.Countdown.Minutes;
+        countdownSeconds = settings.Countdown.Seconds;
+        prizeSectionWidth = settings.Layout.PrizeSectionWidthPercent;
+        prizeFontSize = settings.Fonts.PrizeFontSizeRem;
+        timerFontSize = settings.Fonts.TimerFontSizeRem;
+        entriesFontSize = settings.Fonts.EntriesFontSizeRem;
+        
+        // Subscribe to settings changes
+        SettingsService.SettingsChanged += OnSettingsChanged;
+    }
+    
+    private void OnSettingsChanged(object sender, SettingsChangedEventArgs e)
+    {
+        if (e.SectionName == "AppSettings")
+        {
+            var settings = SettingsService.CurrentSettings;
+            
+            firebotFilePath = settings.FireBotFileFolder;
+            countdownMinutes = settings.Countdown.Minutes;
+            countdownSeconds = settings.Countdown.Seconds;
+            prizeSectionWidth = settings.Layout.PrizeSectionWidthPercent;
+            prizeFontSize = settings.Fonts.PrizeFontSizeRem;
+            timerFontSize = settings.Fonts.TimerFontSizeRem;
+            entriesFontSize = settings.Fonts.EntriesFontSizeRem;
+            
+            StateHasChanged();
+        }
     }
 
-    private void SetFirebotFilePath()
+    private async Task SetFirebotFilePath()
     {
+        await SettingsService.UpdateFireBotFileFolderAsync(firebotFilePath);
         GiveAwayHelpers.SetFireBotFileFolder(firebotFilePath);
     }
 
-    private void SetCountdownTime()
+    private async Task SetCountdownTime()
     {
+        await SettingsService.UpdateCountdownTimeAsync(countdownMinutes, countdownSeconds);
         GiveAwayHelpers.SetCountdownTime(countdownMinutes, countdownSeconds);
     }
 
@@ -187,23 +220,38 @@
         }
     }
 
-    private void SetPrizeSectionWidth()
+    private async Task SetPrizeSectionWidth()
     {
+        await SettingsService.UpdatePrizeSectionWidthAsync(prizeSectionWidth);
         GiveAwayHelpers.SetPrizeSectionWidth(prizeSectionWidth);
     }
 
-    private void SetPrizeFontSize()
+    private async Task SetPrizeFontSize()
     {
+        await UpdateFontSizes();
         GiveAwayHelpers.SetPrizeFontSize(prizeFontSize);
     }
 
-    private void SetTimerFontSize()
+    private async Task SetTimerFontSize()
     {
+        await UpdateFontSizes();
         GiveAwayHelpers.SetTimerFontSize(timerFontSize);
     }
 
-    private void SetEntriesFontSize()
+    private async Task SetEntriesFontSize()
     {
+        await UpdateFontSizes();
         GiveAwayHelpers.SetEntriesFontSize(entriesFontSize);
+    }
+    
+    private async Task UpdateFontSizes()
+    {
+        await SettingsService.UpdateFontSizesAsync(prizeFontSize, timerFontSize, entriesFontSize);
+    }
+    
+    public void Dispose()
+    {
+        // Unsubscribe from events
+        SettingsService.SettingsChanged -= OnSettingsChanged;
     }
 }

@@ -1,13 +1,11 @@
 @using FirebotGiveawayObsOverlay.WebApp.Models
 @using FirebotGiveawayObsOverlay.WebApp.Services
-@using Microsoft.Extensions.Options
 @using System.ComponentModel.DataAnnotations
 @using System.Text
 @using System.Text.Json
-@inject IOptions<TwitchSettings> TwitchOptions
+@inject ISettingsService SettingsService
 @inject TwitchService TwitchService
-@inject IConfiguration Configuration
-@inject IWebHostEnvironment Environment
+@implements IDisposable
 
 @page "/twitch-setup"
 @rendermode InteractiveServer
@@ -141,22 +139,55 @@
     protected override void OnInitialized()
     {
         // Clone the settings to avoid modifying the original
+        var currentSettings = SettingsService.CurrentTwitchSettings;
+        
         twitchSettings = new TwitchSettings
         {
-            Enabled = TwitchOptions.Value.Enabled,
-            Channel = TwitchOptions.Value.Channel,
-            ClientId = TwitchOptions.Value.ClientId,
-            ClientSecret = TwitchOptions.Value.ClientSecret,
-            RedirectUri = TwitchOptions.Value.RedirectUri,
-            RequireFollower = TwitchOptions.Value.RequireFollower,
-            FollowerMinimumAgeDays = TwitchOptions.Value.FollowerMinimumAgeDays,
+            Enabled = currentSettings.Enabled,
+            Channel = currentSettings.Channel,
+            ClientId = currentSettings.ClientId,
+            ClientSecret = currentSettings.ClientSecret,
+            RedirectUri = currentSettings.RedirectUri,
+            RequireFollower = currentSettings.RequireFollower,
+            FollowerMinimumAgeDays = currentSettings.FollowerMinimumAgeDays,
             Commands = new CommandSettings
             {
-                Join = TwitchOptions.Value.Commands.Join,
-                StartGiveaway = TwitchOptions.Value.Commands.StartGiveaway,
-                DrawWinner = TwitchOptions.Value.Commands.DrawWinner
+                Join = currentSettings.Commands.Join,
+                StartGiveaway = currentSettings.Commands.StartGiveaway,
+                DrawWinner = currentSettings.Commands.DrawWinner
             }
         };
+        
+        // Subscribe to settings changes
+        SettingsService.SettingsChanged += OnSettingsChanged;
+    }
+    
+    private void OnSettingsChanged(object sender, SettingsChangedEventArgs e)
+    {
+        if (e.SectionName == "TwitchSettings" && !isSaving)
+        {
+            // Only update if we're not in the middle of saving
+            var currentSettings = SettingsService.CurrentTwitchSettings;
+            
+            twitchSettings = new TwitchSettings
+            {
+                Enabled = currentSettings.Enabled,
+                Channel = currentSettings.Channel,
+                ClientId = currentSettings.ClientId,
+                ClientSecret = currentSettings.ClientSecret,
+                RedirectUri = currentSettings.RedirectUri,
+                RequireFollower = currentSettings.RequireFollower,
+                FollowerMinimumAgeDays = currentSettings.FollowerMinimumAgeDays,
+                Commands = new CommandSettings
+                {
+                    Join = currentSettings.Commands.Join,
+                    StartGiveaway = currentSettings.Commands.StartGiveaway,
+                    DrawWinner = currentSettings.Commands.DrawWinner
+                }
+            };
+            
+            StateHasChanged();
+        }
     }
 
     private async Task TestConnection()
@@ -202,55 +233,8 @@
 
         try
         {
-            // Get the path to appsettings.json
-            string appSettingsPath = Path.Combine(Environment.ContentRootPath, "appsettings.json");
-            
-            // Read the current appsettings.json
-            string json = await File.ReadAllTextAsync(appSettingsPath);
-            var jsonDocument = JsonDocument.Parse(json);
-            
-            // Create a new JSON object with the updated settings
-            using var stream = new MemoryStream();
-            using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
-            {
-                writer.WriteStartObject();
-                
-                // Copy all properties except TwitchSettings
-                foreach (var property in jsonDocument.RootElement.EnumerateObject())
-                {
-                    if (property.Name != "TwitchSettings")
-                    {
-                        property.WriteTo(writer);
-                    }
-                }
-                
-                // Write the updated TwitchSettings
-                writer.WritePropertyName("TwitchSettings");
-                writer.WriteStartObject();
-                
-                writer.WriteBoolean("Enabled", twitchSettings.Enabled);
-                writer.WriteString("Channel", twitchSettings.Channel);
-                writer.WriteString("ClientId", twitchSettings.ClientId);
-                writer.WriteString("ClientSecret", twitchSettings.ClientSecret);
-                writer.WriteString("RedirectUri", twitchSettings.RedirectUri);
-                writer.WriteBoolean("RequireFollower", twitchSettings.RequireFollower);
-                writer.WriteNumber("FollowerMinimumAgeDays", twitchSettings.FollowerMinimumAgeDays);
-                
-                writer.WritePropertyName("Commands");
-                writer.WriteStartObject();
-                writer.WriteString("Join", twitchSettings.Commands.Join);
-                writer.WriteString("StartGiveaway", twitchSettings.Commands.StartGiveaway);
-                writer.WriteString("DrawWinner", twitchSettings.Commands.DrawWinner);
-                writer.WriteEndObject(); // End Commands
-                
-                writer.WriteEndObject(); // End TwitchSettings
-                
-                writer.WriteEndObject(); // End root
-            }
-            
-            // Convert to string and save back to appsettings.json
-            var jsonString = Encoding.UTF8.GetString(stream.ToArray());
-            await File.WriteAllTextAsync(appSettingsPath, jsonString);
+            // Use the settings service to update the settings
+            await SettingsService.UpdateTwitchSettingsAsync(twitchSettings);
             
             // If Twitch is enabled, try to connect
             if (twitchSettings.Enabled)
@@ -296,6 +280,12 @@
                 connectionTestResult = "Channel name is required when Twitch integration is enabled";
                 connectionTestSuccess = false;
                 return false;
+            }
+            
+            public void Dispose()
+            {
+                // Unsubscribe from events
+                SettingsService.SettingsChanged -= OnSettingsChanged;
             }
             
             if (string.IsNullOrWhiteSpace(twitchSettings.ClientId))

@@ -1,4 +1,5 @@
 using FirebotGiveawayObsOverlay.WebApp.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Text.RegularExpressions;
@@ -9,28 +10,39 @@ namespace FirebotGiveawayObsOverlay.WebApp.Services;
 
 public class CommandHandler : IDisposable
 {
-    private readonly TwitchSettings _settings;
+    private readonly IOptionsMonitor<TwitchSettings> _settingsMonitor;
+    private TwitchSettings _currentSettings;
     private readonly TwitchService _twitchService;
     private readonly TimerService _timerService;
     private readonly GiveawayService _giveawayService;
+    private readonly ILogger<CommandHandler> _logger;
     
     // Regular expression to parse the prize from the !startgiveaway command
-    private readonly Regex _startGiveawayRegex;
+    private Regex _startGiveawayRegex;
 
     public CommandHandler(
-        IOptions<TwitchSettings> settings,
+        IOptionsMonitor<TwitchSettings> settingsMonitor,
         TwitchService twitchService,
         TimerService timerService,
-        GiveawayService giveawayService)
+        GiveawayService giveawayService,
+        ILogger<CommandHandler> logger)
     {
-        _settings = settings.Value;
+        _settingsMonitor = settingsMonitor;
+        _currentSettings = _settingsMonitor.CurrentValue;
         _twitchService = twitchService;
         _timerService = timerService;
         _giveawayService = giveawayService;
+        _logger = logger;
         
         // Create regex to match the command and capture the prize
-        _startGiveawayRegex = new Regex(
-            $@"^{Regex.Escape(_settings.Commands.StartGiveaway)}\s+(.+)$",
+        UpdateCommandRegex();
+        
+        // Subscribe to settings changes
+        _settingsMonitor.OnChange(settings => {
+            _logger.LogInformation("Twitch command settings changed");
+            _currentSettings = settings;
+            UpdateCommandRegex();
+        });
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         // Subscribe to Twitch message events
@@ -44,14 +56,14 @@ public class CommandHandler : IDisposable
         var isMod = e.ChatMessage.IsModerator || e.ChatMessage.IsBroadcaster;
 
         // Check for !join command
-        if (message.Equals(_settings.Commands.Join, StringComparison.OrdinalIgnoreCase))
+        if (message.Equals(_currentSettings.Commands.Join, StringComparison.OrdinalIgnoreCase))
         {
             await HandleJoinCommandAsync(username);
             return;
         }
         
         // Check for !drawwinner command (mod only)
-        if (message.Equals(_settings.Commands.DrawWinner, StringComparison.OrdinalIgnoreCase) && isMod)
+        if (message.Equals(_currentSettings.Commands.DrawWinner, StringComparison.OrdinalIgnoreCase) && isMod)
         {
             HandleDrawWinnerCommand();
             return;
@@ -76,9 +88,12 @@ public class CommandHandler : IDisposable
         }
 
         // Check if user is a follower if required
-        if (_settings.RequireFollower)
+        if (_currentSettings.RequireFollower)
         {
             var (isFollower, meetsMinimumAge) = await _twitchService.CheckFollowerStatusAsync(username);
+            
+            _logger.LogDebug("User {Username} follower check: IsFollower={IsFollower}, MeetsMinimumAge={MeetsMinimumAge}",
+                username, isFollower, meetsMinimumAge);
             
             if (!isFollower)
             {
@@ -88,7 +103,8 @@ public class CommandHandler : IDisposable
             
             if (!meetsMinimumAge)
             {
-                _twitchService.SendMessage($"@{username}, you need to be a follower for at least {_settings.FollowerMinimumAgeDays} days to join the giveaway.");
+                _twitchService.SendMessage($"@{username}, you need to be a follower for at least {_currentSettings.FollowerMinimumAgeDays} days to join the giveaway.");
+                _logger.LogInformation("User {Username} rejected from giveaway: does not meet minimum follower age requirement", username);
                 return;
             }
         }
@@ -97,10 +113,12 @@ public class CommandHandler : IDisposable
         if (_giveawayService.AddEntry(username))
         {
             _twitchService.SendMessage($"@{username}, you have been entered into the giveaway for {_giveawayService.CurrentPrize}!");
+            _logger.LogInformation("User {Username} entered the giveaway", username);
         }
         else
         {
             _twitchService.SendMessage($"@{username}, you are already entered in the giveaway.");
+            _logger.LogDebug("User {Username} attempted to enter giveaway again", username);
         }
     }
 
@@ -156,6 +174,16 @@ public class CommandHandler : IDisposable
         }
     }
 
+    private void UpdateCommandRegex()
+    {
+        _startGiveawayRegex = new Regex(
+            $@"^{Regex.Escape(_currentSettings.Commands.StartGiveaway)}\s+(.+)$",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        
+        _logger.LogDebug("Updated command regex with StartGiveaway command: {Command}",
+            _currentSettings.Commands.StartGiveaway);
+    }
+    
     public void Dispose()
     {
         _twitchService.MessageReceived -= OnMessageReceived;

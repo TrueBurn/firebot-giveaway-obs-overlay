@@ -1,4 +1,5 @@
 using FirebotGiveawayObsOverlay.WebApp.Models;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Threading.Tasks;
@@ -15,9 +16,11 @@ namespace FirebotGiveawayObsOverlay.WebApp.Services;
 public class TwitchService : IDisposable
 {
     private readonly TwitchClient _client;
-    private readonly TwitchSettings _settings;
+    private readonly IOptionsMonitor<TwitchSettings> _settingsMonitor;
+    private TwitchSettings _currentSettings;
     private readonly TwitchAPI? _api;
     private bool _isConnected;
+    private readonly ILogger<TwitchService> _logger;
 
     public event EventHandler<OnMessageReceivedArgs>? MessageReceived;
     public event EventHandler<OnUserJoinedArgs>? UserJoined;
@@ -25,9 +28,22 @@ public class TwitchService : IDisposable
     public event EventHandler<OnConnectedArgs>? Connected;
     public event EventHandler<OnDisconnectedEventArgs>? Disconnected;
 
-    public TwitchService(IOptions<TwitchSettings> settings)
+    public TwitchService(
+        IOptionsMonitor<TwitchSettings> settingsMonitor,
+        ILogger<TwitchService> logger)
     {
-        _settings = settings.Value;
+        _settingsMonitor = settingsMonitor;
+        _currentSettings = _settingsMonitor.CurrentValue;
+        _logger = logger;
+        
+        // Subscribe to settings changes
+        _settingsMonitor.OnChange(settings => {
+            _logger.LogInformation("Twitch settings changed");
+            _currentSettings = settings;
+            
+            // If connection state needs to change based on settings
+            UpdateConnectionBasedOnSettings();
+        });
 
         var clientOptions = new ClientOptions
         {
@@ -39,11 +55,12 @@ public class TwitchService : IDisposable
         _client = new TwitchClient(webSocketClient);
         
         // Initialize Twitch API if credentials are provided
-        if (!string.IsNullOrEmpty(_settings.ClientId) && !string.IsNullOrEmpty(_settings.ClientSecret))
+        if (!string.IsNullOrEmpty(_currentSettings.ClientId) && !string.IsNullOrEmpty(_currentSettings.ClientSecret))
         {
             _api = new TwitchAPI();
-            _api.Settings.ClientId = _settings.ClientId;
-            _api.Settings.Secret = _settings.ClientSecret;
+            _api.Settings.ClientId = _currentSettings.ClientId;
+            _api.Settings.Secret = _currentSettings.ClientSecret;
+            _logger.LogInformation("Initialized Twitch API with provided credentials");
         }
 
         // Set up event handlers
@@ -62,8 +79,9 @@ public class TwitchService : IDisposable
         try
         {
             // Create credentials for the bot
-            var credentials = new ConnectionCredentials(_settings.Channel, _settings.ClientSecret);
-            _client.Initialize(credentials, _settings.Channel);
+            var credentials = new ConnectionCredentials(_currentSettings.Channel, _currentSettings.ClientSecret);
+            _client.Initialize(credentials, _currentSettings.Channel);
+            _logger.LogInformation("Connecting to Twitch channel: {Channel}", _currentSettings.Channel);
             _client.Connect();
 
             _isConnected = true;
@@ -89,7 +107,8 @@ public class TwitchService : IDisposable
         if (!_isConnected)
             throw new InvalidOperationException("Cannot send message: Not connected to Twitch chat");
 
-        _client.SendMessage(_settings.Channel, message);
+        _client.SendMessage(_currentSettings.Channel, message);
+        _logger.LogDebug("Sent message to Twitch chat: {Message}", message);
     }
 
     public bool IsConnected => _isConnected;
@@ -110,18 +129,34 @@ public class TwitchService : IDisposable
     {
         UserLeft?.Invoke(this, e);
     }
-
-    private void Client_OnConnected(object? sender, OnConnectedArgs e)
-    {
-        Console.WriteLine($"Connected to Twitch channel: {_settings.Channel}");
-        Connected?.Invoke(this, e);
+private void Client_OnConnected(object? sender, OnConnectedArgs e)
+{
+    _logger.LogInformation("Connected to Twitch channel: {Channel}", _currentSettings.Channel);
+    Connected?.Invoke(this, e);
+}
     }
 
     private void Client_OnDisconnected(object? sender, OnDisconnectedEventArgs e)
     {
-        Console.WriteLine("Disconnected from Twitch");
+        _logger.LogInformation("Disconnected from Twitch");
         _isConnected = false;
         Disconnected?.Invoke(this, e);
+    }
+    
+    private void UpdateConnectionBasedOnSettings()
+    {
+        // If settings changed from enabled to disabled, disconnect
+        if (_isConnected && !_currentSettings.Enabled)
+        {
+            _logger.LogInformation("Disconnecting from Twitch due to settings change");
+            Disconnect();
+        }
+        // If settings changed from disabled to enabled, connect
+        else if (!_isConnected && _currentSettings.Enabled)
+        {
+            _logger.LogInformation("Connecting to Twitch due to settings change");
+            _ = ConnectAsync();
+        }
     }
 
     #endregion
@@ -214,7 +249,7 @@ public class TwitchService : IDisposable
     public async Task<(bool isFollower, bool meetsMinimumAge)> CheckFollowerStatusAsync(string username)
     {
         // If API is not initialized or follower check is not required, return true for both
-        if (_api == null || !_settings.RequireFollower)
+        if (_api == null || !_currentSettings.RequireFollower)
         {
             return (true, true);
         }
@@ -231,9 +266,10 @@ public class TwitchService : IDisposable
             var userId = users.Users[0].Id;
             
             // Get broadcaster ID
-            var broadcasters = await _api.Helix.Users.GetUsersAsync(logins: new List<string> { _settings.Channel });
+            var broadcasters = await _api.Helix.Users.GetUsersAsync(logins: new List<string> { _currentSettings.Channel });
             if (broadcasters.Users.Length == 0)
             {
+                _logger.LogWarning("Could not find broadcaster ID for channel: {Channel}", _currentSettings.Channel);
                 return (false, false);
             }
             
@@ -250,13 +286,16 @@ public class TwitchService : IDisposable
             // Check if the follow meets the minimum age requirement
             var followDate = follows.Follows[0].FollowedAt;
             var followAge = DateTime.UtcNow - followDate;
-            var meetsMinimumAge = followAge.TotalDays >= _settings.FollowerMinimumAgeDays;
+            var meetsMinimumAge = followAge.TotalDays >= _currentSettings.FollowerMinimumAgeDays;
+            
+            _logger.LogDebug("User {Username} follow age: {FollowAgeDays} days, minimum required: {MinimumAgeDays} days",
+                username, followAge.TotalDays, _currentSettings.FollowerMinimumAgeDays);
             
             return (true, meetsMinimumAge);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error checking follower status: {ex.Message}");
+            _logger.LogError(ex, "Error checking follower status for user {Username}", username);
             // In case of error, default to allowing the user to join
             return (true, true);
         }

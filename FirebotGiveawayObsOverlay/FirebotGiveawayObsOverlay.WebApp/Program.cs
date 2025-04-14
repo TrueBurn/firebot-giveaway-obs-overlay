@@ -1,27 +1,55 @@
 using FirebotGiveawayObsOverlay.WebApp.Components;
+using FirebotGiveawayObsOverlay.WebApp.Configuration;
 using FirebotGiveawayObsOverlay.WebApp.Helpers;
 using FirebotGiveawayObsOverlay.WebApp.Models;
 using FirebotGiveawayObsOverlay.WebApp.Services;
+using Microsoft.Extensions.Options;
+using Serilog;
+using Serilog.Events;
+using Serilog.Sinks.SystemConsole.Themes;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+// Configure Serilog first
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+    .Enrich.FromLogContext()
+    .WriteTo.Console(theme: AnsiConsoleTheme.Literate)
+    .CreateLogger();
 
-// Add services to the container.
-builder.Services
-    .AddRazorComponents()
-    .AddInteractiveServerComponents();
+try
+{
+    Log.Information("Starting Firebot Giveaway OBS Overlay");
 
-// Configure Twitch settings
-builder.Services.Configure<TwitchSettings>(builder.Configuration.GetSection("TwitchSettings"));
+    WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-// Add services as singletons
-builder.Services.AddSingleton<TimerService>();
-builder.Services.AddSingleton<TwitchService>();
-builder.Services.AddSingleton<GiveawayService>();
-builder.Services.AddSingleton<CommandHandler>();
+    // Add Serilog to the application
+    builder.Host.UseSerilog();
 
-WebApplication app = builder.Build();
+    // Set up dynamic configuration
+    string appSettingsPath = Path.Combine(builder.Environment.ContentRootPath, "appsettings.json");
+    builder.Configuration.Sources.Insert(0, new DynamicConfigurationSource(appSettingsPath));
+
+    // Add services to the container.
+    builder.Services
+        .AddRazorComponents()
+        .AddInteractiveServerComponents();
+
+    // Configure strongly typed settings
+    builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
+    builder.Services.Configure<TwitchSettings>(builder.Configuration.GetSection("TwitchSettings"));
+
+    // Register settings service
+    builder.Services.AddSingleton<ISettingsService, SettingsService>();
+
+    // Add services as singletons
+    builder.Services.AddSingleton<TimerService>();
+    builder.Services.AddSingleton<TwitchService>();
+    builder.Services.AddSingleton<GiveawayService>();
+    builder.Services.AddSingleton<CommandHandler>();
+
+    WebApplication app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -33,25 +61,44 @@ if (!app.Environment.IsDevelopment())
 
 app.Lifetime.ApplicationStarted.Register(async () =>
 {
-    string fileBotFileFolder = app.Configuration.GetValue("AppSettings:FireBotFileFolder", "G:\\Giveaway") ?? "G:\\Giveaway";
-    GiveAwayHelpers.SetFireBotFileFolder(fileBotFileFolder);
+    // Get the settings service
+    var settingsService = app.Services.GetRequiredService<ISettingsService>();
+    
+    // Initialize FireBotFileReader with the current settings
+    GiveAwayHelpers.SetFireBotFileFolder(settingsService.CurrentSettings.FireBotFileFolder);
     
     // Initialize countdown timer settings from configuration
-    int countdownMinutes = app.Configuration.GetValue<int>("AppSettings:CountdownMinutes", 60);
-    int countdownSeconds = app.Configuration.GetValue<int>("AppSettings:CountdownSeconds", 0);
-    GiveAwayHelpers.SetCountdownTime(countdownMinutes, countdownSeconds);
+    GiveAwayHelpers.SetCountdownTime(
+        settingsService.CurrentSettings.Countdown.Minutes,
+        settingsService.CurrentSettings.Countdown.Seconds);
     
     // Initialize prize section width from configuration
-    int prizeSectionWidth = app.Configuration.GetValue<int>("AppSettings:PrizeSectionWidthPercent", 75);
-    GiveAwayHelpers.SetPrizeSectionWidth(prizeSectionWidth);
+    GiveAwayHelpers.SetPrizeSectionWidth(
+        settingsService.CurrentSettings.Layout.PrizeSectionWidthPercent);
     
     // Initialize font size settings from configuration
-    double prizeFontSize = app.Configuration.GetValue<double>("AppSettings:PrizeFontSizeRem", 3.5);
-    double timerFontSize = app.Configuration.GetValue<double>("AppSettings:TimerFontSizeRem", 3.0);
-    double entriesFontSize = app.Configuration.GetValue<double>("AppSettings:EntriesFontSizeRem", 2.5);
-    GiveAwayHelpers.SetPrizeFontSize(prizeFontSize);
-    GiveAwayHelpers.SetTimerFontSize(timerFontSize);
-    GiveAwayHelpers.SetEntriesFontSize(entriesFontSize);
+    GiveAwayHelpers.SetPrizeFontSize(settingsService.CurrentSettings.Fonts.PrizeFontSizeRem);
+    GiveAwayHelpers.SetTimerFontSize(settingsService.CurrentSettings.Fonts.TimerFontSizeRem);
+    GiveAwayHelpers.SetEntriesFontSize(settingsService.CurrentSettings.Fonts.EntriesFontSizeRem);
+    
+    // Subscribe to settings changes
+    settingsService.SettingsChanged += (sender, e) =>
+    {
+        if (e.SectionName == "AppSettings")
+        {
+            var settings = settingsService.CurrentSettings;
+            
+            // Update helpers with new settings
+            GiveAwayHelpers.SetFireBotFileFolder(settings.FireBotFileFolder);
+            GiveAwayHelpers.SetCountdownTime(settings.Countdown.Minutes, settings.Countdown.Seconds);
+            GiveAwayHelpers.SetPrizeSectionWidth(settings.Layout.PrizeSectionWidthPercent);
+            GiveAwayHelpers.SetPrizeFontSize(settings.Fonts.PrizeFontSizeRem);
+            GiveAwayHelpers.SetTimerFontSize(settings.Fonts.TimerFontSizeRem);
+            GiveAwayHelpers.SetEntriesFontSize(settings.Fonts.EntriesFontSizeRem);
+            
+            Log.Information("Updated application settings from configuration changes");
+        }
+    };
     
     // Initialize Twitch connection if enabled
     bool enableTwitch = app.Configuration.GetValue<bool>("TwitchSettings:Enabled", false);
@@ -100,4 +147,18 @@ app.UseAntiforgery();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-app.Run();
+try
+{
+    Log.Information("Starting web host");
+    app.Run();
+    return 0;
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Host terminated unexpectedly");
+    return 1;
+}
+finally
+{
+    Log.CloseAndFlush();
+}
