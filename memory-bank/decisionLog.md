@@ -77,3 +77,17 @@
 - Adds new dependencies to the project
 - Needs configuration in appsettings.json
 - May slightly increase application startup time
+
+## [2025-04-14 23:27:00] - Test Updates for IOptionsMonitor
+
+**Decision:** Update all test files to use IOptionsMonitor instead of IOptions to match service implementations.
+
+**Rationale:**
+- Ensures consistency between production and test code
+- Prevents test failures due to interface mismatches
+- Allows proper testing of change notification features
+
+**Implications:**
+- Required updates to mock setup in test files
+- Needed to implement OnChange callback simulation in tests
+- Improved test coverage for dynamic configuration scenarios

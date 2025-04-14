@@ -35,12 +35,13 @@ public class TwitchService : IDisposable
         _settingsMonitor = settingsMonitor;
         _currentSettings = _settingsMonitor.CurrentValue;
         _logger = logger;
-        
+
         // Subscribe to settings changes
-        _settingsMonitor.OnChange(settings => {
+        _settingsMonitor.OnChange(settings =>
+        {
             _logger.LogInformation("Twitch settings changed");
             _currentSettings = settings;
-            
+
             // If connection state needs to change based on settings
             UpdateConnectionBasedOnSettings();
         });
@@ -53,7 +54,7 @@ public class TwitchService : IDisposable
 
         var webSocketClient = new WebSocketClient(clientOptions);
         _client = new TwitchClient(webSocketClient);
-        
+
         // Initialize Twitch API if credentials are provided
         if (!string.IsNullOrEmpty(_currentSettings.ClientId) && !string.IsNullOrEmpty(_currentSettings.ClientSecret))
         {
@@ -129,11 +130,10 @@ public class TwitchService : IDisposable
     {
         UserLeft?.Invoke(this, e);
     }
-private void Client_OnConnected(object? sender, OnConnectedArgs e)
-{
-    _logger.LogInformation("Connected to Twitch channel: {Channel}", _currentSettings.Channel);
-    Connected?.Invoke(this, e);
-}
+    private void Client_OnConnected(object? sender, OnConnectedArgs e)
+    {
+        _logger.LogInformation("Connected to Twitch channel: {Channel}", _currentSettings.Channel);
+        Connected?.Invoke(this, e);
     }
 
     private void Client_OnDisconnected(object? sender, OnDisconnectedEventArgs e)
@@ -142,7 +142,7 @@ private void Client_OnConnected(object? sender, OnConnectedArgs e)
         _isConnected = false;
         Disconnected?.Invoke(this, e);
     }
-    
+
     private void UpdateConnectionBasedOnSettings()
     {
         // If settings changed from enabled to disabled, disconnect
@@ -194,43 +194,43 @@ private void Client_OnConnected(object? sender, OnConnectedArgs e)
 
             var webSocketClient = new WebSocketClient(clientOptions);
             var testClient = new TwitchClient(webSocketClient);
-            
+
             // Create credentials for the bot
             var credentials = new ConnectionCredentials(settings.Channel, settings.ClientSecret);
             testClient.Initialize(credentials, settings.Channel);
-            
+
             // Set up a task completion source to track connection status
             var connectionTcs = new TaskCompletionSource<bool>();
-            
+
             // Set up event handlers
             testClient.OnConnected += (sender, e) =>
             {
                 connectionTcs.TrySetResult(true);
             };
-            
+
             testClient.OnConnectionError += (sender, e) =>
             {
                 connectionTcs.TrySetResult(false);
             };
-            
+
             // Connect to Twitch
             testClient.Connect();
-            
+
             // Wait for connection result with a timeout
             var connectionTask = connectionTcs.Task;
             var timeoutTask = Task.Delay(TimeSpan.FromSeconds(10));
-            
+
             var completedTask = await Task.WhenAny(connectionTask, timeoutTask);
-            
+
             // Disconnect the test client
             testClient.Disconnect();
-            
+
             // If the connection task completed, return its result
             if (completedTask == connectionTask)
             {
                 return await connectionTask;
             }
-            
+
             // If we timed out, return false
             return false;
         }
@@ -240,7 +240,7 @@ private void Client_OnConnected(object? sender, OnConnectedArgs e)
             return false;
         }
     }
-    
+
     /// <summary>
     /// Checks if a user is a follower of the channel and meets the minimum age requirement
     /// </summary>
@@ -262,9 +262,9 @@ private void Client_OnConnected(object? sender, OnConnectedArgs e)
             {
                 return (false, false);
             }
-            
+
             var userId = users.Users[0].Id;
-            
+
             // Get broadcaster ID
             var broadcasters = await _api.Helix.Users.GetUsersAsync(logins: new List<string> { _currentSettings.Channel });
             if (broadcasters.Users.Length == 0)
@@ -272,25 +272,25 @@ private void Client_OnConnected(object? sender, OnConnectedArgs e)
                 _logger.LogWarning("Could not find broadcaster ID for channel: {Channel}", _currentSettings.Channel);
                 return (false, false);
             }
-            
+
             var broadcasterId = broadcasters.Users[0].Id;
-            
+
             // Check if user follows the channel
             var follows = await _api.Helix.Users.GetUsersFollowsAsync(fromId: userId, toId: broadcasterId);
-            
+
             if (follows.Follows.Length == 0)
             {
                 return (false, false);
             }
-            
+
             // Check if the follow meets the minimum age requirement
             var followDate = follows.Follows[0].FollowedAt;
             var followAge = DateTime.UtcNow - followDate;
             var meetsMinimumAge = followAge.TotalDays >= _currentSettings.FollowerMinimumAgeDays;
-            
+
             _logger.LogDebug("User {Username} follow age: {FollowAgeDays} days, minimum required: {MinimumAgeDays} days",
                 username, followAge.TotalDays, _currentSettings.FollowerMinimumAgeDays);
-            
+
             return (true, meetsMinimumAge);
         }
         catch (Exception ex)

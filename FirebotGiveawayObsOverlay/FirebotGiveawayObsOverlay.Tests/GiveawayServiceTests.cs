@@ -1,7 +1,8 @@
 using FirebotGiveawayObsOverlay.WebApp.Models;
 using FirebotGiveawayObsOverlay.WebApp.Services;
 using FluentAssertions;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 using Moq;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,8 @@ namespace FirebotGiveawayObsOverlay.Tests
 {
     public class GiveawayServiceTests
     {
-        private readonly Mock<IConfiguration> _mockConfiguration;
+        private readonly Mock<IOptionsMonitor<AppSettings>> _mockOptions;
+        private readonly Mock<ILogger<GiveawayService>> _mockLogger;
         private readonly string _testFolder;
         private readonly GiveawayService _giveawayService;
 
@@ -23,13 +25,20 @@ namespace FirebotGiveawayObsOverlay.Tests
             _testFolder = Path.Combine(Path.GetTempPath(), "FirebotGiveawayTests_" + Guid.NewGuid().ToString());
             Directory.CreateDirectory(_testFolder);
 
-            // Set up mock configuration
-            _mockConfiguration = new Mock<IConfiguration>();
-            _mockConfiguration.Setup(c => c.GetValue<string>("AppSettings:FireBotFileFolder", It.IsAny<string>()))
-                .Returns(_testFolder);
+            // Set up mock options
+            var appSettings = new AppSettings
+            {
+                FireBotFileFolder = _testFolder
+            };
+            
+            _mockOptions = new Mock<IOptionsMonitor<AppSettings>>();
+            _mockOptions.Setup(o => o.CurrentValue).Returns(appSettings);
+                
+            // Set up mock logger
+            _mockLogger = new Mock<ILogger<GiveawayService>>();
 
-            // Create the service with the mock configuration
-            _giveawayService = new GiveawayService(_mockConfiguration.Object);
+            // Create the service with the mock options and logger
+            _giveawayService = new GiveawayService(_mockOptions.Object, _mockLogger.Object);
         }
 
         [Fact]

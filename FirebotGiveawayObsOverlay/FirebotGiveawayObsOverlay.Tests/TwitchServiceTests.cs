@@ -1,6 +1,7 @@
 using FirebotGiveawayObsOverlay.WebApp.Models;
 using FirebotGiveawayObsOverlay.WebApp.Services;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using System;
@@ -21,9 +22,10 @@ namespace FirebotGiveawayObsOverlay.Tests
 {
     public class TwitchServiceTests
     {
-        private readonly Mock<IOptions<TwitchSettings>> _mockOptions;
+        private readonly Mock<IOptionsMonitor<TwitchSettings>> _mockOptions;
         private readonly Mock<ITwitchClient> _mockTwitchClient;
         private readonly Mock<ITwitchAPI> _mockTwitchApi;
+        private readonly Mock<ILogger<TwitchService>> _mockLogger;
         private readonly TwitchSettings _twitchSettings;
 
         public TwitchServiceTests()
@@ -38,21 +40,24 @@ namespace FirebotGiveawayObsOverlay.Tests
                 FollowerMinimumAgeDays = 7
             };
 
-            _mockOptions = new Mock<IOptions<TwitchSettings>>();
-            _mockOptions.Setup(o => o.Value).Returns(_twitchSettings);
+            _mockOptions = new Mock<IOptionsMonitor<TwitchSettings>>();
+            _mockOptions.Setup(o => o.CurrentValue).Returns(_twitchSettings);
 
             // Set up mock TwitchClient
             _mockTwitchClient = new Mock<ITwitchClient>();
 
             // Set up mock TwitchAPI
             _mockTwitchApi = new Mock<ITwitchAPI>();
+            
+            // Set up mock logger
+            _mockLogger = new Mock<ILogger<TwitchService>>();
         }
 
         [Fact]
         public void Constructor_ShouldInitializeCorrectly()
         {
             // Act
-            var service = new TwitchServiceForTest(_mockOptions.Object, _mockTwitchClient.Object, _mockTwitchApi.Object);
+            var service = new TwitchServiceForTest(_mockOptions.Object, _mockTwitchClient.Object, _mockTwitchApi.Object, _mockLogger.Object);
 
             // Assert
             service.Should().NotBeNull();
@@ -63,7 +68,7 @@ namespace FirebotGiveawayObsOverlay.Tests
         public async Task ConnectAsync_ShouldConnectToTwitch()
         {
             // Arrange
-            var service = new TwitchServiceForTest(_mockOptions.Object, _mockTwitchClient.Object, _mockTwitchApi.Object);
+            var service = new TwitchServiceForTest(_mockOptions.Object, _mockTwitchClient.Object, _mockTwitchApi.Object, _mockLogger.Object);
 
             // Act
             await service.ConnectAsync();
@@ -76,7 +81,7 @@ namespace FirebotGiveawayObsOverlay.Tests
         public void Disconnect_ShouldDisconnectFromTwitch()
         {
             // Arrange
-            var service = new TwitchServiceForTest(_mockOptions.Object, _mockTwitchClient.Object, _mockTwitchApi.Object);
+            var service = new TwitchServiceForTest(_mockOptions.Object, _mockTwitchClient.Object, _mockTwitchApi.Object, _mockLogger.Object);
             service.SetConnected(true);
 
             // Act
@@ -91,7 +96,7 @@ namespace FirebotGiveawayObsOverlay.Tests
         public void SendMessage_ShouldSendMessageToChannel()
         {
             // Arrange
-            var service = new TwitchServiceForTest(_mockOptions.Object, _mockTwitchClient.Object, _mockTwitchApi.Object);
+            var service = new TwitchServiceForTest(_mockOptions.Object, _mockTwitchClient.Object, _mockTwitchApi.Object, _mockLogger.Object);
             service.SetConnected(true);
             string message = "Test message";
 
@@ -107,7 +112,7 @@ namespace FirebotGiveawayObsOverlay.Tests
         public void SendMessage_WhenNotConnected_ShouldThrowException()
         {
             // Arrange
-            var service = new TwitchServiceForTest(_mockOptions.Object, _mockTwitchClient.Object, _mockTwitchApi.Object);
+            var service = new TwitchServiceForTest(_mockOptions.Object, _mockTwitchClient.Object, _mockTwitchApi.Object, _mockLogger.Object);
             string message = "Test message";
 
             // Act & Assert
@@ -120,7 +125,7 @@ namespace FirebotGiveawayObsOverlay.Tests
         public async Task CheckFollowerStatusAsync_WhenUserIsFollower_ShouldReturnTrue()
         {
             // Arrange
-            var service = new TwitchServiceForTest(_mockOptions.Object, _mockTwitchClient.Object, _mockTwitchApi.Object);
+            var service = new TwitchServiceForTest(_mockOptions.Object, _mockTwitchClient.Object, _mockTwitchApi.Object, _mockLogger.Object);
             string username = "testuser";
             
             // Set up the mock to return a predefined result
@@ -138,7 +143,7 @@ namespace FirebotGiveawayObsOverlay.Tests
         public async Task CheckFollowerStatusAsync_WhenUserIsNewFollower_ShouldReturnFalseForMinimumAge()
         {
             // Arrange
-            var service = new TwitchServiceForTest(_mockOptions.Object, _mockTwitchClient.Object, _mockTwitchApi.Object);
+            var service = new TwitchServiceForTest(_mockOptions.Object, _mockTwitchClient.Object, _mockTwitchApi.Object, _mockLogger.Object);
             string username = "testuser";
             
             // Set up the mock to return a predefined result
@@ -156,7 +161,7 @@ namespace FirebotGiveawayObsOverlay.Tests
         public async Task TestConnectionAsync_ShouldReturnTrueForValidSettings()
         {
             // Arrange
-            var service = new TwitchServiceForTest(_mockOptions.Object, _mockTwitchClient.Object, _mockTwitchApi.Object);
+            var service = new TwitchServiceForTest(_mockOptions.Object, _mockTwitchClient.Object, _mockTwitchApi.Object, _mockLogger.Object);
             
             // Set up the mock client to simulate a successful connection
             service.SetTestConnectionResult(true);
@@ -172,7 +177,7 @@ namespace FirebotGiveawayObsOverlay.Tests
         public async Task TestConnectionAsync_ShouldReturnFalseForInvalidSettings()
         {
             // Arrange
-            var service = new TwitchServiceForTest(_mockOptions.Object, _mockTwitchClient.Object, _mockTwitchApi.Object);
+            var service = new TwitchServiceForTest(_mockOptions.Object, _mockTwitchClient.Object, _mockTwitchApi.Object, _mockLogger.Object);
             
             // Set up the mock client to simulate a failed connection
             service.SetTestConnectionResult(false);
@@ -195,8 +200,8 @@ namespace FirebotGiveawayObsOverlay.Tests
             public bool MessageSent { get; private set; }
             public string LastSentMessage { get; private set; } = string.Empty; // Initialize to avoid warning
 
-            public TwitchServiceForTest(IOptions<TwitchSettings> settings, ITwitchClient mockClient, ITwitchAPI mockApi)
-                : base(settings)
+            public TwitchServiceForTest(IOptionsMonitor<TwitchSettings> settings, ITwitchClient mockClient, ITwitchAPI mockApi, ILogger<TwitchService> logger)
+                : base(settings, logger)
             {
                 _mockClient = mockClient;
                 _mockApi = mockApi;

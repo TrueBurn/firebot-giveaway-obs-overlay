@@ -282,12 +282,6 @@
                 return false;
             }
             
-            public void Dispose()
-            {
-                // Unsubscribe from events
-                SettingsService.SettingsChanged -= OnSettingsChanged;
-            }
-            
             if (string.IsNullOrWhiteSpace(twitchSettings.ClientId))
             {
                 connectionTestResult = "Client ID is required when Twitch integration is enabled";
@@ -304,5 +298,11 @@
         }
         
         return true;
+    }
+    
+    public void Dispose()
+    {
+        // Unsubscribe from events
+        SettingsService.SettingsChanged -= OnSettingsChanged;
     }
 }

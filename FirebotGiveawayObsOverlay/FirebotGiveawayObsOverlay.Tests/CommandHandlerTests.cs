@@ -1,6 +1,7 @@
 using FirebotGiveawayObsOverlay.WebApp.Models;
 using FirebotGiveawayObsOverlay.WebApp.Services;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using System;
@@ -14,10 +15,11 @@ namespace FirebotGiveawayObsOverlay.Tests
 {
     public class CommandHandlerTests
     {
-        private readonly Mock<IOptions<TwitchSettings>> _mockOptions;
+        private readonly Mock<IOptionsMonitor<TwitchSettings>> _mockOptions;
         private readonly Mock<TwitchService> _mockTwitchService;
         private readonly Mock<TimerService> _mockTimerService;
         private readonly Mock<GiveawayService> _mockGiveawayService;
+        private readonly Mock<ILogger<CommandHandler>> _mockLogger;
         private readonly TwitchSettings _twitchSettings;
         private readonly CommandHandler _commandHandler;
 
@@ -37,20 +39,22 @@ namespace FirebotGiveawayObsOverlay.Tests
                 }
             };
 
-            _mockOptions = new Mock<IOptions<TwitchSettings>>();
-            _mockOptions.Setup(o => o.Value).Returns(_twitchSettings);
+            _mockOptions = new Mock<IOptionsMonitor<TwitchSettings>>();
+            _mockOptions.Setup(o => o.CurrentValue).Returns(_twitchSettings);
 
             // Set up mock services
             _mockTwitchService = new Mock<TwitchService>(MockBehavior.Loose, _mockOptions.Object);
             _mockTimerService = new Mock<TimerService>();
             _mockGiveawayService = new Mock<GiveawayService>(MockBehavior.Loose, It.IsAny<Microsoft.Extensions.Configuration.IConfiguration>());
+            _mockLogger = new Mock<ILogger<CommandHandler>>();
 
             // Create the command handler
             _commandHandler = new CommandHandler(
                 _mockOptions.Object,
                 _mockTwitchService.Object,
                 _mockTimerService.Object,
-                _mockGiveawayService.Object);
+                _mockGiveawayService.Object,
+                _mockLogger.Object);
         }
 
         [Fact]

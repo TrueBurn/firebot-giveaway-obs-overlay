@@ -29,7 +29,7 @@ try
 
     // Set up dynamic configuration
     string appSettingsPath = Path.Combine(builder.Environment.ContentRootPath, "appsettings.json");
-    builder.Configuration.Sources.Insert(0, new DynamicConfigurationSource(appSettingsPath));
+    builder.Configuration.AddDynamicJsonFile(appSettingsPath);
 
     // Add services to the container.
     builder.Services
@@ -51,114 +51,120 @@ try
 
     WebApplication app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
-}
+    // Configure the HTTP request pipeline.
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseExceptionHandler("/Error", createScopeForErrors: true);
+        // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+        app.UseHsts();
+    }
 
-app.Lifetime.ApplicationStarted.Register(async () =>
-{
-    // Get the settings service
-    var settingsService = app.Services.GetRequiredService<ISettingsService>();
-    
-    // Initialize FireBotFileReader with the current settings
-    GiveAwayHelpers.SetFireBotFileFolder(settingsService.CurrentSettings.FireBotFileFolder);
-    
-    // Initialize countdown timer settings from configuration
-    GiveAwayHelpers.SetCountdownTime(
-        settingsService.CurrentSettings.Countdown.Minutes,
-        settingsService.CurrentSettings.Countdown.Seconds);
-    
-    // Initialize prize section width from configuration
-    GiveAwayHelpers.SetPrizeSectionWidth(
-        settingsService.CurrentSettings.Layout.PrizeSectionWidthPercent);
-    
-    // Initialize font size settings from configuration
-    GiveAwayHelpers.SetPrizeFontSize(settingsService.CurrentSettings.Fonts.PrizeFontSizeRem);
-    GiveAwayHelpers.SetTimerFontSize(settingsService.CurrentSettings.Fonts.TimerFontSizeRem);
-    GiveAwayHelpers.SetEntriesFontSize(settingsService.CurrentSettings.Fonts.EntriesFontSizeRem);
-    
-    // Subscribe to settings changes
-    settingsService.SettingsChanged += (sender, e) =>
+    app.Lifetime.ApplicationStarted.Register(async () =>
     {
-        if (e.SectionName == "AppSettings")
+        // Get the settings service
+        var settingsService = app.Services.GetRequiredService<ISettingsService>();
+
+        // Initialize FireBotFileReader with the current settings
+        GiveAwayHelpers.SetFireBotFileFolder(settingsService.CurrentSettings.FireBotFileFolder);
+
+        // Initialize countdown timer settings from configuration
+        GiveAwayHelpers.SetCountdownTime(
+            settingsService.CurrentSettings.Countdown.Minutes,
+            settingsService.CurrentSettings.Countdown.Seconds);
+
+        // Initialize prize section width from configuration
+        GiveAwayHelpers.SetPrizeSectionWidth(
+            settingsService.CurrentSettings.Layout.PrizeSectionWidthPercent);
+
+        // Initialize font size settings from configuration
+        GiveAwayHelpers.SetPrizeFontSize(settingsService.CurrentSettings.Fonts.PrizeFontSizeRem);
+        GiveAwayHelpers.SetTimerFontSize(settingsService.CurrentSettings.Fonts.TimerFontSizeRem);
+        GiveAwayHelpers.SetEntriesFontSize(settingsService.CurrentSettings.Fonts.EntriesFontSizeRem);
+
+        // Subscribe to settings changes
+        settingsService.SettingsChanged += (sender, e) =>
         {
-            var settings = settingsService.CurrentSettings;
-            
-            // Update helpers with new settings
-            GiveAwayHelpers.SetFireBotFileFolder(settings.FireBotFileFolder);
-            GiveAwayHelpers.SetCountdownTime(settings.Countdown.Minutes, settings.Countdown.Seconds);
-            GiveAwayHelpers.SetPrizeSectionWidth(settings.Layout.PrizeSectionWidthPercent);
-            GiveAwayHelpers.SetPrizeFontSize(settings.Fonts.PrizeFontSizeRem);
-            GiveAwayHelpers.SetTimerFontSize(settings.Fonts.TimerFontSizeRem);
-            GiveAwayHelpers.SetEntriesFontSize(settings.Fonts.EntriesFontSizeRem);
-            
-            Log.Information("Updated application settings from configuration changes");
+            if (e.SectionName == "AppSettings")
+            {
+                var settings = settingsService.CurrentSettings;
+
+                // Update helpers with new settings
+                GiveAwayHelpers.SetFireBotFileFolder(settings.FireBotFileFolder);
+                GiveAwayHelpers.SetCountdownTime(settings.Countdown.Minutes, settings.Countdown.Seconds);
+                GiveAwayHelpers.SetPrizeSectionWidth(settings.Layout.PrizeSectionWidthPercent);
+                GiveAwayHelpers.SetPrizeFontSize(settings.Fonts.PrizeFontSizeRem);
+                GiveAwayHelpers.SetTimerFontSize(settings.Fonts.TimerFontSizeRem);
+                GiveAwayHelpers.SetEntriesFontSize(settings.Fonts.EntriesFontSizeRem);
+
+                Log.Information("Updated application settings from configuration changes");
+            }
+        };
+
+        // Initialize Twitch connection if enabled
+        bool enableTwitch = app.Configuration.GetValue<bool>("TwitchSettings:Enabled", false);
+        if (enableTwitch)
+        {
+            try
+            {
+                var twitchService = app.Services.GetRequiredService<TwitchService>();
+                await twitchService.ConnectAsync();
+                Console.WriteLine("Connected to Twitch chat successfully.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to connect to Twitch: {ex.Message}");
+            }
         }
-    };
-    
-    // Initialize Twitch connection if enabled
-    bool enableTwitch = app.Configuration.GetValue<bool>("TwitchSettings:Enabled", false);
-    if (enableTwitch)
-    {
+
+        // Launch browser with correct port
+        string url = "http://localhost:5000/giveaway";
         try
         {
-            var twitchService = app.Services.GetRequiredService<TwitchService>();
-            await twitchService.ConnectAsync();
-            Console.WriteLine("Connected to Twitch chat successfully.");
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                Process.Start("xdg-open", url);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                Process.Start("open", url);
+            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Failed to connect to Twitch: {ex.Message}");
+            Console.WriteLine($"Failed to open browser: {ex.Message}");
         }
-    }
+    });
 
-    // Launch browser with correct port
-    string url = "http://localhost:5000/giveaway";
+    //app.UseHttpsRedirection();
+
+    app.UseStaticFiles();
+    app.UseAntiforgery();
+
+    app.MapRazorComponents<App>()
+        .AddInteractiveServerRenderMode();
+
     try
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-        }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-        {
-            Process.Start("xdg-open", url);
-        }
-        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-        {
-            Process.Start("open", url);
-        }
+        Log.Information("Starting web host");
+        app.Run();
+        return 0;
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Failed to open browser: {ex.Message}");
+        Log.Fatal(ex, "Host terminated unexpectedly");
+        return 1;
     }
-});
-
-//app.UseHttpsRedirection();
-
-app.UseStaticFiles();
-app.UseAntiforgery();
-
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
-
-try
-{
-    Log.Information("Starting web host");
-    app.Run();
-    return 0;
+    finally
+    {
+        Log.CloseAndFlush();
+    }
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "Host terminated unexpectedly");
+    Log.Fatal(ex, "Application start-up failed");
     return 1;
-}
-finally
-{
-    Log.CloseAndFlush();
 }

@@ -19,8 +19,9 @@ The current focus is on architectural improvements, specifically implementing th
 
 ## Open Questions/Issues
 
-- How to maintain backward compatibility during the transition from static helpers to IOptions pattern?
 - What level of logging detail is appropriate for different components of the application?
+- Should we consider implementing a more robust validation mechanism for settings?
 
 [2025-04-14 22:22:18] - Initial creation of activeContext.md from existing project-overview.md
 [2025-04-14 22:54:00] - Updated current focus to reflect IOptions pattern and Serilog integration work
+[2025-04-14 23:26:15] - Updated open questions after resolving build errors

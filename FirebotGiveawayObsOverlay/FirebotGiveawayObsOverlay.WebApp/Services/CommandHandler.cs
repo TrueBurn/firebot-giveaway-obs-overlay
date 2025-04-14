@@ -16,7 +16,7 @@ public class CommandHandler : IDisposable
     private readonly TimerService _timerService;
     private readonly GiveawayService _giveawayService;
     private readonly ILogger<CommandHandler> _logger;
-    
+
     // Regular expression to parse the prize from the !startgiveaway command
     private Regex _startGiveawayRegex;
 
@@ -33,17 +33,17 @@ public class CommandHandler : IDisposable
         _timerService = timerService;
         _giveawayService = giveawayService;
         _logger = logger;
-        
+
         // Create regex to match the command and capture the prize
         UpdateCommandRegex();
-        
+
         // Subscribe to settings changes
-        _settingsMonitor.OnChange(settings => {
+        _settingsMonitor.OnChange(settings =>
+        {
             _logger.LogInformation("Twitch command settings changed");
             _currentSettings = settings;
             UpdateCommandRegex();
         });
-            RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         // Subscribe to Twitch message events
         _twitchService.MessageReceived += OnMessageReceived;
@@ -61,14 +61,14 @@ public class CommandHandler : IDisposable
             await HandleJoinCommandAsync(username);
             return;
         }
-        
+
         // Check for !drawwinner command (mod only)
         if (message.Equals(_currentSettings.Commands.DrawWinner, StringComparison.OrdinalIgnoreCase) && isMod)
         {
             HandleDrawWinnerCommand();
             return;
         }
-        
+
         // Check for !startgiveaway command with prize (mod only)
         var startGiveawayMatch = _startGiveawayRegex.Match(message);
         if (startGiveawayMatch.Success && isMod)
@@ -91,16 +91,16 @@ public class CommandHandler : IDisposable
         if (_currentSettings.RequireFollower)
         {
             var (isFollower, meetsMinimumAge) = await _twitchService.CheckFollowerStatusAsync(username);
-            
+
             _logger.LogDebug("User {Username} follower check: IsFollower={IsFollower}, MeetsMinimumAge={MeetsMinimumAge}",
                 username, isFollower, meetsMinimumAge);
-            
+
             if (!isFollower)
             {
                 _twitchService.SendMessage($"@{username}, you need to be a follower to join the giveaway.");
                 return;
             }
-            
+
             if (!meetsMinimumAge)
             {
                 _twitchService.SendMessage($"@{username}, you need to be a follower for at least {_currentSettings.FollowerMinimumAgeDays} days to join the giveaway.");
@@ -135,13 +135,13 @@ public class CommandHandler : IDisposable
             _twitchService.SendMessage("Please specify a prize for the giveaway. Usage: !startgiveaway [prize]");
             return;
         }
-        
+
         // Start the giveaway
         _giveawayService.StartGiveaway(prize);
-        
+
         // Reset timer
         _timerService.ResetTimer();
-        
+
         // Announce the giveaway
         _twitchService.SendMessage($"Giveaway started for {prize}! Type !join to enter.");
     }
@@ -162,7 +162,7 @@ public class CommandHandler : IDisposable
 
         // Draw a winner
         var winner = _giveawayService.DrawWinner();
-        
+
         if (winner != null)
         {
             // Announce winner
@@ -179,11 +179,11 @@ public class CommandHandler : IDisposable
         _startGiveawayRegex = new Regex(
             $@"^{Regex.Escape(_currentSettings.Commands.StartGiveaway)}\s+(.+)$",
             RegexOptions.IgnoreCase | RegexOptions.Compiled);
-        
+
         _logger.LogDebug("Updated command regex with StartGiveaway command: {Command}",
             _currentSettings.Commands.StartGiveaway);
     }
-    
+
     public void Dispose()
     {
         _twitchService.MessageReceived -= OnMessageReceived;
