@@ -10,9 +10,38 @@ This guide provides detailed instructions on how to set up and use the Twitch ch
 - Streamer or moderator permissions for the channel where you want to run giveaways
 - Firebot Giveaway OBS Overlay application installed and running
 
-### Obtaining Twitch API Credentials
+### Authentication Modes
 
-To use the Twitch integration, you need to register your application with Twitch and obtain API credentials:
+The application supports two authentication modes:
+
+1. **Simple Authentication** - Uses a "Login with Twitch" button for quick and easy setup
+2. **Advanced Authentication** - Requires your own Twitch API credentials for more control
+
+#### Simple Authentication Mode
+
+The Simple authentication mode is the easiest way to connect your Twitch account:
+
+1. Launch the Firebot Giveaway OBS Overlay application
+2. Navigate to the "Twitch Setup" page
+3. Enable Twitch Integration by checking the "Enable Twitch Integration" checkbox
+4. Select "Simple Authentication" mode
+5. Enter your Twitch channel name (without the @ symbol)
+6. Click the "Login with Twitch" button
+7. A dialog will appear with:
+   - A URL to visit (e.g., https://id.twitch.tv/oauth2/authorize)
+   - A code to enter on that page
+8. Open the URL in your web browser, log in to Twitch if prompted, and enter the code
+9. Once authenticated, the application will show "Authenticated" with a green checkmark
+10. Click "Test Connection" to verify everything is working correctly
+11. Click "Save Settings" to complete the setup
+
+If you need to log out or switch accounts, click the "Log Out" button next to the authentication status.
+
+#### Advanced Authentication Mode
+
+The Advanced authentication mode requires you to register your own application with Twitch:
+
+##### Obtaining Twitch API Credentials
 
 1. Go to the [Twitch Developer Console](https://dev.twitch.tv/console/apps)
 2. Log in with your Twitch account
@@ -27,16 +56,32 @@ To use the Twitch integration, you need to register your application with Twitch
 8. Click "New Secret" to generate a **Client Secret**
 9. Copy both the Client ID and Client Secret - you'll need these for configuration
 
-## Configuring the Integration
+##### Configuring Advanced Authentication
 
 1. Launch the Firebot Giveaway OBS Overlay application
 2. Navigate to the "Twitch Setup" page
 3. Enable Twitch Integration by checking the "Enable Twitch Integration" checkbox
-4. Fill in the following fields:
+4. Select "Advanced Authentication" mode
+5. Fill in the following fields:
    - **Channel Name**: Your Twitch channel name (without the @ symbol)
    - **Client ID**: The Client ID you obtained from the Twitch Developer Console
    - **Client Secret**: The Client Secret you obtained from the Twitch Developer Console
    - **Redirect URI**: The same redirect URI you specified when registering your application
+
+### Switching Between Authentication Modes
+
+You can switch between Simple and Advanced authentication modes at any time:
+
+1. Navigate to the "Twitch Setup" page
+2. Select your preferred authentication mode (Simple or Advanced)
+3. If switching from Advanced to Simple:
+   - Click the "Login with Twitch" button to authenticate
+4. If switching from Simple to Advanced:
+   - Enter your Client ID, Client Secret, and Redirect URI
+5. Click "Test Connection" to verify your settings
+6. Click "Save Settings" to apply the changes
+
+Note that switching authentication modes will require you to re-authenticate with Twitch.
 
 ### Command Settings
 
@@ -59,7 +104,7 @@ You can restrict giveaway participation to followers only:
 
 Before saving your settings, you can test the connection to ensure your credentials are correct:
 
-1. Fill in all required fields (Channel Name, Client ID, Client Secret)
+1. Fill in all required fields (Channel Name and authentication details)
 2. Click the "Test Connection" button
 3. If successful, you'll see a "Connection successful!" message
 4. If unsuccessful, verify your credentials and try again

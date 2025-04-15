@@ -4,27 +4,34 @@ This document provides technical information about the Twitch chat integration f
 
 ## Architecture Overview
 
-The Twitch integration is built on a service-oriented architecture within the .NET Blazor web application. It uses the TwitchLib library to handle communication with Twitch's API and chat services.
+The Twitch integration is built on a service-oriented architecture within the .NET Blazor web application. It uses the TwitchLib library to handle communication with Twitch's API and chat services, and implements the Device Code Grant Flow for authentication.
 
 ### High-Level Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                  Firebot Giveaway OBS Overlay                │
-│                                                             │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────────┐  │
-│  │ TwitchSetup │    │ CommandHandler│   │ GiveawayService │  │
-│  │   (UI)      │───▶│  (Processing)│───▶│  (Core Logic)   │  │
-│  └─────────────┘    └─────────────┘    └─────────────────┘  │
-│         │                  ▲                   │            │
-│         │                  │                   │            │
-│         ▼                  │                   ▼            │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────────┐  │
-│  │TwitchSettings│    │TwitchService│    │   File System   │  │
-│  │(Configuration)│◀──▶│ (Connection)│    │  (Integration)  │  │
-│  └─────────────┘    └─────────────┘    └─────────────────┘  │
-│                           │                                 │
-└───────────────────────────┼─────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      Firebot Giveaway OBS Overlay                        │
+│                                                                         │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────────┐              │
+│  │ TwitchSetup │    │ CommandHandler│   │ GiveawayService │              │
+│  │   (UI)      │───▶│  (Processing)│───▶│  (Core Logic)   │              │
+│  └─────────────┘    └─────────────┘    └─────────────────┘              │
+│         │                  ▲                   │                        │
+│         │                  │                   │                        │
+│         ▼                  │                   ▼                        │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────────┐              │
+│  │TwitchSettings│    │TwitchService│    │   File System   │              │
+│  │(Configuration)│◀──▶│ (Connection)│    │  (Integration)  │              │
+│  └─────────────┘    └─────────────┘    └─────────────────┘              │
+│         ▲                  ▲                                            │
+│         │                  │                                            │
+│         │                  │                                            │
+│         │           ┌─────────────┐                                     │
+│         └───────────│TwitchAuthService                                  │
+│                     │(Authentication)│                                   │
+│                     └─────────────┘                                     │
+│                           │                                             │
+└───────────────────────────┼─────────────────────────────────────────────┘
                             │
                             ▼
                      ┌─────────────┐
@@ -36,13 +43,42 @@ The Twitch integration is built on a service-oriented architecture within the .N
 ### Data Flow
 
 1. User configures Twitch integration through the TwitchSetup UI
-2. Configuration is stored in TwitchSettings
-3. TwitchService establishes connection to Twitch chat
-4. Incoming chat messages are processed by CommandHandler
-5. Giveaway logic is handled by GiveawayService
-6. Output files are written to the file system for OBS integration
+2. User authenticates with Twitch using the Device Code Grant Flow via TwitchAuthService
+3. Authentication tokens are securely stored and managed by TwitchAuthService
+4. Configuration is stored in TwitchSettings
+5. TwitchService uses the access token from TwitchAuthService to establish connection to Twitch chat
+6. Incoming chat messages are processed by CommandHandler
+7. Giveaway logic is handled by GiveawayService
+8. Output files are written to the file system for OBS integration
 
 ## Key Classes and Responsibilities
+
+### TwitchAuthService
+
+**Purpose**: Manages Twitch authentication using the Device Code Grant Flow and handles token lifecycle.
+
+**Key Responsibilities**:
+- Initiating the Device Code Grant Flow authentication process
+- Managing access and refresh tokens
+- Automatically refreshing tokens before they expire
+- Validating token status
+- Revoking tokens when logging out
+- Providing authentication status updates
+
+**Key Methods**:
+- `InitiateAuthenticationAsync(bool useDefaultCredentials)`: Starts the authentication process
+- `GetAccessTokenAsync()`: Retrieves the current access token
+- `ValidateTokenAsync()`: Validates if the current token is valid
+- `RefreshTokenAsync()`: Refreshes the access token using the refresh token
+- `RevokeTokenAsync()`: Revokes the current token when logging out
+
+**Events**:
+- `AuthStatusChanged`: Fired when authentication status changes
+- `DeviceCodeReceived`: Fired when a device code is received and user needs to authorize
+
+**Authentication Modes**:
+- Simple: Uses pre-registered application credentials
+- Advanced: Uses custom application credentials provided by the user
 
 ### TwitchService
 
@@ -140,6 +176,10 @@ The Twitch integration relies on the following external dependencies:
 
 2. **System.IO**: For file operations related to OBS integration
 
+3. **System.Net.Http**: For HTTP requests to Twitch OAuth endpoints
+
+4. **System.Text.Json**: For serializing and deserializing JSON responses
+
 ## File-Based Integration with OBS
 
 The application uses a file-based approach to integrate with OBS:
@@ -167,14 +207,29 @@ OBS reads these files using Text Source (GDI+) elements:
 1. **API Credentials**:
    - Client Secret is stored in `appsettings.json` and should be protected
    - Consider using environment variables or secret management for production
+   - Simple mode uses pre-registered application credentials
+   - Advanced mode allows users to provide their own credentials
 
-2. **Rate Limiting**:
+2. **Token Security**:
+   - Access and refresh tokens are stored securely
+   - Tokens are automatically refreshed before expiration
+   - Tokens can be revoked when logging out
+
+3. **Rate Limiting**:
    - The application implements rate limiting to prevent Twitch timeouts
    - Default: 750 messages per 30-second period
 
-3. **Permission Model**:
+4. **Permission Model**:
    - Moderator commands are restricted to users with moderator status
    - Follower requirements can be enabled to restrict giveaway participation
+
+5. **OAuth Scopes**:
+   - The application requests only the necessary scopes:
+     - chat:read - For reading chat messages
+     - chat:edit - For sending messages to chat
+     - channel:read:subscriptions - For checking subscription status
+     - channel:read:predictions - For reading prediction data
+     - channel:read:polls - For reading poll data
 
 ## Extension Points
 
@@ -256,3 +311,50 @@ var winner = _participants.ElementAt(winnerIndex);
 3. **File I/O**:
    - File operations are performed synchronously and may block the UI thread
    - Consider implementing asynchronous file operations for better responsiveness
+
+4. **Token Refresh**:
+   - Tokens are refreshed 5 minutes before expiration to ensure continuous operation
+   - Token refresh operations are performed asynchronously
+
+## Device Code Grant Flow Implementation
+
+The application implements the Device Code Grant Flow for Twitch authentication, which is particularly suitable for devices that lack a browser or have limited input capabilities.
+
+### Authentication Flow
+
+1. **Request Device Code**:
+   - The application requests a device code from Twitch's OAuth endpoint
+   - Twitch returns a device code, user code, verification URI, and expiration time
+
+2. **User Authorization**:
+   - The application displays the user code and verification URI to the user
+   - The user navigates to the verification URI on a separate device and enters the user code
+   - The user authorizes the application on Twitch's website
+
+3. **Token Polling**:
+   - The application polls Twitch's token endpoint at regular intervals
+   - Once the user authorizes, Twitch returns an access token and refresh token
+
+4. **Token Management**:
+   - The access token is used for API requests and chat connection
+   - The refresh token is used to obtain new access tokens when they expire
+   - Tokens are securely stored and managed by the TwitchAuthService
+
+### Token Storage and Management
+
+1. **Storage Mechanism**:
+   - Tokens are stored securely using environment variables (in the current implementation)
+   - In a production environment, consider using a more secure storage mechanism
+
+2. **Token Lifecycle**:
+   - Access tokens expire after a set period (typically a few hours)
+   - Refresh tokens are used to obtain new access tokens without requiring re-authentication
+   - A timer is set to refresh tokens 5 minutes before they expire
+
+3. **Token Validation**:
+   - Tokens are validated before use to ensure they are still valid
+   - If validation fails, the token is refreshed automatically
+
+4. **Token Revocation**:
+   - When logging out, tokens are revoked via Twitch's revoke endpoint
+   - All stored token data is cleared

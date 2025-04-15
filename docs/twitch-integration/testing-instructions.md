@@ -9,6 +9,53 @@ This guide provides step-by-step instructions for testing the Twitch chat integr
 - Completed Twitch integration setup (see [User Guide](user-guide.md))
 - Access to the Twitch channel specified in the configuration
 
+### Authentication Testing
+
+#### Simple Authentication Mode (Button-Based)
+
+1. **Login with Twitch Button Test**
+   
+   a. Navigate to the "Twitch Setup" page in the application
+   b. Select "Simple Authentication" mode
+   c. Click the "Login with Twitch" button
+   d. Verify that a modal appears with a user code and verification URI
+   e. Open the verification URI in a browser
+   f. Enter the user code displayed in the application
+   g. Authorize the application on Twitch
+   h. Verify that the modal closes automatically and "Authenticated" appears next to the button
+   i. Verify that the "Log Out" button appears
+
+2. **Device Code Grant Flow Verification**
+   
+   a. During the authentication process, observe the progress bar in the modal
+   b. Verify that the modal shows the remaining time before code expiration
+   c. If you don't complete authentication before the timer expires, verify that an appropriate error message is displayed
+   d. Test canceling the authentication by clicking the "Cancel" button in the modal
+   e. Verify that the authentication process stops and no error messages appear
+
+3. **Token Refresh and Authentication Persistence**
+   
+   a. After successfully authenticating, close the application
+   b. Reopen the application and navigate to the "Twitch Setup" page
+   c. Verify that you're still authenticated (the "Authenticated" status should appear)
+   d. Leave the application running for several hours (or adjust system time if testing)
+   e. Verify that the application automatically refreshes the token without requiring re-authentication
+   f. Test the "Log Out" button and verify that it properly revokes the token and clears authentication status
+
+#### Advanced Authentication Mode
+
+1. **Custom Credentials Test**
+   
+   a. Navigate to the "Twitch Setup" page in the application
+   b. Select "Advanced Authentication" mode
+   c. Ensure all fields are filled in correctly:
+      - Channel Name
+      - Client ID
+      - Client Secret
+      - Redirect URI
+   d. Click the "Test Connection" button
+   e. Verify you receive a "Connection successful!" message
+
 ### Connection Test Procedure
 
 1. **Basic Connection Test**
@@ -16,8 +63,8 @@ This guide provides step-by-step instructions for testing the Twitch chat integr
    a. Navigate to the "Twitch Setup" page in the application
    b. Ensure all fields are filled in correctly:
       - Channel Name
-      - Client ID
-      - Client Secret
+      - For Simple mode: Verify you're authenticated
+      - For Advanced mode: Verify Client ID and Client Secret are filled in
    c. Click the "Test Connection" button
    d. Verify you receive a "Connection successful!" message
 
@@ -148,6 +195,8 @@ If you encounter issues during testing, refer to the [Troubleshooting Guide](tro
    - Verify your internet connection
    - Check Twitch API status
    - Confirm your credentials are correct
+   - For Simple mode: Try logging out and logging back in
+   - For Advanced mode: Verify your Client ID and Client Secret
 
 2. **File Access Issues**
    - Ensure the application has write permissions to the output folder
@@ -159,11 +208,19 @@ If you encounter issues during testing, refer to the [Troubleshooting Guide](tro
    - Ensure you have the appropriate permissions for the commands you're testing
    - Check that the application is properly connected to Twitch chat
 
+4. **Authentication Issues**
+   - For Simple mode: Try clearing browser cookies and cache before retrying
+   - For Advanced mode: Verify your application is properly registered on the Twitch Developer Console
+   - Check that your application has the required scopes (chat:read, chat:edit, etc.)
+   - Verify that the device code hasn't expired during the authentication process
+
 ## Post-Testing Checklist
 
 Before using the integration in a live stream, complete this final checklist:
 
 - [ ] Connection to Twitch chat is stable
+- [ ] Authentication works correctly in your chosen mode (Simple or Advanced)
+- [ ] Token refresh works properly (test by leaving application running for extended period)
 - [ ] All commands work as expected
 - [ ] Follower requirements function correctly (if enabled)
 - [ ] Files are being written to the correct location

@@ -30,9 +30,14 @@ The application can be configured through the `appsettings.json` file:
   "TwitchSettings": {
     "Enabled": false,                       // Enable/disable Twitch integration
     "Channel": "channelName",               // Your Twitch channel name
-    "ClientId": "your-client-id",           // Twitch API Client ID
-    "ClientSecret": "your-client-secret",   // Twitch API Client Secret
-    "RedirectUri": "http://localhost:3000/auth/callback",
+    "AuthMode": "Simple",                   // Authentication mode: "Simple" or "Advanced"
+    "ClientId": "your-client-id",           // Twitch API Client ID (Advanced mode only)
+    "ClientSecret": "your-client-secret",   // Twitch API Client Secret (Advanced mode only)
+    "RedirectUri": "http://localhost:3000/auth/callback", // OAuth redirect URI (Advanced mode only)
+    "AccessToken": "",                      // Twitch API access token (managed automatically)
+    "RefreshToken": "",                     // Twitch API refresh token (managed automatically)
+    "TokenExpiration": null,                // Token expiration timestamp (managed automatically)
+    "Scopes": [],                           // Granted permission scopes (managed automatically)
     "Commands": {
       "Join": "!join",                      // Command for viewers to join giveaway
       "StartGiveaway": "!startgiveaway",    // Command to start a giveaway
@@ -94,12 +99,16 @@ The new Twitch integration allows you to:
 3. Let viewers join with the `!join` command
 4. Draw winners with the `!drawwinner` command (mods only)
 5. Optionally restrict entry to followers only
+6. Authenticate using a simple button-based flow or advanced custom credentials
 
 To set up Twitch integration:
 1. Go to the Twitch Setup page in the application
-2. Enter your Twitch credentials and settings
-3. Test the connection
-4. Enable the integration
+2. Choose your authentication mode:
+   - **Simple Mode**: Click the "Login with Twitch" button and follow the prompts to authenticate
+   - **Advanced Mode**: Enter your own Twitch application credentials (Client ID, Client Secret, etc.)
+3. Configure your channel name and command settings
+4. Test the connection
+5. Enable the integration
 
 For detailed instructions, see the [Twitch Integration Documentation](docs/twitch-integration/README.md).
 

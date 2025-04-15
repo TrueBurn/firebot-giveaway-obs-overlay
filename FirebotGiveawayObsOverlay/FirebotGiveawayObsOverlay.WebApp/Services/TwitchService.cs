@@ -10,6 +10,7 @@ using TwitchLib.Client.Models;
 using TwitchLib.Communication.Clients;
 using TwitchLib.Communication.Events;
 using TwitchLib.Communication.Models;
+using System.Collections.Generic;
 
 namespace FirebotGiveawayObsOverlay.WebApp.Services;
 
@@ -18,7 +19,8 @@ public class TwitchService : IDisposable
     private readonly TwitchClient _client;
     private readonly IOptionsMonitor<TwitchSettings> _settingsMonitor;
     private TwitchSettings _currentSettings;
-    private readonly TwitchAPI? _api;
+    private readonly TwitchAPI _api;
+    private readonly TwitchAuthService _authService;
     private bool _isConnected;
     private readonly ILogger<TwitchService> _logger;
 
@@ -30,11 +32,13 @@ public class TwitchService : IDisposable
 
     public TwitchService(
         IOptionsMonitor<TwitchSettings> settingsMonitor,
-        ILogger<TwitchService> logger)
+        ILogger<TwitchService> logger,
+        TwitchAuthService authService)
     {
         _settingsMonitor = settingsMonitor;
         _currentSettings = _settingsMonitor.CurrentValue;
         _logger = logger;
+        _authService = authService;
 
         // Subscribe to settings changes
         _settingsMonitor.OnChange(settings =>
@@ -55,13 +59,22 @@ public class TwitchService : IDisposable
         var webSocketClient = new WebSocketClient(clientOptions);
         _client = new TwitchClient(webSocketClient);
 
-        // Initialize Twitch API if credentials are provided
-        if (!string.IsNullOrEmpty(_currentSettings.ClientId) && !string.IsNullOrEmpty(_currentSettings.ClientSecret))
+        // Initialize Twitch API
+        _api = new TwitchAPI();
+        
+        // Configure API based on auth mode
+        if (_currentSettings.AuthMode == AuthMode.Advanced &&
+            !string.IsNullOrEmpty(_currentSettings.ClientId) &&
+            !string.IsNullOrEmpty(_currentSettings.ClientSecret))
         {
-            _api = new TwitchAPI();
             _api.Settings.ClientId = _currentSettings.ClientId;
             _api.Settings.Secret = _currentSettings.ClientSecret;
-            _logger.LogInformation("Initialized Twitch API with provided credentials");
+            _logger.LogInformation("Initialized Twitch API with advanced mode credentials");
+        }
+        else
+        {
+            // In Simple mode, we'll set the access token when connecting
+            _logger.LogInformation("Initialized Twitch API for simple mode authentication");
         }
 
         // Set up event handlers
@@ -79,8 +92,35 @@ public class TwitchService : IDisposable
 
         try
         {
-            // Create credentials for the bot
-            var credentials = new ConnectionCredentials(_currentSettings.Channel, _currentSettings.ClientSecret);
+            ConnectionCredentials credentials;
+            
+            // Use different authentication methods based on the auth mode
+            if (_currentSettings.AuthMode == AuthMode.Simple)
+            {
+                // Get access token from TwitchAuthService
+                string? accessToken = await _authService.GetAccessTokenAsync();
+                
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    _logger.LogWarning("No access token available. Please authenticate first.");
+                    throw new InvalidOperationException("Authentication required. Please authenticate with Twitch first.");
+                }
+                
+                // Create credentials using the access token
+                credentials = new ConnectionCredentials(_currentSettings.Channel, accessToken);
+                
+                // Update API settings
+                _api.Settings.AccessToken = accessToken;
+                
+                _logger.LogInformation("Using simple mode authentication with device code flow");
+            }
+            else
+            {
+                // Advanced mode - use the client secret directly
+                credentials = new ConnectionCredentials(_currentSettings.Channel, _currentSettings.ClientSecret);
+                _logger.LogInformation("Using advanced mode authentication");
+            }
+            
             _client.Initialize(credentials, _currentSettings.Channel);
             _logger.LogInformation("Connecting to Twitch channel: {Channel}", _currentSettings.Channel);
             _client.Connect();
@@ -89,7 +129,7 @@ public class TwitchService : IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error connecting to Twitch: {ex.Message}");
+            _logger.LogError(ex, "Error connecting to Twitch");
             throw;
         }
     }
@@ -195,10 +235,6 @@ public class TwitchService : IDisposable
             var webSocketClient = new WebSocketClient(clientOptions);
             var testClient = new TwitchClient(webSocketClient);
 
-            // Create credentials for the bot
-            var credentials = new ConnectionCredentials(settings.Channel, settings.ClientSecret);
-            testClient.Initialize(credentials, settings.Channel);
-
             // Set up a task completion source to track connection status
             var connectionTcs = new TaskCompletionSource<bool>();
 
@@ -212,6 +248,38 @@ public class TwitchService : IDisposable
             {
                 connectionTcs.TrySetResult(false);
             };
+
+            // Create credentials based on auth mode
+            ConnectionCredentials credentials;
+            
+            if (settings.AuthMode == AuthMode.Simple)
+            {
+                // Get access token from TwitchAuthService for testing
+                string? accessToken = await _authService.GetAccessTokenAsync();
+                
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    _logger.LogWarning("No access token available for testing. Please authenticate first.");
+                    return false;
+                }
+                
+                credentials = new ConnectionCredentials(settings.Channel, accessToken);
+                _logger.LogInformation("Testing connection with simple mode authentication");
+            }
+            else
+            {
+                // Advanced mode - use the client secret directly
+                if (string.IsNullOrEmpty(settings.ClientSecret))
+                {
+                    _logger.LogWarning("No client secret provided for advanced mode authentication");
+                    return false;
+                }
+                
+                credentials = new ConnectionCredentials(settings.Channel, settings.ClientSecret);
+                _logger.LogInformation("Testing connection with advanced mode authentication");
+            }
+
+            testClient.Initialize(credentials, settings.Channel);
 
             // Connect to Twitch
             testClient.Connect();
@@ -236,7 +304,7 @@ public class TwitchService : IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error testing Twitch connection: {ex.Message}");
+            _logger.LogError(ex, "Error testing Twitch connection: {Message}", ex.Message);
             return false;
         }
     }
@@ -248,10 +316,23 @@ public class TwitchService : IDisposable
     /// <returns>A tuple containing (isFollower, meetsMinimumAge)</returns>
     public async Task<(bool isFollower, bool meetsMinimumAge)> CheckFollowerStatusAsync(string username)
     {
-        // If API is not initialized or follower check is not required, return true for both
-        if (_api == null || !_currentSettings.RequireFollower)
+        // If follower check is not required, return true for both
+        if (!_currentSettings.RequireFollower)
         {
             return (true, true);
+        }
+        
+        // Ensure API is properly configured with access token if in simple mode
+        if (_currentSettings.AuthMode == AuthMode.Simple)
+        {
+            string? accessToken = await _authService.GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                _logger.LogWarning("No access token available for follower check");
+                return (true, true); // Default to allowing participation if we can't check
+            }
+            
+            _api.Settings.AccessToken = accessToken;
         }
 
         try

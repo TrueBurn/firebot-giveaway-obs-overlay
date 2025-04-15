@@ -64,6 +64,7 @@ try
 
     // Add services as singletons
     builder.Services.AddSingleton<TimerService>();
+    builder.Services.AddSingleton<TwitchAuthService>();
     builder.Services.AddSingleton<TwitchService>();
     builder.Services.AddSingleton<GiveawayService>();
     builder.Services.AddSingleton<CommandHandler>();

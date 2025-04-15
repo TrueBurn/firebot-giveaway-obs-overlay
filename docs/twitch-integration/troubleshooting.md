@@ -19,8 +19,8 @@ This guide helps you diagnose and resolve common issues with the Twitch chat int
 
 2. **Check Credentials**
    - Verify your Channel Name is correct (without the @ symbol)
-   - Ensure Client ID and Client Secret are entered correctly
-   - Re-generate a new Client Secret if necessary
+   - Ensure Client ID and Client Secret are entered correctly (for Advanced mode)
+   - Re-generate a new Client Secret if necessary (for Advanced mode)
 
 3. **Firewall or Network Issues**
    - Check if your firewall is blocking the application
@@ -54,7 +54,38 @@ This guide helps you diagnose and resolve common issues with the Twitch chat int
 
 ## Authentication Errors
 
-### Issue: Invalid Client ID or Secret
+### Issue: Simple Mode Authentication Problems
+
+**Symptoms:**
+- "Login with Twitch" button doesn't open the authentication modal
+- Authentication modal appears but code verification fails
+- "Authorization timed out" or "Authorization denied" messages
+
+**Possible Solutions:**
+
+1. **Browser Issues**
+   - Ensure you're using a modern browser that supports popups
+   - If the verification page doesn't open, try manually visiting the URL shown in the modal
+   - Clear browser cookies and cache if you've previously authenticated
+
+2. **Code Entry Problems**
+   - Make sure you're entering the exact code shown in the modal
+   - Codes are case-sensitive and must be entered exactly as shown
+   - If the code expires (progress bar reaches 0%), click "Login with Twitch" again to get a new code
+
+3. **Account Permissions**
+   - Ensure you're logged into the correct Twitch account when authorizing
+   - The account must have appropriate permissions for the channel you're trying to connect to
+
+4. **Timeout Issues**
+   - If you see "Authorization timed out", you didn't complete the authorization process in time
+   - Click "Login with Twitch" again to restart the process with a new code
+
+5. **Denied Authorization**
+   - If you see "Authorization denied", you or Twitch rejected the authorization request
+   - Check that you approved all requested permissions during the authorization process
+
+### Issue: Invalid Client ID or Secret (Advanced Mode)
 
 **Symptoms:**
 - "Connection failed. Please check your credentials" message
@@ -83,10 +114,18 @@ This guide helps you diagnose and resolve common issues with the Twitch chat int
 
 **Possible Solutions:**
 
-1. **Recreate Application with Proper Scopes**
-   - The application requires specific OAuth scopes for full functionality
+1. **Simple Mode Scope Issues**
+   - If using Simple mode, try logging out and logging back in
+   - The pre-registered application should request all necessary scopes automatically
+
+2. **Advanced Mode Scope Issues**
    - Recreate your application in the Twitch Developer Console
    - Ensure you've selected the appropriate category (Application Integration)
+   - Add all required scopes: chat:read, chat:edit, channel:read:subscriptions, channel:read:predictions, channel:read:polls
+
+3. **Token Refresh Issues**
+   - If scopes were recently changed, you may need to revoke the token and re-authenticate
+   - Click "Log Out" (in Simple mode) or clear your Client Secret and save, then re-enter it (in Advanced mode)
 
 ## Command Issues
 
@@ -190,3 +229,66 @@ If you continue to experience issues after trying the solutions above:
    - Uninstall the application completely
    - Delete any configuration files
    - Reinstall and reconfigure from scratch
+
+## Device Code Authentication Troubleshooting (Simple Mode)
+
+### Issue: Device Code Modal Doesn't Appear
+
+**Symptoms:**
+- Clicking "Login with Twitch" doesn't show the device code modal
+- Application freezes after clicking the button
+
+**Possible Solutions:**
+
+1. **Check Browser Integration**
+   - Ensure your system allows the application to open browser windows
+   - Try manually opening a browser and navigating to the Twitch authorization page
+
+2. **UI Rendering Issues**
+   - Try resizing or minimizing/maximizing the application window
+   - Restart the application and try again
+
+### Issue: Device Code Authentication Times Out
+
+**Symptoms:**
+- "Authorization timed out" message appears
+- Progress bar reaches 0% before authentication completes
+
+**Possible Solutions:**
+
+1. **Speed Up Authentication Process**
+   - Have the Twitch verification page ready before requesting a code
+   - Enter the code immediately after it appears in the modal
+   - Ensure you're already logged into Twitch in your browser
+
+2. **Check Network Delays**
+   - If your network is slow, the code might expire before the authentication completes
+   - Try using a more stable or faster internet connection
+
+3. **Browser Issues**
+   - Try using a different browser for the verification step
+   - Ensure your browser isn't blocking cookies from Twitch
+
+### Issue: Authentication Succeeds But Connection Fails
+
+**Symptoms:**
+- "Authentication successful" message appears
+- Connection test still fails after authentication
+
+**Possible Solutions:**
+
+1. **Token Validation Issues**
+   - The token might be valid but doesn't have the required scopes
+   - Log out and log back in to refresh the token with proper scopes
+
+2. **Channel Name Mismatch**
+   - Ensure the Channel Name field matches the Twitch account you authenticated with
+   - For bot accounts, the Channel Name should be the channel you want to connect to, not the bot's name
+
+3. **Rate Limiting**
+   - If you've made multiple authentication attempts, Twitch might be rate-limiting your requests
+   - Wait a few minutes before trying again
+
+4. **Token Storage Issues**
+   - The application might have issues storing the authentication token
+   - Restart the application and try authenticating again

@@ -5,6 +5,7 @@
 @using System.Text.Json
 @inject ISettingsService SettingsService
 @inject TwitchService TwitchService
+@inject TwitchAuthService TwitchAuthService
 @implements IDisposable
 
 @page "/twitch-setup"
@@ -32,27 +33,91 @@
         <div class="form-text">Enter your Twitch channel name without the @@ symbol</div>
     </div>
 
-    <div class="mb-3">
-        <label class="form-label">Client ID</label>
-        <InputText @bind-Value="twitchSettings.ClientId" class="form-control" placeholder="Twitch API Client ID" />
-        <ValidationMessage For="@(() => twitchSettings.ClientId)" />
-        <div class="form-text">
-            Get your Client ID from the <a href="https://dev.twitch.tv/console/apps" target="_blank">Twitch Developer Console</a>
+    <div class="mb-4">
+        <div class="form-check form-check-inline">
+            <InputRadioGroup @bind-Value="twitchSettings.AuthMode" Name="authMode">
+                <div class="form-check">
+                    <InputRadio Value="AuthMode.Simple" class="form-check-input" id="simpleMode" />
+                    <label class="form-check-label" for="simpleMode">Simple Authentication</label>
+                </div>
+                <div class="form-check">
+                    <InputRadio Value="AuthMode.Advanced" class="form-check-input" id="advancedMode" />
+                    <label class="form-check-label" for="advancedMode">Advanced Authentication</label>
+                </div>
+            </InputRadioGroup>
+        </div>
+        <div class="form-text mb-2">
+            @if (twitchSettings.AuthMode == AuthMode.Simple)
+            {
+                <span>Simple mode uses our pre-registered application for authentication</span>
+            }
+            else
+            {
+                <span>Advanced mode requires your own Twitch application credentials</span>
+            }
         </div>
     </div>
 
-    <div class="mb-3">
-        <label class="form-label">Client Secret</label>
-        <InputText @bind-Value="twitchSettings.ClientSecret" class="form-control" type="password" placeholder="Twitch API Client Secret" />
-        <ValidationMessage For="@(() => twitchSettings.ClientSecret)" />
-    </div>
+    @if (twitchSettings.AuthMode == AuthMode.Simple)
+    {
+        <div class="mb-4">
+            <div class="d-flex align-items-center">
+                <button type="button" class="btn btn-primary me-3" @onclick="InitiateAuthentication" disabled="@isAuthenticating">
+                    @if (isAuthenticating)
+                    {
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        <span> Authenticating...</span>
+                    }
+                    else
+                    {
+                        <span>Login with Twitch</span>
+                    }
+                </button>
 
-    <div class="mb-3">
-        <label class="form-label">Redirect URI</label>
-        <InputText @bind-Value="twitchSettings.RedirectUri" class="form-control" placeholder="OAuth Redirect URI" />
-        <ValidationMessage For="@(() => twitchSettings.RedirectUri)" />
-        <div class="form-text">Usually http://localhost:3000/auth/callback for local development</div>
-    </div>
+                @if (isAuthenticated)
+                {
+                    <div class="text-success d-flex align-items-center">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <span>Authenticated</span>
+                        <button type="button" class="btn btn-sm btn-outline-danger ms-3" @onclick="RevokeToken">
+                            Log Out
+                        </button>
+                    </div>
+                }
+                else if (!string.IsNullOrEmpty(authStatusMessage))
+                {
+                    <div class="text-danger">
+                        <i class="bi bi-exclamation-circle-fill me-2"></i>
+                        <span>@authStatusMessage</span>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="mb-3">
+            <label class="form-label">Client ID</label>
+            <InputText @bind-Value="twitchSettings.ClientId" class="form-control" placeholder="Twitch API Client ID" />
+            <ValidationMessage For="@(() => twitchSettings.ClientId)" />
+            <div class="form-text">
+                Get your Client ID from the <a href="https://dev.twitch.tv/console/apps" target="_blank">Twitch Developer Console</a>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Client Secret</label>
+            <InputText @bind-Value="twitchSettings.ClientSecret" class="form-control" type="password" placeholder="Twitch API Client Secret" />
+            <ValidationMessage For="@(() => twitchSettings.ClientSecret)" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Redirect URI</label>
+            <InputText @bind-Value="twitchSettings.RedirectUri" class="form-control" placeholder="OAuth Redirect URI" />
+            <ValidationMessage For="@(() => twitchSettings.RedirectUri)" />
+            <div class="form-text">Usually http://localhost:3000/auth/callback for local development</div>
+        </div>
+    }
 
     <div class="mb-4">
         <h5>Command Settings</h5>
@@ -129,12 +194,66 @@
     </div>
 </EditForm>
 
+@if (showDeviceCodeModal)
+{
+    <div class="modal fade show" style="display: block;" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Twitch Authentication</h5>
+                    <button type="button" class="btn-close" @onclick="CloseDeviceCodeModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>To authenticate with Twitch, please follow these steps:</p>
+                    <ol>
+                        <li>Go to <a href="@verificationUri" target="_blank">@verificationUri</a></li>
+                        <li>Enter the following code:</li>
+                    </ol>
+                    <div class="d-flex justify-content-center mb-3">
+                        <div class="user-code p-3 bg-light border rounded">
+                            <h3 class="mb-0">@userCode</h3>
+                        </div>
+                    </div>
+                    <p>This code will expire in @expiresInMinutes minutes.</p>
+                    <div class="progress mb-3">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" 
+                             style="width: @progressPercentage%" 
+                             aria-valuenow="@progressPercentage" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100"></div>
+                    </div>
+                    <p class="text-center">Waiting for authentication...</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseDeviceCodeModal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
 @code {
     private TwitchSettings twitchSettings = new();
     private bool isSaving = false;
     private bool isTestingConnection = false;
     private string connectionTestResult = string.Empty;
     private bool connectionTestSuccess = false;
+    
+    // Authentication related properties
+    private bool isAuthenticated = false;
+    private bool isAuthenticating = false;
+    private string authStatusMessage = string.Empty;
+    
+    // Device code modal properties
+    private bool showDeviceCodeModal = false;
+    private string userCode = string.Empty;
+    private string verificationUri = string.Empty;
+    private int expiresIn = 0;
+    private int expiresInMinutes => expiresIn / 60;
+    private int progressPercentage = 100;
+    private System.Threading.Timer? progressTimer;
 
     protected override void OnInitialized()
     {
@@ -145,6 +264,7 @@
         {
             Enabled = currentSettings.Enabled,
             Channel = currentSettings.Channel,
+            AuthMode = currentSettings.AuthMode,
             ClientId = currentSettings.ClientId,
             ClientSecret = currentSettings.ClientSecret,
             RedirectUri = currentSettings.RedirectUri,
@@ -160,6 +280,13 @@
         
         // Subscribe to settings changes
         SettingsService.SettingsChanged += OnSettingsChanged;
+        
+        // Subscribe to auth service events
+        TwitchAuthService.AuthStatusChanged += OnAuthStatusChanged;
+        TwitchAuthService.DeviceCodeReceived += OnDeviceCodeReceived;
+        
+        // Check initial authentication status
+        isAuthenticated = TwitchAuthService.IsAuthenticated;
     }
     
     private void OnSettingsChanged(object sender, SettingsChangedEventArgs e)
@@ -173,6 +300,7 @@
             {
                 Enabled = currentSettings.Enabled,
                 Channel = currentSettings.Channel,
+                AuthMode = currentSettings.AuthMode,
                 ClientId = currentSettings.ClientId,
                 ClientSecret = currentSettings.ClientSecret,
                 RedirectUri = currentSettings.RedirectUri,
@@ -189,14 +317,108 @@
             InvokeAsync(StateHasChanged);
         }
     }
+    
+    private void OnAuthStatusChanged(object? sender, AuthStatusChangedEventArgs e)
+    {
+        isAuthenticated = e.IsAuthenticated;
+        authStatusMessage = e.Message;
+        isAuthenticating = false;
+        
+        if (e.IsAuthenticated)
+        {
+            CloseDeviceCodeModal();
+        }
+        
+        InvokeAsync(StateHasChanged);
+    }
+    
+    private void OnDeviceCodeReceived(object? sender, DeviceCodeReceivedEventArgs e)
+    {
+        userCode = e.UserCode;
+        verificationUri = e.VerificationUri;
+        expiresIn = e.ExpiresIn;
+        progressPercentage = 100;
+        
+        // Show the device code modal
+        showDeviceCodeModal = true;
+        
+        // Set up a timer to update the progress bar
+        progressTimer?.Dispose();
+        progressTimer = new System.Threading.Timer(_ =>
+        {
+            progressPercentage = Math.Max(0, (int)(100 * (expiresIn - (DateTime.UtcNow - DateTime.UtcNow).TotalSeconds) / expiresIn));
+            InvokeAsync(StateHasChanged);
+        }, null, 0, 1000);
+        
+        InvokeAsync(StateHasChanged);
+    }
+    
+    private void CloseDeviceCodeModal()
+    {
+        showDeviceCodeModal = false;
+        progressTimer?.Dispose();
+        progressTimer = null;
+        
+        // If we're still authenticating, cancel it
+        if (isAuthenticating)
+        {
+            TwitchAuthService.CancelAuthentication();
+            isAuthenticating = false;
+        }
+        
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task InitiateAuthentication()
+    {
+        isAuthenticating = true;
+        authStatusMessage = string.Empty;
+        
+        try
+        {
+            // Use simple mode authentication
+            await TwitchAuthService.InitiateAuthenticationAsync(true);
+        }
+        catch (Exception ex)
+        {
+            authStatusMessage = $"Error: {ex.Message}";
+            isAuthenticating = false;
+        }
+    }
+    
+    private async Task RevokeToken()
+    {
+        try
+        {
+            await TwitchAuthService.RevokeTokenAsync();
+        }
+        catch (Exception ex)
+        {
+            authStatusMessage = $"Error revoking token: {ex.Message}";
+        }
+    }
 
     private async Task TestConnection()
     {
-        if (string.IsNullOrWhiteSpace(twitchSettings.Channel) || 
-            string.IsNullOrWhiteSpace(twitchSettings.ClientId) || 
-            string.IsNullOrWhiteSpace(twitchSettings.ClientSecret))
+        if (string.IsNullOrWhiteSpace(twitchSettings.Channel))
         {
-            connectionTestResult = "Please fill in Channel, Client ID, and Client Secret before testing";
+            connectionTestResult = "Please fill in Channel name before testing";
+            connectionTestSuccess = false;
+            return;
+        }
+        
+        if (twitchSettings.AuthMode == AuthMode.Advanced && 
+            (string.IsNullOrWhiteSpace(twitchSettings.ClientId) || 
+             string.IsNullOrWhiteSpace(twitchSettings.ClientSecret)))
+        {
+            connectionTestResult = "Please fill in Client ID and Client Secret before testing";
+            connectionTestSuccess = false;
+            return;
+        }
+        
+        if (twitchSettings.AuthMode == AuthMode.Simple && !isAuthenticated)
+        {
+            connectionTestResult = "Please authenticate with Twitch before testing";
             connectionTestSuccess = false;
             return;
         }
@@ -282,16 +504,25 @@
                 return false;
             }
             
-            if (string.IsNullOrWhiteSpace(twitchSettings.ClientId))
+            if (twitchSettings.AuthMode == AuthMode.Advanced)
             {
-                connectionTestResult = "Client ID is required when Twitch integration is enabled";
-                connectionTestSuccess = false;
-                return false;
+                if (string.IsNullOrWhiteSpace(twitchSettings.ClientId))
+                {
+                    connectionTestResult = "Client ID is required when using Advanced authentication mode";
+                    connectionTestSuccess = false;
+                    return false;
+                }
+                
+                if (string.IsNullOrWhiteSpace(twitchSettings.ClientSecret))
+                {
+                    connectionTestResult = "Client Secret is required when using Advanced authentication mode";
+                    connectionTestSuccess = false;
+                    return false;
+                }
             }
-            
-            if (string.IsNullOrWhiteSpace(twitchSettings.ClientSecret))
+            else if (twitchSettings.AuthMode == AuthMode.Simple && !isAuthenticated)
             {
-                connectionTestResult = "Client Secret is required when Twitch integration is enabled";
+                connectionTestResult = "Please authenticate with Twitch before enabling integration in Simple mode";
                 connectionTestSuccess = false;
                 return false;
             }
@@ -304,5 +535,10 @@
     {
         // Unsubscribe from events
         SettingsService.SettingsChanged -= OnSettingsChanged;
+        TwitchAuthService.AuthStatusChanged -= OnAuthStatusChanged;
+        TwitchAuthService.DeviceCodeReceived -= OnDeviceCodeReceived;
+        
+        // Dispose of timer
+        progressTimer?.Dispose();
     }
 }
