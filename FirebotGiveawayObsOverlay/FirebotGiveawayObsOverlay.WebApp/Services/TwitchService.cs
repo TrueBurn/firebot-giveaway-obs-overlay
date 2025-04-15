@@ -143,7 +143,7 @@ public class TwitchService : IDisposable
         _isConnected = false;
     }
 
-    public void SendMessage(string message)
+    public virtual void SendMessage(string message)
     {
         if (!_isConnected)
             throw new InvalidOperationException("Cannot send message: Not connected to Twitch chat");
@@ -152,7 +152,7 @@ public class TwitchService : IDisposable
         _logger.LogDebug("Sent message to Twitch chat: {Message}", message);
     }
 
-    public bool IsConnected => _isConnected;
+    public virtual bool IsConnected => _isConnected;
 
     #region Event Handlers
 
@@ -314,7 +314,7 @@ public class TwitchService : IDisposable
     /// </summary>
     /// <param name="username">The username to check</param>
     /// <returns>A tuple containing (isFollower, meetsMinimumAge)</returns>
-    public async Task<(bool isFollower, bool meetsMinimumAge)> CheckFollowerStatusAsync(string username)
+    public virtual async Task<(bool isFollower, bool meetsMinimumAge)> CheckFollowerStatusAsync(string username)
     {
         // If follower check is not required, return true for both
         if (!_currentSettings.RequireFollower)

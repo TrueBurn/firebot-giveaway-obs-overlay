@@ -69,7 +69,7 @@ namespace FirebotGiveawayObsOverlay.WebApp.Services
         /// <summary>
         /// Gets a value indicating whether the user is currently authenticated
         /// </summary>
-        public bool IsAuthenticated { get; private set; }
+        public virtual bool IsAuthenticated { get; private set; }
 
         /// <summary>
         /// Gets a value indicating whether authentication is in progress
@@ -256,7 +256,7 @@ namespace FirebotGiveawayObsOverlay.WebApp.Services
         /// Gets the current access token
         /// </summary>
         /// <returns>The access token if authenticated, otherwise null</returns>
-        public async Task<string?> GetAccessTokenAsync()
+        public virtual async Task<string?> GetAccessTokenAsync()
         {
             if (!IsAuthenticated)
             {

@@ -6,7 +6,7 @@ public class TimerService
 {
     public event Action? OnTimerReset;
 
-    public void ResetTimer()
+    public virtual void ResetTimer()
     {
         OnTimerReset?.Invoke();
     }
