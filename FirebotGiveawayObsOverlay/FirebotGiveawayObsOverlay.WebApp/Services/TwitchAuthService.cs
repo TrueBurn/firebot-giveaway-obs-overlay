@@ -705,6 +705,66 @@ namespace FirebotGiveawayObsOverlay.WebApp.Services
         }
 
         #endregion
+        #region Nested Response Classes
+        
+        /// <summary>
+        /// Response from the device code endpoint
+        /// </summary>
+        private class DeviceCodeResponse
+        {
+            [JsonPropertyName("device_code")]
+            public string DeviceCode { get; set; } = string.Empty;
+
+            [JsonPropertyName("user_code")]
+            public string UserCode { get; set; } = string.Empty;
+
+            [JsonPropertyName("verification_uri")]
+            public string VerificationUri { get; set; } = string.Empty;
+
+            [JsonPropertyName("expires_in")]
+            public int ExpiresIn { get; set; }
+
+            [JsonPropertyName("interval")]
+            public int Interval { get; set; }
+        }
+
+        /// <summary>
+        /// Response from the token endpoint
+        /// </summary>
+        private class TokenResponse
+        {
+            [JsonPropertyName("access_token")]
+            public string AccessToken { get; set; } = string.Empty;
+
+            [JsonPropertyName("refresh_token")]
+            public string RefreshToken { get; set; } = string.Empty;
+
+            [JsonPropertyName("expires_in")]
+            public int ExpiresIn { get; set; }
+
+            [JsonPropertyName("scope")]
+            public string[] Scope { get; set; } = Array.Empty<string>();
+
+            [JsonPropertyName("token_type")]
+            public string TokenType { get; set; } = string.Empty;
+        }
+
+        /// <summary>
+        /// Error response
+        /// </summary>
+        private class ErrorResponse
+        {
+            [JsonPropertyName("error")]
+            public string Error { get; set; } = string.Empty;
+
+            [JsonPropertyName("status")]
+            public int Status { get; set; }
+
+            [JsonPropertyName("message")]
+            public string Message { get; set; } = string.Empty;
+        }
+        
+        #endregion
     }
 
     #region Helper Classes
@@ -785,63 +845,6 @@ namespace FirebotGiveawayObsOverlay.WebApp.Services
             ExpiresIn = expiresIn;
         }
     }
-
-    /// <summary>
-    /// Response from the device code endpoint
-    /// </summary>
-    private class DeviceCodeResponse
-    {
-        [JsonPropertyName("device_code")]
-        public string DeviceCode { get; set; } = string.Empty;
-
-        [JsonPropertyName("user_code")]
-        public string UserCode { get; set; } = string.Empty;
-
-        [JsonPropertyName("verification_uri")]
-        public string VerificationUri { get; set; } = string.Empty;
-
-        [JsonPropertyName("expires_in")]
-        public int ExpiresIn { get; set; }
-
-        [JsonPropertyName("interval")]
-        public int Interval { get; set; }
-    }
-
-    /// <summary>
-    /// Response from the token endpoint
-    /// </summary>
-    private class TokenResponse
-    {
-        [JsonPropertyName("access_token")]
-        public string AccessToken { get; set; } = string.Empty;
-
-        [JsonPropertyName("refresh_token")]
-        public string RefreshToken { get; set; } = string.Empty;
-
-        [JsonPropertyName("expires_in")]
-        public int ExpiresIn { get; set; }
-
-        [JsonPropertyName("scope")]
-        public string[] Scope { get; set; } = Array.Empty<string>();
-
-        [JsonPropertyName("token_type")]
-        public string TokenType { get; set; } = string.Empty;
-    }
-
-    /// <summary>
-    /// Error response
-    /// </summary>
-    private class ErrorResponse
-    {
-        [JsonPropertyName("error")]
-        public string Error { get; set; } = string.Empty;
-
-        [JsonPropertyName("status")]
-        public int Status { get; set; }
-
-        [JsonPropertyName("message")]
-        public string Message { get; set; } = string.Empty;
-    }
-
+    
     #endregion
 }
