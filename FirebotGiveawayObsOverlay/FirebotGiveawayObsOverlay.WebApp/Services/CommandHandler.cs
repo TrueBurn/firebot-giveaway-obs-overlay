@@ -1,9 +1,6 @@
 using FirebotGiveawayObsOverlay.WebApp.Models;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using TwitchLib.Client.Events;
 
 namespace FirebotGiveawayObsOverlay.WebApp.Services;

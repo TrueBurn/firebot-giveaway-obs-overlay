@@ -1,17 +1,11 @@
-using System;
+namespace FirebotGiveawayObsOverlay.Tests.TestHelpers;
 
-namespace FirebotGiveawayObsOverlay.Tests.TestHelpers
+/// <summary>
+/// A custom implementation of OnMessageReceivedArgs for testing
+/// </summary>
+public class TestMessageReceivedArgs : EventArgs
 {
-    /// <summary>
-    /// A custom implementation of OnMessageReceivedArgs for testing
-    /// </summary>
-    public class TestMessageReceivedArgs : EventArgs
-    {
-        public TestChatMessage ChatMessage { get; }
+    public TestChatMessage ChatMessage { get; }
 
-        public TestMessageReceivedArgs(TestChatMessage chatMessage)
-        {
-            ChatMessage = chatMessage;
-        }
-    }
+    public TestMessageReceivedArgs(TestChatMessage chatMessage) => ChatMessage = chatMessage;
 }

@@ -1,5 +1,3 @@
-using System;
-
 namespace FirebotGiveawayObsOverlay.WebApp.Models;
 
 public class AppSettings

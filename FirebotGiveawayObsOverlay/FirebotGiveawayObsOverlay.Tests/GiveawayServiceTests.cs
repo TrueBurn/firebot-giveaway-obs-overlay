@@ -4,170 +4,164 @@ using FluentAssertions;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using Xunit;
 
-namespace FirebotGiveawayObsOverlay.Tests
+namespace FirebotGiveawayObsOverlay.Tests;
+
+public class GiveawayServiceTests
 {
-    public class GiveawayServiceTests
+    private readonly Mock<IOptionsMonitor<AppSettings>> _mockOptions;
+    private readonly Mock<ILogger<GiveawayService>> _mockLogger;
+    private readonly string _testFolder;
+    private readonly GiveawayService _giveawayService;
+
+    public GiveawayServiceTests()
     {
-        private readonly Mock<IOptionsMonitor<AppSettings>> _mockOptions;
-        private readonly Mock<ILogger<GiveawayService>> _mockLogger;
-        private readonly string _testFolder;
-        private readonly GiveawayService _giveawayService;
+        // Create a temporary test folder
+        _testFolder = Path.Combine(Path.GetTempPath(), "FirebotGiveawayTests_" + Guid.NewGuid().ToString());
+        Directory.CreateDirectory(_testFolder);
 
-        public GiveawayServiceTests()
+        // Set up mock options
+        var appSettings = new AppSettings
         {
-            // Create a temporary test folder
-            _testFolder = Path.Combine(Path.GetTempPath(), "FirebotGiveawayTests_" + Guid.NewGuid().ToString());
-            Directory.CreateDirectory(_testFolder);
-
-            // Set up mock options
-            var appSettings = new AppSettings
-            {
-                FireBotFileFolder = _testFolder
-            };
+            FireBotFileFolder = _testFolder
+        };
+        
+        _mockOptions = new Mock<IOptionsMonitor<AppSettings>>();
+        _mockOptions.Setup(o => o.CurrentValue).Returns(appSettings);
             
-            _mockOptions = new Mock<IOptionsMonitor<AppSettings>>();
-            _mockOptions.Setup(o => o.CurrentValue).Returns(appSettings);
-                
-            // Set up mock logger
-            _mockLogger = new Mock<ILogger<GiveawayService>>();
+        // Set up mock logger
+        _mockLogger = new Mock<ILogger<GiveawayService>>();
 
-            // Create the service with the mock options and logger
-            _giveawayService = new GiveawayService(_mockOptions.Object, _mockLogger.Object);
-        }
+        // Create the service with the mock options and logger
+        _giveawayService = new GiveawayService(_mockOptions.Object, _mockLogger.Object);
+    }
 
-        [Fact]
-        public void StartGiveaway_ShouldSetGiveawayActive()
-        {
-            // Arrange
-            string prize = "Test Prize";
+    [Fact]
+    public void StartGiveaway_ShouldSetGiveawayActive()
+    {
+        // Arrange
+        string prize = "Test Prize";
 
-            // Act
-            bool result = _giveawayService.StartGiveaway(prize);
+        // Act
+        bool result = _giveawayService.StartGiveaway(prize);
 
-            // Assert
-            result.Should().BeTrue();
-            _giveawayService.IsGiveawayActive.Should().BeTrue();
-            _giveawayService.CurrentPrize.Should().Be(prize);
-            _giveawayService.EntryCount.Should().Be(0);
+        // Assert
+        result.Should().BeTrue();
+        _giveawayService.IsGiveawayActive.Should().BeTrue();
+        _giveawayService.CurrentPrize.Should().Be(prize);
+        _giveawayService.EntryCount.Should().Be(0);
 
-            // Verify files were created
-            File.Exists(Path.Combine(_testFolder, "prize.txt")).Should().BeTrue();
-            File.ReadAllText(Path.Combine(_testFolder, "prize.txt")).Should().Be(prize);
-            File.Exists(Path.Combine(_testFolder, "winner.txt")).Should().BeTrue();
-            File.ReadAllText(Path.Combine(_testFolder, "winner.txt")).Should().BeEmpty();
-        }
+        // Verify files were created
+        File.Exists(Path.Combine(_testFolder, "prize.txt")).Should().BeTrue();
+        File.ReadAllText(Path.Combine(_testFolder, "prize.txt")).Should().Be(prize);
+        File.Exists(Path.Combine(_testFolder, "winner.txt")).Should().BeTrue();
+        File.ReadAllText(Path.Combine(_testFolder, "winner.txt")).Should().BeEmpty();
+    }
 
-        [Fact]
-        public void StartGiveaway_WhenGiveawayAlreadyActive_ShouldReturnFalse()
-        {
-            // Arrange
-            _giveawayService.StartGiveaway("First Prize");
+    [Fact]
+    public void StartGiveaway_WhenGiveawayAlreadyActive_ShouldReturnFalse()
+    {
+        // Arrange
+        _giveawayService.StartGiveaway("First Prize");
 
-            // Act
-            bool result = _giveawayService.StartGiveaway("Second Prize");
+        // Act
+        bool result = _giveawayService.StartGiveaway("Second Prize");
 
-            // Assert
-            result.Should().BeFalse();
-            _giveawayService.CurrentPrize.Should().Be("First Prize");
-        }
+        // Assert
+        result.Should().BeFalse();
+        _giveawayService.CurrentPrize.Should().Be("First Prize");
+    }
 
-        [Fact]
-        public void AddEntry_ShouldAddParticipant()
-        {
-            // Arrange
-            _giveawayService.StartGiveaway("Test Prize");
-            string username = "testuser";
+    [Fact]
+    public void AddEntry_ShouldAddParticipant()
+    {
+        // Arrange
+        _giveawayService.StartGiveaway("Test Prize");
+        string username = "testuser";
 
-            // Act
-            bool result = _giveawayService.AddEntry(username);
+        // Act
+        bool result = _giveawayService.AddEntry(username);
 
-            // Assert
-            result.Should().BeTrue();
-            _giveawayService.EntryCount.Should().Be(1);
-            _giveawayService.Entries.Should().Contain(username);
+        // Assert
+        result.Should().BeTrue();
+        _giveawayService.EntryCount.Should().Be(1);
+        _giveawayService.Entries.Should().Contain(username);
 
-            // Verify file was updated
-            File.Exists(Path.Combine(_testFolder, "giveaway.txt")).Should().BeTrue();
-            File.ReadAllLines(Path.Combine(_testFolder, "giveaway.txt")).Should().Contain(username);
-        }
+        // Verify file was updated
+        File.Exists(Path.Combine(_testFolder, "giveaway.txt")).Should().BeTrue();
+        File.ReadAllLines(Path.Combine(_testFolder, "giveaway.txt")).Should().Contain(username);
+    }
 
-        [Fact]
-        public void AddEntry_WhenGiveawayNotActive_ShouldReturnFalse()
-        {
-            // Act
-            bool result = _giveawayService.AddEntry("testuser");
+    [Fact]
+    public void AddEntry_WhenGiveawayNotActive_ShouldReturnFalse()
+    {
+        // Act
+        bool result = _giveawayService.AddEntry("testuser");
 
-            // Assert
-            result.Should().BeFalse();
-            _giveawayService.EntryCount.Should().Be(0);
-        }
+        // Assert
+        result.Should().BeFalse();
+        _giveawayService.EntryCount.Should().Be(0);
+    }
 
-        [Fact]
-        public void AddEntry_WhenUserAlreadyEntered_ShouldReturnFalse()
-        {
-            // Arrange
-            _giveawayService.StartGiveaway("Test Prize");
-            string username = "testuser";
-            _giveawayService.AddEntry(username);
+    [Fact]
+    public void AddEntry_WhenUserAlreadyEntered_ShouldReturnFalse()
+    {
+        // Arrange
+        _giveawayService.StartGiveaway("Test Prize");
+        string username = "testuser";
+        _giveawayService.AddEntry(username);
 
-            // Act
-            bool result = _giveawayService.AddEntry(username);
+        // Act
+        bool result = _giveawayService.AddEntry(username);
 
-            // Assert
-            result.Should().BeFalse();
-            _giveawayService.EntryCount.Should().Be(1);
-        }
+        // Assert
+        result.Should().BeFalse();
+        _giveawayService.EntryCount.Should().Be(1);
+    }
 
-        [Fact]
-        public void DrawWinner_ShouldSelectRandomWinner()
-        {
-            // Arrange
-            _giveawayService.StartGiveaway("Test Prize");
-            _giveawayService.AddEntry("user1");
-            _giveawayService.AddEntry("user2");
-            _giveawayService.AddEntry("user3");
+    [Fact]
+    public void DrawWinner_ShouldSelectRandomWinner()
+    {
+        // Arrange
+        _giveawayService.StartGiveaway("Test Prize");
+        _giveawayService.AddEntry("user1");
+        _giveawayService.AddEntry("user2");
+        _giveawayService.AddEntry("user3");
 
-            // Act
-            string? winner = _giveawayService.DrawWinner();
+        // Act
+        string? winner = _giveawayService.DrawWinner();
 
-            // Assert
-            winner.Should().NotBeNull();
-            winner.Should().BeOneOf("user1", "user2", "user3");
-            _giveawayService.IsGiveawayActive.Should().BeFalse();
+        // Assert
+        winner.Should().NotBeNull();
+        winner.Should().BeOneOf("user1", "user2", "user3");
+        _giveawayService.IsGiveawayActive.Should().BeFalse();
 
-            // Verify winner file was updated
-            File.Exists(Path.Combine(_testFolder, "winner.txt")).Should().BeTrue();
-            File.ReadAllText(Path.Combine(_testFolder, "winner.txt")).Should().Be(winner);
-        }
+        // Verify winner file was updated
+        File.Exists(Path.Combine(_testFolder, "winner.txt")).Should().BeTrue();
+        File.ReadAllText(Path.Combine(_testFolder, "winner.txt")).Should().Be(winner);
+    }
 
-        [Fact]
-        public void DrawWinner_WhenNoEntries_ShouldReturnNull()
-        {
-            // Arrange
-            _giveawayService.StartGiveaway("Test Prize");
+    [Fact]
+    public void DrawWinner_WhenNoEntries_ShouldReturnNull()
+    {
+        // Arrange
+        _giveawayService.StartGiveaway("Test Prize");
 
-            // Act
-            string? winner = _giveawayService.DrawWinner();
+        // Act
+        string? winner = _giveawayService.DrawWinner();
 
-            // Assert
-            winner.Should().BeNull();
-            _giveawayService.IsGiveawayActive.Should().BeTrue();
-        }
+        // Assert
+        winner.Should().BeNull();
+        _giveawayService.IsGiveawayActive.Should().BeTrue();
+    }
 
-        [Fact]
-        public void DrawWinner_WhenGiveawayNotActive_ShouldReturnNull()
-        {
-            // Act
-            string? winner = _giveawayService.DrawWinner();
+    [Fact]
+    public void DrawWinner_WhenGiveawayNotActive_ShouldReturnNull()
+    {
+        // Act
+        string? winner = _giveawayService.DrawWinner();
 
-            // Assert
-            winner.Should().BeNull();
-        }
+        // Assert
+        winner.Should().BeNull();
     }
 }
