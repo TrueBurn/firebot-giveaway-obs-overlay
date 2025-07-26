@@ -99,6 +99,23 @@ The overlay features:
 
 Winner overlay uses solid black background (`rgb(0, 0, 0)`) without trophy emojis for clean appearance.
 
+## Recent Project Changes
+
+### April 14, 2025 - Winner Overlay Improvements
+- Changed winner overlay background from semi-transparent to solid black for cleaner appearance
+- Removed trophy emojis from winner display for minimal design
+
+## Future Enhancement Ideas
+
+Based on project roadmap:
+- Customizable color schemes for the overlay
+- Option to adjust animation speeds or disable specific animations
+- Additional winner announcement styles
+- Support for displaying multiple winners
+- Integration with stream chat for real-time interaction
+- Configurable overlay size and position
+- Mobile-responsive design for monitoring on different devices
+
 ## Memory Bank Integration
 
 This project uses an LLM agent memory bank system located in the `memory-bank/` directory to maintain context across sessions.
@@ -107,10 +124,15 @@ This project uses an LLM agent memory bank system located in the `memory-bank/` 
 
 **Initialization Check:**
 1. Always check if `memory-bank/` directory exists at session start
-2. If memory bank exists, read all files before proceeding:
-   - `project-overview.md` - High-level project context
-   - `tasks.md` - Completed and pending tasks
-   - `README.md` - Memory bank overview
+2. If memory bank exists, read all mandatory files before proceeding:
+   - `productContext.md` - Project overview, goals, features, and constraints
+   - `activeContext.md` - Current focus, recent changes, and open questions
+   - `systemPatterns.md` - Architectural patterns and design approaches
+   - `decisionLog.md` - Historical architectural decisions and rationale
+   - `progress.md` - Task completion history and upcoming work
+   - `project-overview.md` - Legacy project structure documentation
+   - `tasks.md` - Legacy task tracking and future enhancement ideas
+   - `README.md` - Memory bank overview and purpose
 3. Set status to `[MEMORY BANK: ACTIVE]` and proceed with full context
 4. If no memory bank exists, inform user and recommend creation
 
@@ -121,15 +143,36 @@ This project uses an LLM agent memory bank system located in the `memory-bank/` 
 
 Update memory bank files throughout chat sessions when significant changes occur:
 
-**tasks.md Updates:**
-- **Trigger**: When tasks begin, complete, or change status
-- **Action**: Append new entries with timestamps, never overwrite
+**Standard Memory Bank File Updates:**
+
+**decisionLog.md Updates:**
+- **Trigger**: When significant architectural decisions are made (new components, data flow changes, technology choices)
+- **Action**: Append new entries with timestamps, never overwrite existing entries
 - **Format**: `[YYYY-MM-DD HH:MM:SS] - [Summary of Change/Focus/Issue]`
 
-**project-overview.md Updates:**
-- **Trigger**: When high-level project description, goals, features, or architecture changes
-- **Action**: Append new information or modify existing entries with timestamps
+**productContext.md Updates:**
+- **Trigger**: When high-level project description, goals, features, or overall architecture changes significantly
+- **Action**: Append new information or modify existing entries with timestamps as footnotes
 - **Format**: `[YYYY-MM-DD HH:MM:SS] - [Summary of Change]`
+
+**systemPatterns.md Updates:**
+- **Trigger**: When new architectural patterns are introduced or existing ones are modified
+- **Action**: Append new patterns or modify existing entries with timestamps
+- **Format**: `[YYYY-MM-DD HH:MM:SS] - [Description of Pattern/Change]`
+
+**activeContext.md Updates:**
+- **Trigger**: When current focus of work changes or significant progress is made
+- **Action**: Append to relevant sections (Current Focus, Recent Changes, Open Questions/Issues) with timestamps
+- **Format**: `[YYYY-MM-DD HH:MM:SS] - [Summary of Change/Focus/Issue]`
+
+**progress.md Updates:**
+- **Trigger**: When tasks begin, are completed, or have status changes
+- **Action**: Append new entries with timestamps, never overwrite existing entries
+- **Format**: `[YYYY-MM-DD HH:MM:SS] - [Summary of Change/Focus/Issue]`
+
+**Legacy Files (maintained for compatibility):**
+- **tasks.md**: Completed Tasks, Pending Tasks, Future Enhancement Ideas
+- **project-overview.md**: Project structure, key components, technical details, recent modifications
 
 ### UMB (Update Memory Bank) Command
 
