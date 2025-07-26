@@ -96,4 +96,19 @@
 - Easy debugging and maintenance
 - Clear separation of concerns
 
+## Development Quality Patterns
+
+### [2025-07-26] Validation-First Development Pattern
+**Pattern**: Mandatory build and test validation after any C# code changes
+**Implementation**:
+- Always run `dotnet build` after modifying .cs files
+- Execute `dotnet test` if test project exists
+- Verify compilation success before considering changes complete
+- Apply to all C# source files, Razor components, services, and extensions
+**Benefits**:
+- Prevents breaking changes from reaching production
+- Immediate feedback on compilation errors
+- Maintains code quality and stability
+- Reduces debugging time in development workflow
+
 [2025-01-26 - Initial system patterns documentation]

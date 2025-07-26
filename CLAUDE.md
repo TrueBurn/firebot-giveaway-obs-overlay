@@ -61,6 +61,24 @@ cd FirebotGiveawayObsOverlay
 dotnet test
 ```
 
+### Code Quality Validation
+**IMPORTANT**: Always run build and test after making changes to .cs files to ensure no breaking changes:
+
+```bash
+# After modifying any .cs files, always run:
+cd FirebotGiveawayObsOverlay/FirebotGiveawayObsOverlay.WebApp
+dotnet build
+
+# If tests exist, also run:
+dotnet test
+```
+
+This validation step is mandatory for:
+- All changes to C# source files (.cs)
+- Component modifications (Razor files with code-behind)
+- Service and helper class updates
+- Extension method changes
+
 ## Configuration
 
 The application is configured through `appsettings.json` with the following key settings:
