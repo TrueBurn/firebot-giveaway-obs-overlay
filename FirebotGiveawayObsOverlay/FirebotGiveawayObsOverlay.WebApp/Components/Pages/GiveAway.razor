@@ -27,9 +27,12 @@
         </div>
         
         <div class="info-section">
-            <h2 class="title-timer @(timerExpired ? "timer-flash" : "")">
-                @FormatTimer(counterTimeSpan)
-            </h2>
+            @if (isTimerEnabled)
+            {
+                <h2 class="title-timer @(timerExpired ? "timer-flash" : "")">
+                    @FormatTimer(counterTimeSpan)
+                </h2>
+            }
             
             <h2 class="title-entries">
                 <span class="@(previousEntryCount != entries.Length ? "entry-count-animate" : "")">
@@ -69,6 +72,7 @@
     private double prizeFontSize = GiveAwayHelpers.GetPrizeFontSize();
     private double timerFontSize = GiveAwayHelpers.GetTimerFontSize();
     private double entriesFontSize = GiveAwayHelpers.GetEntriesFontSize();
+    private bool isTimerEnabled = GiveAwayHelpers.GetCountdownTimerEnabled();
 
     protected override async Task OnInitializedAsync()
     {
@@ -76,7 +80,12 @@
         fileScanTimer.Elapsed += new ElapsedEventHandler(HandleFileScanTimer);
         countdownTimer.Elapsed += new ElapsedEventHandler(HandleCountdownTimer);
         StartFileScanTimer();
-        StartCountdownTimer();
+        
+        // Only start countdown timer if enabled
+        if (isTimerEnabled)
+        {
+            StartCountdownTimer();
+        }
 
         // Subscribe to timer reset events
         TimerService.OnTimerReset += HandleTimerReset;
@@ -150,25 +159,29 @@
         isGiveAwayRunning = hasPrizeNow;
         doesGiveawayHaveWinner = hasWinnerNow;
         
-        // If giveaway has a winner, pause the countdown timer
-        if (doesGiveawayHaveWinner && countdownTimer.Enabled)
+        // Timer management - only if timer is enabled
+        if (isTimerEnabled)
         {
-            countdownTimer.Stop();
-        }
-        // If winner was cleared and giveaway is still running, reset and start the timer
-        else if (hadWinnerBefore && !doesGiveawayHaveWinner && isGiveAwayRunning)
-        {
-            ResetTimer();
-        }
-        // If prize was added (and there was no prize before), reset and start the timer
-        else if (!hadPrizeBefore && hasPrizeNow && !doesGiveawayHaveWinner)
-        {
-            ResetTimer();
-        }
-        // If giveaway is not running, reset the timer
-        else if (!isGiveAwayRunning)
-        {
-            ResetTimer();
+            // If giveaway has a winner, pause the countdown timer
+            if (doesGiveawayHaveWinner && countdownTimer.Enabled)
+            {
+                countdownTimer.Stop();
+            }
+            // If winner was cleared and giveaway is still running, reset and start the timer
+            else if (hadWinnerBefore && !doesGiveawayHaveWinner && isGiveAwayRunning)
+            {
+                ResetTimer();
+            }
+            // If prize was added (and there was no prize before), reset and start the timer
+            else if (!hadPrizeBefore && hasPrizeNow && !doesGiveawayHaveWinner)
+            {
+                ResetTimer();
+            }
+            // If giveaway is not running, reset the timer
+            else if (!isGiveAwayRunning)
+            {
+                ResetTimer();
+            }
         }
 
         // Update the prize section width and font sizes from settings
@@ -176,18 +189,35 @@
         prizeFontSize = GiveAwayHelpers.GetPrizeFontSize();
         timerFontSize = GiveAwayHelpers.GetTimerFontSize();
         entriesFontSize = GiveAwayHelpers.GetEntriesFontSize();
+        
+        // Check for timer enabled state changes
+        bool wasTimerEnabled = isTimerEnabled;
+        isTimerEnabled = GiveAwayHelpers.GetCountdownTimerEnabled();
+        
+        // Handle timer state changes
+        if (wasTimerEnabled && !isTimerEnabled)
+        {
+            // Timer was disabled - stop it
+            countdownTimer.Stop();
+        }
+        else if (!wasTimerEnabled && isTimerEnabled && isGiveAwayRunning && !doesGiveawayHaveWinner)
+        {
+            // Timer was enabled - reset and start it if giveaway is running
+            ResetTimer();
+        }
     }
     
     private void ResetTimer()
     {
+        // Always reset timer values, but only start if enabled
         countdownTimer.Stop();
         var (hours, minutes, seconds) = GiveAwayHelpers.GetCountdownTime();
         counter = TimeSpan.FromHours(hours).Add(TimeSpan.FromMinutes(minutes)).Add(TimeSpan.FromSeconds(seconds)).TotalSeconds;
         counterTimeSpan = TimeSpan.FromSeconds(counter);
         timerExpired = false;
         
-        // Restart the timer if a giveaway is running and there's no winner
-        if (isGiveAwayRunning && !doesGiveawayHaveWinner)
+        // Only start the timer if enabled and conditions are met
+        if (isTimerEnabled && isGiveAwayRunning && !doesGiveawayHaveWinner)
         {
             countdownTimer.Start();
         }

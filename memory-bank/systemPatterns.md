@@ -125,4 +125,33 @@
 - Efficient screen space utilization
 - Progressive enhancement maintaining existing functionality
 
+### [2025-07-26] Configurable Feature Toggle Pattern
+**Pattern**: Optional feature enablement with complete UI state management
+**Implementation**:
+- Boolean configuration parameter controls feature availability (`CountdownTimerEnabled`)
+- UI elements conditionally rendered or disabled based on feature state
+- Related controls (inputs, buttons) disabled when feature is off with proper visual feedback
+- Background functionality (file monitoring) continues independently of feature state
+- Automatic state management handles feature transitions (enable/disable with proper cleanup)
+**Benefits**:
+- Flexible user experience supporting different use cases
+- Clear visual indication of feature availability
+- Robust state management preventing inconsistent UI states
+- Independent operation of core functionality regardless of optional features
+- Professional appearance with standard disabled control styling
+
+### [2025-07-26] Comprehensive Control State Management Pattern
+**Pattern**: Coordinated enabling/disabling of related UI controls based on feature state
+**Implementation**:
+- Primary toggle control manages overall feature state
+- Related input controls automatically disabled when feature is turned off
+- Action buttons (reset, submit) disabled when their functionality is not available
+- Visual feedback through Bootstrap disabled styling and cursor changes
+- Defensive programming prevents operations when controls are disabled
+**Benefits**:
+- Consistent user experience across all related controls
+- Prevention of user confusion about control availability
+- Professional appearance matching standard UI conventions
+- Improved accessibility through proper disabled state handling
+
 [2025-01-26 - Initial system patterns documentation]

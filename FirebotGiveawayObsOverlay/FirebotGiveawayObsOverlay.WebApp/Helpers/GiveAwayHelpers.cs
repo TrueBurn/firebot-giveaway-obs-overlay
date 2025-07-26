@@ -2,6 +2,7 @@
 
 public static class GiveAwayHelpers
 {
+    private static bool _countdownTimerEnabled = true;
     private static int _countdownHours = 0;
     private static int _countdownMinutes = 60;
     private static int _countdownSeconds = 0;
@@ -20,6 +21,16 @@ public static class GiveAwayHelpers
     public static (int hours, int minutes, int seconds) GetCountdownTime()
     {
         return (_countdownHours, _countdownMinutes, _countdownSeconds);
+    }
+
+    public static void SetCountdownTimerEnabled(bool enabled)
+    {
+        _countdownTimerEnabled = enabled;
+    }
+
+    public static bool GetCountdownTimerEnabled()
+    {
+        return _countdownTimerEnabled;
     }
 
     public static void SetPrizeSectionWidth(int widthPercent)

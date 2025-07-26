@@ -91,15 +91,16 @@ The application is configured through `appsettings.json` with the following key 
 Configuration is applied at application startup in `Program.cs:27-47` and managed through `GiveAwayHelpers` static methods.
 
 ### Timer Configuration
-The countdown timer supports hours, minutes, and seconds configuration:
+The countdown timer supports hours, minutes, and seconds configuration with optional enable/disable:
+- `CountdownTimerEnabled`: Default true, enables/disables countdown timer display and functionality
 - `CountdownHours`: Default 0, supports extended giveaway durations
 - `CountdownMinutes`: Default 59, range 0-59
 - `CountdownSeconds`: Default 59, range 0-59
 
-Display format automatically adapts:
-- `HH:MM:SS` when hours > 0
-- `MM:SS` when only minutes/seconds  
-- `SS` when only seconds
+Timer behavior:
+- When enabled: Display format automatically adapts (HH:MM:SS when hours > 0, MM:SS when only minutes/seconds, SS when only seconds)
+- When disabled: Timer hidden from overlay, file monitoring continues for winner detection
+- Setup page provides toggle control with disabled state styling for all timer inputs and reset button
 
 ## OBS Integration
 
@@ -130,13 +131,15 @@ Winner overlay uses solid black background (`rgb(0, 0, 0)`) without trophy emoji
 
 ## Recent Project Changes
 
-### July 26, 2025 - Timer Hours Support Enhancement
+### July 26, 2025 - Comprehensive Timer System Enhancement
 - Extended countdown timer to support hours in addition to minutes and seconds
-- Added CountdownHours configuration parameter with default value of 0
-- Enhanced Setup.razor with hours input field and proper validation (0-23 range)
+- Added configurable timer enable/disable feature for giveaways without explicit durations
+- Added CountdownHours and CountdownTimerEnabled configuration parameters
+- Enhanced Setup.razor with hours input field, timer toggle, and comprehensive control state management
 - Implemented conditional display logic: HH:MM:SS, MM:SS, or SS based on duration
-- Updated all timer calculation and configuration logic to handle three-parameter time settings
-- Maintains backward compatibility with existing minute/second configurations
+- Added disabled state styling for all timer controls when timer is turned off
+- Updated all timer calculation and configuration logic while preserving file monitoring
+- Maintains backward compatibility with existing configurations
 
 ### April 14, 2025 - Winner Overlay Improvements
 - Changed winner overlay background from semi-transparent to solid black for cleaner appearance

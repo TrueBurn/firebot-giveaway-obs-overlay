@@ -28,6 +28,7 @@ Firebot Giveaway OBS Overlay is a specialized streaming tool that provides a rea
 - Configurable font sizes for all text elements
 - Adjustable layout proportions (prize section width)
 - Customizable countdown timer settings (hours, minutes, seconds)
+- Optional countdown timer enable/disable for different giveaway types
 - Firebot file directory configuration
 
 ### Technical Features
@@ -50,5 +51,6 @@ Firebot Giveaway OBS Overlay is a specialized streaming tool that provides a rea
 - Designed specifically for single giveaway display (not multiple simultaneous)
 - Browser source compatibility requirements for OBS Studio
 
+[2025-07-26 - Added configurable timer enable/disable feature for flexible giveaway types without explicit durations]
 [2025-07-26 - Enhanced countdown timer to support hours configuration for extended giveaway durations]
 [2025-01-26 - Initial product context documentation]
