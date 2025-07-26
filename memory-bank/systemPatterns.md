@@ -17,12 +17,14 @@
 **Pattern**: Runtime UI customization through configuration without code changes
 **Implementation**:
 - `GiveAwayHelpers` static class manages runtime settings
-- `appsettings.json` configuration loaded at startup
-- Static methods for accessing/updating configuration values
+- `appsettings.json` configuration loaded at startup with structured parameters (hours, minutes, seconds)
+- Static methods for accessing/updating configuration values with parameter validation
+- Three-parameter time configuration supporting extended duration ranges
 **Benefits**:
 - Easy customization for streamers
 - No recompilation needed for layout changes
 - Centralized configuration management
+- Flexible time duration configuration supporting hours for extended giveaways
 
 ### Singleton Service Pattern
 **Pattern**: Single instance services for application-wide state management
@@ -110,5 +112,17 @@
 - Immediate feedback on compilation errors
 - Maintains code quality and stability
 - Reduces debugging time in development workflow
+
+### [2025-07-26] Conditional Display Pattern
+**Pattern**: Dynamic UI element visibility based on data state and value ranges
+**Implementation**:
+- Timer display format adapts based on duration: HH:MM:SS when hours > 0, MM:SS when only minutes/seconds, SS when only seconds
+- Setup form fields validate input ranges (hours: 0-23, minutes: 0-59, seconds: 0-59)
+- Configuration system maintains backward compatibility while supporting enhanced functionality
+**Benefits**:
+- Clean UI that shows only relevant information
+- Intuitive user experience with familiar time format conventions
+- Efficient screen space utilization
+- Progressive enhancement maintaining existing functionality
 
 [2025-01-26 - Initial system patterns documentation]

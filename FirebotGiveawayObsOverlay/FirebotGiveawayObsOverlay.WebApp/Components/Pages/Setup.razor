@@ -15,12 +15,23 @@
     <label class="form-label">Countdown Timer</label>
     <div class="d-flex gap-2">
         <div class="flex-grow-1">
+            <label class="form-label">Hours</label>
+            <input type="number" required
+                   placeholder="Hours"
+                   class="form-control"
+                   min="0"
+                   max="23"
+                   @bind="countdownHours"
+                   @bind:event="oninput"
+                   @bind:after="SetCountdownTime" />
+        </div>
+        <div class="flex-grow-1">
             <label class="form-label">Minutes</label>
             <input type="number" required
                    placeholder="Minutes"
                    class="form-control"
                    min="0"
-                   max="99"
+                   max="59"
                    @bind="countdownMinutes"
                    @bind:event="oninput"
                    @bind:after="SetCountdownTime" />
@@ -137,6 +148,7 @@
 
 @code {
     private string firebotFilePath = GiveAwayHelpers.GetFireBotFileFolder();
+    private int countdownHours;
     private int countdownMinutes;
     private int countdownSeconds;
     private string resetMessage = "";
@@ -148,7 +160,8 @@
 
     protected override void OnInitialized()
     {
-        var (minutes, seconds) = GiveAwayHelpers.GetCountdownTime();
+        var (hours, minutes, seconds) = GiveAwayHelpers.GetCountdownTime();
+        countdownHours = hours;
         countdownMinutes = minutes;
         countdownSeconds = seconds;
     }
@@ -160,7 +173,7 @@
 
     private void SetCountdownTime()
     {
-        GiveAwayHelpers.SetCountdownTime(countdownMinutes, countdownSeconds);
+        GiveAwayHelpers.SetCountdownTime(countdownHours, countdownMinutes, countdownSeconds);
     }
 
     private void ResetGiveawayTimer()

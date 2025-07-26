@@ -84,11 +84,22 @@ This validation step is mandatory for:
 The application is configured through `appsettings.json` with the following key settings:
 
 - `FireBotFileFolder`: Directory where Firebot stores giveaway files (default: "G:\\Giveaway")
-- `CountdownMinutes/CountdownSeconds`: Default giveaway duration
+- `CountdownHours/CountdownMinutes/CountdownSeconds`: Giveaway duration configuration
 - `PrizeSectionWidthPercent`: Layout width distribution (50-90%)
 - Font size settings: `PrizeFontSizeRem`, `TimerFontSizeRem`, `EntriesFontSizeRem`
 
 Configuration is applied at application startup in `Program.cs:27-47` and managed through `GiveAwayHelpers` static methods.
+
+### Timer Configuration
+The countdown timer supports hours, minutes, and seconds configuration:
+- `CountdownHours`: Default 0, supports extended giveaway durations
+- `CountdownMinutes`: Default 59, range 0-59
+- `CountdownSeconds`: Default 59, range 0-59
+
+Display format automatically adapts:
+- `HH:MM:SS` when hours > 0
+- `MM:SS` when only minutes/seconds  
+- `SS` when only seconds
 
 ## OBS Integration
 
@@ -118,6 +129,14 @@ The overlay features:
 Winner overlay uses solid black background (`rgb(0, 0, 0)`) without trophy emojis for clean appearance.
 
 ## Recent Project Changes
+
+### July 26, 2025 - Timer Hours Support Enhancement
+- Extended countdown timer to support hours in addition to minutes and seconds
+- Added CountdownHours configuration parameter with default value of 0
+- Enhanced Setup.razor with hours input field and proper validation (0-23 range)
+- Implemented conditional display logic: HH:MM:SS, MM:SS, or SS based on duration
+- Updated all timer calculation and configuration logic to handle three-parameter time settings
+- Maintains backward compatibility with existing minute/second configurations
 
 ### April 14, 2025 - Winner Overlay Improvements
 - Changed winner overlay background from semi-transparent to solid black for cleaner appearance

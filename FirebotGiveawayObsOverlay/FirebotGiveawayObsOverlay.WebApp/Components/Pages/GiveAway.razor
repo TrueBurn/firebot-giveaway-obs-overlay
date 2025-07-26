@@ -181,8 +181,8 @@
     private void ResetTimer()
     {
         countdownTimer.Stop();
-        var (minutes, seconds) = GiveAwayHelpers.GetCountdownTime();
-        counter = TimeSpan.FromMinutes(minutes).Add(TimeSpan.FromSeconds(seconds)).TotalSeconds;
+        var (hours, minutes, seconds) = GiveAwayHelpers.GetCountdownTime();
+        counter = TimeSpan.FromHours(hours).Add(TimeSpan.FromMinutes(minutes)).Add(TimeSpan.FromSeconds(seconds)).TotalSeconds;
         counterTimeSpan = TimeSpan.FromSeconds(counter);
         timerExpired = false;
         
@@ -196,7 +196,11 @@
     // Format timer to have colored numbers with colon separator
     private MarkupString FormatTimer(TimeSpan time)
     {
-        if (time.TotalMinutes >= 1)
+        if (time.TotalHours >= 1)
+        {
+            return new MarkupString($"<span class='timer-numbers'>{time.Hours:D2}</span><span class='timer-separator'>:</span><span class='timer-numbers'>{time.Minutes:D2}</span><span class='timer-separator'>:</span><span class='timer-numbers'>{time.Seconds:D2}</span>");
+        }
+        else if (time.TotalMinutes >= 1)
         {
             return new MarkupString($"<span class='timer-numbers'>{time.Minutes:D2}</span><span class='timer-separator'>:</span><span class='timer-numbers'>{time.Seconds:D2}</span>");
         }

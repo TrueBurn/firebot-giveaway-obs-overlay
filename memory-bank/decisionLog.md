@@ -61,4 +61,23 @@
 - Requires custom CSS and animation work
 - Theme consistency across all UI elements
 
+### [2025-07-26] Timer Hours Support Enhancement
+**Decision**: Extended countdown timer to support hours in addition to minutes and seconds
+**Rationale**:
+- User requirement for longer giveaway durations beyond 99 minutes
+- Common use case for extended giveaways during special events or streams
+- Consistent with standard time display conventions (HH:MM:SS format)
+- Maintains backward compatibility with existing minute/second configurations
+**Implementation Details**:
+- Added `CountdownHours` to appsettings.json with default value of 0
+- Updated `GiveAwayHelpers` to handle three-parameter time configuration
+- Modified timer display logic to show hours only when > 0
+- Enhanced Setup.razor with hours input field
+- Updated all timer calculation logic to include hours
+**Implications**:
+- Improved flexibility for various giveaway durations
+- Enhanced user experience with intuitive time format display
+- Maintains clean UI by showing hours only when relevant
+- Requires configuration migration for existing installations
+
 [2025-01-26 - Initial decision log documentation with historical decisions]

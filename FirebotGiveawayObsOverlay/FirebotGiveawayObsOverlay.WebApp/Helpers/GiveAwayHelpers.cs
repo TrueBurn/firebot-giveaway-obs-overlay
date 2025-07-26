@@ -2,6 +2,7 @@
 
 public static class GiveAwayHelpers
 {
+    private static int _countdownHours = 0;
     private static int _countdownMinutes = 60;
     private static int _countdownSeconds = 0;
     private static int _prizeSectionWidthPercent = 75;
@@ -9,15 +10,16 @@ public static class GiveAwayHelpers
     private static double _timerFontSizeRem = 3.0;
     private static double _entriesFontSizeRem = 2.5;
 
-    public static void SetCountdownTime(int minutes, int seconds)
+    public static void SetCountdownTime(int hours, int minutes, int seconds)
     {
+        _countdownHours = hours;
         _countdownMinutes = minutes;
         _countdownSeconds = seconds;
     }
 
-    public static (int minutes, int seconds) GetCountdownTime()
+    public static (int hours, int minutes, int seconds) GetCountdownTime()
     {
-        return (_countdownMinutes, _countdownSeconds);
+        return (_countdownHours, _countdownMinutes, _countdownSeconds);
     }
 
     public static void SetPrizeSectionWidth(int widthPercent)

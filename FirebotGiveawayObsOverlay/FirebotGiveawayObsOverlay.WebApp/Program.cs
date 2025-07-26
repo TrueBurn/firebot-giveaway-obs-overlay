@@ -30,9 +30,10 @@ app.Lifetime.ApplicationStarted.Register(() =>
     GiveAwayHelpers.SetFireBotFileFolder(fileBotFileFolder);
     
     // Initialize countdown timer settings from configuration
+    int countdownHours = app.Configuration.GetValue<int>("AppSettings:CountdownHours", 0);
     int countdownMinutes = app.Configuration.GetValue<int>("AppSettings:CountdownMinutes", 60);
     int countdownSeconds = app.Configuration.GetValue<int>("AppSettings:CountdownSeconds", 0);
-    GiveAwayHelpers.SetCountdownTime(countdownMinutes, countdownSeconds);
+    GiveAwayHelpers.SetCountdownTime(countdownHours, countdownMinutes, countdownSeconds);
     
     // Initialize prize section width from configuration
     int prizeSectionWidth = app.Configuration.GetValue<int>("AppSettings:PrizeSectionWidthPercent", 75);
