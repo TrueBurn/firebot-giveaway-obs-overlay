@@ -3,6 +3,16 @@
 :root {
     --bg-blue-light: hsl(183 97% 83%);
     --bg-blue-dark: hsl(185 77% 53%);
+
+    /* Theme colors - these are set dynamically via inline styles */
+    --theme-primary: #00fff9;
+    --theme-secondary: #ff00c8;
+    --theme-bg-start: rgba(0, 0, 0, 0.9);
+    --theme-bg-end: rgba(15, 25, 35, 0.98);
+    --theme-border-glow: rgba(0, 255, 255, 0.15);
+    --theme-text: #ffffff;
+    --theme-timer-expired: #ff3333;
+    --theme-separator: rgba(0, 255, 255, 0.5);
 }
 
 * {
@@ -50,15 +60,12 @@ a {
     align-items: center;
     justify-content: space-between;
     padding: 1.5rem 2rem;
-    background: linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(15, 25, 35, 0.98) 100%);
+    background: linear-gradient(135deg, var(--theme-bg-start) 0%, var(--theme-bg-end) 100%);
     border-radius: 1.5rem;
-    border: 2px solid rgba(0, 255, 255, 0.15);
+    border: 2px solid var(--theme-border-glow);
     position: relative;
     overflow: hidden;
-    box-shadow: 
-        0 0 20px rgba(0, 255, 255, 0.2),
-        0 0 40px rgba(238, 130, 238, 0.1),
-        0 0 60px rgba(255, 192, 203, 0.1);
+    box-shadow: var(--theme-container-glow);
 }
 
 /* Animated gradient border */
@@ -69,11 +76,11 @@ a {
     left: -2px;
     right: -2px;
     bottom: -2px;
-    background: linear-gradient(45deg, 
-        #ff3d00,
-        #ff00c8,
-        #00fff9,
-        #ff3d00
+    background: linear-gradient(45deg,
+        var(--theme-secondary),
+        var(--theme-primary),
+        var(--theme-secondary),
+        var(--theme-primary)
     );
     z-index: -1;
     animation: animatedBorder 4s linear infinite;
@@ -89,9 +96,9 @@ a {
     left: 0;
     right: 0;
     bottom: 0;
-    background: 
-        linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px) 0 0 / 20px 20px,
-        linear-gradient(0deg, rgba(238, 130, 238, 0.03) 1px, transparent 1px) 0 0 / 20px 20px;
+    background:
+        linear-gradient(90deg, var(--theme-grid-line, rgba(255, 255, 255, 0.03)) 1px, transparent 1px) 0 0 / 20px 20px,
+        linear-gradient(0deg, var(--theme-grid-line, rgba(255, 255, 255, 0.03)) 1px, transparent 1px) 0 0 / 20px 20px;
     pointer-events: none;
 }
 
@@ -134,17 +141,15 @@ a {
 
 /* Restore the gradient styling for the prize text */
 .primarySpan {
-    background: linear-gradient(45deg, 
-        #00fff9 0%,
-        #ff00c8 50%,
-        #00fff9 100%
+    background: linear-gradient(45deg,
+        var(--theme-primary) 0%,
+        var(--theme-secondary) 50%,
+        var(--theme-primary) 100%
     );
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    text-shadow: 
-        0 0 10px rgba(0, 255, 255, 0.5),
-        0 0 20px rgba(0, 255, 255, 0.3);
+    text-shadow: var(--theme-text-glow);
 }
 
 .title-timer {
@@ -158,23 +163,21 @@ a {
 
 /* Style for the timer numbers - reduce blur effect */
 .timer-numbers {
-    background: linear-gradient(45deg, 
-        #00fff9 0%,
-        #ff00c8 50%,
-        #00fff9 100%
+    background: linear-gradient(45deg,
+        var(--theme-primary) 0%,
+        var(--theme-secondary) 50%,
+        var(--theme-primary) 100%
     );
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    text-shadow: 
-        0 0 5px rgba(0, 255, 255, 0.4),
-        0 0 10px rgba(0, 255, 255, 0.2);
+    text-shadow: var(--theme-text-glow-subtle);
     display: inline-block;
 }
 
 /* Style for the timer separator (colon) */
 .timer-separator {
-    color: white;
+    color: var(--theme-text);
     margin: 0 0.2rem;
     display: inline-block;
     font-weight: 600;
@@ -189,39 +192,32 @@ a {
 @keyframes pulse {
     0% {
         transform: scale(1);
-        text-shadow: 
-            0 0 5px rgba(255, 0, 0, 0.4),
-            0 0 10px rgba(255, 0, 0, 0.2);
+        text-shadow: var(--theme-expired-glow-1);
     }
     50% {
         transform: scale(1.05);
-        text-shadow: 
-            0 0 10px rgba(255, 0, 0, 0.7),
-            0 0 20px rgba(255, 0, 0, 0.5),
-            0 0 30px rgba(255, 0, 0, 0.3);
+        text-shadow: var(--theme-expired-glow-2);
     }
     100% {
         transform: scale(1);
-        text-shadow: 
-            0 0 5px rgba(255, 0, 0, 0.4),
-            0 0 10px rgba(255, 0, 0, 0.2);
+        text-shadow: var(--theme-expired-glow-1);
     }
 }
 
 .timer-flash {
     animation: pulse 1.5s infinite ease-in-out;
-    color: #ff3333 !important;
+    color: var(--theme-timer-expired) !important;
 }
 
 .timer-flash .timer-numbers {
-    color: #ff3333 !important;
-    text-shadow: 
-        0 0 5px rgba(255, 0, 0, 0.7),
-        0 0 10px rgba(255, 0, 0, 0.5);
+    background: var(--theme-timer-expired) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    text-shadow: var(--theme-expired-glow-1);
 }
 
 .timer-flash .timer-separator {
-    color: #ff3333 !important;
+    color: var(--theme-timer-expired) !important;
 }
 
 .title-winner {
@@ -240,19 +236,16 @@ a {
 
 .title-winner .winner-label {
     font-size: 2.5rem;
-    color: white;
+    color: var(--theme-text);
     margin-bottom: 0.5rem;
 }
 
 .secondarySpan {
     background: linear-gradient(
         to right,
-        #ff9a9e 0%,
-        #fad0c4 20%,
-        #fbc2eb 40%,
-        #a6c1ee 60%,
-        #84fab0 80%,
-        #8fd3f4 100%
+        var(--theme-primary) 0%,
+        var(--theme-secondary) 50%,
+        var(--theme-primary) 100%
     );
     background-size: 200% auto;
     -webkit-background-clip: text;
@@ -261,9 +254,7 @@ a {
     animation: gradient 3s linear infinite;
     font-size: 4rem;
     font-weight: bold;
-    text-shadow: 
-        0 0 10px rgba(255, 215, 0, 0.5),
-        0 0 20px rgba(255, 215, 0, 0.3);
+    text-shadow: var(--theme-text-glow);
     display: block;
 }
 
@@ -340,7 +331,7 @@ a {
     letter-spacing: 0.05em;
     text-align: center;
     font-family: 'Orbitron', sans-serif;
-    color: white;
+    color: var(--theme-text);
     white-space: nowrap;
     display: flex;
     flex-direction: row;
@@ -351,17 +342,15 @@ a {
 
 /* Style for the entry count number - keep the gradient and animation */
 .entry-count-animate {
-    background: linear-gradient(45deg, 
-        #00fff9 0%,
-        #ff00c8 50%,
-        #00fff9 100%
+    background: linear-gradient(45deg,
+        var(--theme-primary) 0%,
+        var(--theme-secondary) 50%,
+        var(--theme-primary) 100%
     );
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    text-shadow: 
-        0 0 5px rgba(0, 255, 255, 0.4),
-        0 0 10px rgba(0, 255, 255, 0.2);
+    text-shadow: var(--theme-text-glow-subtle);
     display: inline-block;
     animation: entryCountPulse 0.5s ease-in-out;
 }
@@ -373,38 +362,32 @@ a {
     }
     50% {
         transform: scale(1.2);
-        text-shadow: 
-            0 0 10px rgba(0, 255, 255, 0.6),
-            0 0 20px rgba(0, 255, 255, 0.4);
+        text-shadow: var(--theme-text-glow);
     }
     100% {
         transform: scale(1);
-        text-shadow: 
-            0 0 5px rgba(0, 255, 255, 0.4),
-            0 0 10px rgba(0, 255, 255, 0.2);
+        text-shadow: var(--theme-text-glow-subtle);
     }
 }
 
 /* Style for the regular entry count (not animating) */
 .title-entries span:first-child:not(.entry-count-animate) {
-    background: linear-gradient(45deg, 
-        #00fff9 0%,
-        #ff00c8 50%,
-        #00fff9 100%
+    background: linear-gradient(45deg,
+        var(--theme-primary) 0%,
+        var(--theme-secondary) 50%,
+        var(--theme-primary) 100%
     );
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    text-shadow: 
-        0 0 5px rgba(0, 255, 255, 0.4),
-        0 0 10px rgba(0, 255, 255, 0.2);
+    text-shadow: var(--theme-text-glow-subtle);
     display: inline-block;
 }
 
 /* Style for the "Entries" text - make it match the "m" and "s" in the timer */
 .title-entries span + span,
 .title-entries:not(:has(span)) {
-    color: white;
+    color: var(--theme-text);
     text-shadow: none;
     margin-left: 0.2rem;
 }
@@ -523,22 +506,20 @@ a {
 .winner-overlay .winner-label {
     font-size: 3rem;
     margin-bottom: 1rem;
-    color: #fff;
+    color: var(--theme-text);
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
 .winner-overlay .secondarySpan {
-    background: linear-gradient(45deg, 
-        #00fff9 0%,
-        #ff00c8 50%,
-        #00fff9 100%
+    background: linear-gradient(45deg,
+        var(--theme-primary) 0%,
+        var(--theme-secondary) 50%,
+        var(--theme-primary) 100%
     );
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    text-shadow: 
-        0 0 10px rgba(0, 255, 255, 0.5),
-        0 0 20px rgba(0, 255, 255, 0.3);
+    text-shadow: var(--theme-text-glow);
     animation: winnerPulse 2s infinite alternate;
     font-size: 5rem;
     font-weight: bold;
@@ -548,16 +529,11 @@ a {
 @keyframes winnerPulse {
     0% {
         transform: scale(1);
-        text-shadow: 
-            0 0 5px rgba(0, 255, 255, 0.4),
-            0 0 10px rgba(0, 255, 255, 0.2);
+        text-shadow: var(--theme-text-glow-subtle);
     }
     100% {
         transform: scale(1.05);
-        text-shadow: 
-            0 0 8px rgba(0, 255, 255, 0.6),
-            0 0 15px rgba(0, 255, 255, 0.3),
-            0 0 25px rgba(0, 255, 255, 0.2);
+        text-shadow: var(--theme-text-glow);
     }
 }
 
@@ -586,11 +562,11 @@ a {
     background: linear-gradient(
         to bottom,
         transparent,
-        rgba(0, 255, 255, 0.5) 20%,
-        rgba(255, 0, 255, 0.5) 50%,
-        rgba(0, 255, 255, 0.5) 80%,
+        var(--separator-color, rgba(0, 255, 255, 0.5)) 20%,
+        var(--separator-secondary, #ff00c8) 50%,
+        var(--separator-color, rgba(0, 255, 255, 0.5)) 80%,
         transparent
     );
-    box-shadow: 0 0 12px rgba(0, 255, 255, 0.6);
+    box-shadow: 0 0 12px var(--separator-color, rgba(0, 255, 255, 0.6));
 }
 

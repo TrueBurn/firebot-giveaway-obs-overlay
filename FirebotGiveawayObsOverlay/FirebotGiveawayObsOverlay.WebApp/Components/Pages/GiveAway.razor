@@ -1,9 +1,11 @@
 ﻿@using FirebotGiveawayObsOverlay.WebApp.Components.Layout
 @using FirebotGiveawayObsOverlay.WebApp.Helpers
 @using FirebotGiveawayObsOverlay.WebApp.Extensions
+@using FirebotGiveawayObsOverlay.WebApp.Models
 @using FirebotGiveawayObsOverlay.WebApp.Services
 @using System.Timers
 @inject TimerService TimerService
+@inject ThemeService ThemeService
 
 @layout NoMenuLayout
 @page "/giveaway"
@@ -14,40 +16,37 @@
 
 @if (isGiveAwayRunning)
 {
-    <div class="container @(doesGiveawayHaveWinner ? "has-winner" : "")" 
-         style="--prize-width: @(prizeSectionWidth)%; 
-                --info-width: @(100 - prizeSectionWidth)%;
-                --prize-font-size: @(prizeFontSize)rem;
-                --timer-font-size: @(timerFontSize)rem;
-                --entries-font-size: @(entriesFontSize)rem;">
+    <div class="container @(doesGiveawayHaveWinner ? "has-winner" : "")"
+         style="@GetContainerStyle()">
         <div class="prize-section">
             <h1 class="title">
-                <span class="primarySpan">@prize</span>
+                <span class="primarySpan" style="@GetPrimarySpanStyle()">@prize</span>
             </h1>
         </div>
-        
-        <div class="info-section">
+
+        <div class="info-section" style="@GetSeparatorStyle()">
             @if (isTimerEnabled)
             {
-                <h2 class="title-timer @(timerExpired ? "timer-flash" : "")">
-                    @FormatTimer(counterTimeSpan)
+                <h2 class="title-timer @(timerExpired ? "timer-flash" : "")" style="@GetTimerStyle()">
+                    @FormatTimerWithTheme(counterTimeSpan)
                 </h2>
             }
-            
-            <h2 class="title-entries">
-                <span class="@(previousEntryCount != entries.Length ? "entry-count-animate" : "")">
+
+            <h2 class="title-entries" style="color: @currentTheme.TextColor;">
+                <span class="@(previousEntryCount != entries.Length ? "entry-count-animate" : "")"
+                      style="@GetPrimarySpanStyle()">
                     @entries.Length
                 </span>
                 Entries
             </h2>
         </div>
-        
+
         @if (doesGiveawayHaveWinner)
         {
             <div class="winner-overlay">
                 <h2 class="title-winner">
-                    <span class="winner-label">Winner:</span>
-                    <span class="secondarySpan">@winner</span>
+                    <span class="winner-label" style="color: @currentTheme.TextColor;">Winner:</span>
+                    <span class="secondarySpan" style="@GetPrimarySpanStyle()">@winner</span>
                 </h2>
             </div>
         }
@@ -73,6 +72,7 @@
     private double timerFontSize = GiveAwayHelpers.GetTimerFontSize();
     private double entriesFontSize = GiveAwayHelpers.GetEntriesFontSize();
     private bool isTimerEnabled = GiveAwayHelpers.GetCountdownTimerEnabled();
+    private ThemeConfig currentTheme = GiveAwayHelpers.GetCurrentTheme();
 
     protected override async Task OnInitializedAsync()
     {
@@ -89,12 +89,21 @@
 
         // Subscribe to timer reset events
         TimerService.OnTimerReset += HandleTimerReset;
+
+        // Subscribe to theme change events
+        ThemeService.OnThemeChanged += HandleThemeChanged;
     }
 
     private void HandleTimerReset()
     {
         ResetTimer();
         InvokeAsync(StateHasChanged);
+    }
+
+    private async void HandleThemeChanged()
+    {
+        currentTheme = GiveAwayHelpers.GetCurrentTheme();
+        await InvokeAsync(StateHasChanged);
     }
 
     private void StartFileScanTimer()
@@ -193,7 +202,7 @@
         // Check for timer enabled state changes
         bool wasTimerEnabled = isTimerEnabled;
         isTimerEnabled = GiveAwayHelpers.GetCountdownTimerEnabled();
-        
+
         // Handle timer state changes
         if (wasTimerEnabled && !isTimerEnabled)
         {
@@ -205,6 +214,9 @@
             // Timer was enabled - reset and start it if giveaway is running
             ResetTimer();
         }
+
+        // Update theme
+        currentTheme = GiveAwayHelpers.GetCurrentTheme();
     }
     
     private void ResetTimer()
@@ -237,12 +249,68 @@
         return new MarkupString($"<span class='timer-numbers'>{time.Seconds:D2}</span>");
     }
 
+    private string GetContainerStyle()
+    {
+        return $@"--prize-width: {prizeSectionWidth}%;
+                  --info-width: {100 - prizeSectionWidth}%;
+                  --prize-font-size: {prizeFontSize}rem;
+                  --timer-font-size: {timerFontSize}rem;
+                  --entries-font-size: {entriesFontSize}rem;
+                  background: linear-gradient(135deg, {currentTheme.BackgroundStart} 0%, {currentTheme.BackgroundEnd} 100%);
+                  border-color: {currentTheme.BorderGlowColor};
+                  box-shadow: 0 0 20px {currentTheme.PrimaryColor}33, 0 0 40px {currentTheme.SecondaryColor}1A, 0 0 60px {currentTheme.SecondaryColor}1A;
+                  --theme-primary: {currentTheme.PrimaryColor};
+                  --theme-secondary: {currentTheme.SecondaryColor};";
+    }
+
+    private string GetPrimarySpanStyle()
+    {
+        return $@"background: linear-gradient(45deg, {currentTheme.PrimaryColor} 0%, {currentTheme.SecondaryColor} 50%, {currentTheme.PrimaryColor} 100%);
+                  -webkit-background-clip: text;
+                  background-clip: text;
+                  color: transparent;
+                  text-shadow: 0 0 10px {currentTheme.PrimaryColor}80, 0 0 20px {currentTheme.PrimaryColor}4D;";
+    }
+
+    private string GetTimerStyle()
+    {
+        if (timerExpired)
+        {
+            return $"color: {currentTheme.TimerExpiredColor};";
+        }
+        return "";
+    }
+
+    private string GetSeparatorStyle()
+    {
+        return $"--separator-color: {currentTheme.SeparatorColor}; --separator-secondary: {currentTheme.SecondaryColor};";
+    }
+
+    private MarkupString FormatTimerWithTheme(TimeSpan time)
+    {
+        var numberStyle = $"background: linear-gradient(45deg, {currentTheme.PrimaryColor} 0%, {currentTheme.SecondaryColor} 50%, {currentTheme.PrimaryColor} 100%); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 0 5px {currentTheme.PrimaryColor}66, 0 0 10px {currentTheme.PrimaryColor}33;";
+        var separatorStyle = $"color: {currentTheme.TextColor};";
+
+        if (time.TotalHours >= 1)
+        {
+            return new MarkupString($"<span class='timer-numbers' style='{numberStyle}'>{time.Hours:D2}</span><span class='timer-separator' style='{separatorStyle}'>:</span><span class='timer-numbers' style='{numberStyle}'>{time.Minutes:D2}</span><span class='timer-separator' style='{separatorStyle}'>:</span><span class='timer-numbers' style='{numberStyle}'>{time.Seconds:D2}</span>");
+        }
+        else if (time.TotalMinutes >= 1)
+        {
+            return new MarkupString($"<span class='timer-numbers' style='{numberStyle}'>{time.Minutes:D2}</span><span class='timer-separator' style='{separatorStyle}'>:</span><span class='timer-numbers' style='{numberStyle}'>{time.Seconds:D2}</span>");
+        }
+        return new MarkupString($"<span class='timer-numbers' style='{numberStyle}'>{time.Seconds:D2}</span>");
+    }
+
     public void Dispose()
     {
         fileScanTimer.Dispose();
         countdownTimer.Dispose();
-        
+
         // Unsubscribe from timer reset events
         TimerService.OnTimerReset -= HandleTimerReset;
+
+        // Unsubscribe from theme change events
+        ThemeService.OnThemeChanged -= HandleThemeChanged;
     }
 }

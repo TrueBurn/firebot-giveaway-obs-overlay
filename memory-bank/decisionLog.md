@@ -120,4 +120,67 @@
 - Professional appearance consistent with modern web applications
 - Enhanced accessibility through proper disabled state handling
 
+### [2025-12-08] Customizable Theme System with Preset and Custom Options
+**Decision**: Implemented comprehensive theme system supporting both preset themes and custom color configuration
+**Rationale**:
+- User requirement for customizable overlay colors to match stream branding
+- Preset themes provide quick selection for common aesthetic preferences
+- Custom colors allow fine-tuned personalization for specific needs
+- Configuration persistence in appsettings.json enables consistent startup experience
+**Implementation Details**:
+- Created ThemeConfig model with 7 preset themes (Warframe, Cyberpunk, Neon, Classic, Ocean, Fire, Purple)
+- Added Theme section to appsettings.json with all color properties
+- Implemented ThemeService singleton for cross-page event-based communication
+- Setup page provides preset dropdown with live preview and custom color pickers
+- Custom colors section conditionally displayed when "Custom" is selected
+**Implications**:
+- Enhanced user experience with immediate visual feedback
+- Flexible theming system that can be extended with additional presets
+- Configuration-driven initialization maintains user preferences across restarts
+
+### [2025-12-08] Inline Styles for Theme Color Application
+**Decision**: Applied theme colors via inline styles on elements rather than CSS custom properties
+**Rationale**:
+- CSS custom properties set on parent elements weren't reliably cascading to child elements in Blazor Server
+- Inline styles guarantee immediate color application when StateHasChanged is called
+- More predictable behavior across different browsers and OBS browser source
+**Implementation Details**:
+- Created GetContainerStyle(), GetPrimarySpanStyle(), GetSeparatorStyle() helper methods
+- Inline styles directly embed color values from currentTheme object
+- FormatTimerWithTheme() generates timer HTML with embedded color styles
+**Implications**:
+- Reliable theme updates without CSS cascade issues
+- Slightly more verbose style generation but guaranteed functionality
+- Theme changes apply immediately without page refresh
+
+### [2025-12-08] Event-Based Theme Change Communication
+**Decision**: Used ThemeService with event-based pattern for cross-page theme updates
+**Rationale**:
+- Consistent with existing TimerService pattern for timer reset notifications
+- Blazor Server's SignalR infrastructure requires explicit state change notification
+- Clean separation between Setup page (theme selection) and GiveAway page (theme display)
+**Implementation Details**:
+- ThemeService registered as singleton with OnThemeChanged event
+- Setup.razor calls ThemeService.NotifyThemeChanged() when theme changes
+- GiveAway.razor subscribes to OnThemeChanged and updates currentTheme + StateHasChanged
+**Implications**:
+- Immediate theme updates without polling or page refresh
+- Established pattern can be reused for other cross-page notifications
+- Clean architectural separation of concerns
+
+### [2025-12-08] Slider Input Event Change (oninput to onchange)
+**Decision**: Changed all range slider bindings from oninput to onchange event
+**Rationale**:
+- User-reported glitchy behavior with sliders jumping to unexpected values
+- Blazor Server's SignalR round-trip creates race conditions with rapid input events
+- oninput fires on every pixel movement, overwhelming the server with requests
+**Implementation Details**:
+- Changed @bind:event="oninput" to @bind:event="onchange" for all range inputs
+- onchange only fires when user releases the slider, eliminating race conditions
+**Implications**:
+- Stable slider behavior without jumps or glitches
+- Less real-time feedback during drag (value updates on release)
+- Significantly reduced server load during slider adjustments
+
+[2025-12-08 - Added theme system and slider fix architectural decisions]
 [2025-01-26 - Initial decision log documentation with historical decisions]

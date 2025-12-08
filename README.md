@@ -1,6 +1,6 @@
 # Firebot Giveaway OBS Overlay
 
-A stylish, animated overlay for Firebot giveaways with Warframe-inspired design.
+A stylish, animated overlay for Firebot giveaways with customizable themes and Warframe-inspired design.
 
 ## Usage
 
@@ -17,22 +17,51 @@ The application can be configured through the `appsettings.json` file:
 ```json
 {
   "AppSettings": {
-    "FireBotFileFolder": "G:\\Giveaway",    // Directory where Firebot stores giveaway files
-    "CountdownMinutes": 59,                 // Default countdown minutes
-    "CountdownSeconds": 59,                 // Default countdown seconds
-    "PrizeSectionWidthPercent": 75,         // Width percentage for prize section
-    "PrizeFontSizeRem": 4.5,                // Font size for prize text
-    "TimerFontSizeRem": 3.0,                // Font size for timer
-    "EntriesFontSizeRem": 3.0               // Font size for entries counter
+    "FireBotFileFolder": "G:\\Giveaway",
+    "CountdownTimerEnabled": true,
+    "CountdownHours": 0,
+    "CountdownMinutes": 59,
+    "CountdownSeconds": 59,
+    "PrizeSectionWidthPercent": 75,
+    "PrizeFontSizeRem": 4.5,
+    "TimerFontSizeRem": 3.0,
+    "EntriesFontSizeRem": 3.0,
+    "Theme": {
+      "Name": "Warframe",
+      "PrimaryColor": "#00fff9",
+      "SecondaryColor": "#ff00c8",
+      "BackgroundStart": "rgba(0, 0, 0, 0.9)",
+      "BackgroundEnd": "rgba(15, 25, 35, 0.98)",
+      "BorderGlowColor": "rgba(0, 255, 255, 0.15)",
+      "TextColor": "#ffffff",
+      "TimerExpiredColor": "#ff3333",
+      "SeparatorColor": "rgba(0, 255, 255, 0.5)"
+    }
   }
 }
 ```
 
 ### Configuration Options:
-- `FireBotFileFolder`: Set this to the directory where Firebot stores your giveaway files
-- `CountdownMinutes` and `CountdownSeconds`: Default duration for giveaways
+- `FireBotFileFolder`: Directory where Firebot stores your giveaway files
+- `CountdownTimerEnabled`: Enable/disable the countdown timer display
+- `CountdownHours`, `CountdownMinutes`, `CountdownSeconds`: Default duration for giveaways
 - `PrizeSectionWidthPercent`: Controls the layout width distribution (50-90%)
 - `PrizeFontSizeRem`, `TimerFontSizeRem`, `EntriesFontSizeRem`: Font size settings
+- `Theme`: Color scheme configuration (see Theme Configuration below)
+
+### Theme Configuration
+You can use a preset theme by name or customize individual colors:
+
+**Preset Themes**: Warframe, Cyberpunk, Neon, Classic, Ocean, Fire, Purple
+
+To use a preset, just set the `Name` field. To customize, modify the color values:
+- `PrimaryColor`: Main accent color for text gradients
+- `SecondaryColor`: Secondary color for gradients and effects
+- `BackgroundStart`/`BackgroundEnd`: Container background gradient
+- `BorderGlowColor`: Border glow effect color
+- `TextColor`: General text color
+- `TimerExpiredColor`: Color when timer reaches zero
+- `SeparatorColor`: Divider line color
 
 ## OBS Integration
 
@@ -48,22 +77,24 @@ The application can be configured through the `appsettings.json` file:
 
 ## Features
 
-- 🎮 Warframe-inspired design
+- 🎮 Customizable themes with 7 presets (Warframe, Cyberpunk, Neon, Classic, Ocean, Fire, Purple)
+- 🎨 Custom color picker for personalized themes
 - ✨ Animated effects and transitions
 - 🎯 Real-time entry counter with animations
-- 🏆 Celebratory winner announcement with animated trophies
-- 🎨 Gradient color schemes with animated borders
+- 🏆 Celebratory winner announcement overlay
+- 🌈 Gradient color schemes with animated borders
 - 📱 Responsive layout with customizable dimensions
-- ⏱️ Configurable countdown timer
-- 🔧 Easy setup page for all customization options
+- ⏱️ Configurable countdown timer (hours, minutes, seconds) with enable/disable option
+- 🔧 Easy setup page for all customization options with live preview
 
 ## Setup Page Options
 
 The setup page allows you to configure:
-- Countdown timer duration
-- Firebot file path
-- Layout proportions
-- Font sizes for all elements
+- **Theme**: Select from preset themes or customize colors (primary, secondary, timer expired)
+- **Countdown Timer**: Duration (hours/minutes/seconds) with enable/disable toggle
+- **Firebot File Path**: Directory where Firebot stores giveaway files
+- **Layout Proportions**: Prize section width percentage
+- **Font Sizes**: Individual sizing for prize, timer, and entries text
 
 ## Development
 

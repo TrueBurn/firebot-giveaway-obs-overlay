@@ -1,6 +1,8 @@
 ﻿@using FirebotGiveawayObsOverlay.WebApp.Helpers
+@using FirebotGiveawayObsOverlay.WebApp.Models
 @using FirebotGiveawayObsOverlay.WebApp.Services
 @inject TimerService TimerService
+@inject ThemeService ThemeService
 
 @page "/setup"
 @rendermode InteractiveServer
@@ -8,6 +10,95 @@
 <PageTitle>Setup</PageTitle>
 
 <h3>Setup</h3>
+
+<hr />
+
+<div class="mb-3">
+    <label class="form-label">Theme</label>
+    <div class="row">
+        <div class="col-md-6">
+            <label class="form-label">Preset Themes</label>
+            <select class="form-select" @bind="selectedThemeName" @bind:after="OnPresetThemeChanged">
+                @foreach (var theme in presetThemes)
+                {
+                    <option value="@theme.Name">@theme.Name</option>
+                }
+                <option value="Custom">Custom</option>
+            </select>
+        </div>
+        <div class="col-md-6">
+            <div class="theme-preview p-3 rounded"
+                 style="background: linear-gradient(135deg, @currentTheme.BackgroundStart 0%, @currentTheme.BackgroundEnd 100%);
+                        border: 2px solid @currentTheme.BorderGlowColor;
+                        min-height: 80px;">
+                <span style="background: linear-gradient(45deg, @currentTheme.PrimaryColor, @currentTheme.SecondaryColor);
+                             -webkit-background-clip: text;
+                             background-clip: text;
+                             color: transparent;
+                             font-weight: bold;
+                             font-size: 1.2rem;">
+                    Preview Text
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (selectedThemeName == "Custom")
+{
+    <div class="mb-3">
+        <label class="form-label">Custom Colors</label>
+        <div class="card card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Primary Color</label>
+                    <div class="input-group">
+                        <input type="color"
+                               class="form-control form-control-color"
+                               @bind="customPrimaryColor"
+                               @bind:event="onchange"
+                               @bind:after="OnCustomColorChanged" />
+                        <input type="text"
+                               class="form-control"
+                               @bind="customPrimaryColor"
+                               @bind:event="onchange"
+                               @bind:after="OnCustomColorChanged" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Secondary Color</label>
+                    <div class="input-group">
+                        <input type="color"
+                               class="form-control form-control-color"
+                               @bind="customSecondaryColor"
+                               @bind:event="onchange"
+                               @bind:after="OnCustomColorChanged" />
+                        <input type="text"
+                               class="form-control"
+                               @bind="customSecondaryColor"
+                               @bind:event="onchange"
+                               @bind:after="OnCustomColorChanged" />
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Timer Expired Color</label>
+                    <div class="input-group">
+                        <input type="color"
+                               class="form-control form-control-color"
+                               @bind="customTimerExpiredColor"
+                               @bind:event="onchange"
+                               @bind:after="OnCustomColorChanged" />
+                        <input type="text"
+                               class="form-control"
+                               @bind="customTimerExpiredColor"
+                               @bind:event="onchange"
+                               @bind:after="OnCustomColorChanged" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 <hr />
 
@@ -93,13 +184,13 @@
     <div class="d-flex gap-2 align-items-center">
         <div class="flex-grow-1">
             <label class="form-label">Prize Section Width (%)</label>
-            <input type="range" 
-                   class="form-range" 
-                   min="50" 
-                   max="90" 
+            <input type="range"
+                   class="form-range"
+                   min="50"
+                   max="90"
                    step="5"
-                   @bind="prizeSectionWidth" 
-                   @bind:event="oninput"
+                   @bind="prizeSectionWidth"
+                   @bind:event="onchange"
                    @bind:after="SetPrizeSectionWidth" />
         </div>
         <div style="width: 50px; text-align: center;">
@@ -114,13 +205,13 @@
         <div class="d-flex gap-2 align-items-center">
             <div class="flex-grow-1">
                 <label class="form-label">Prize Font Size</label>
-                <input type="range" 
-                       class="form-range" 
-                       min="1.0" 
-                       max="6.0" 
+                <input type="range"
+                       class="form-range"
+                       min="1.0"
+                       max="6.0"
                        step="0.1"
-                       @bind="prizeFontSize" 
-                       @bind:event="oninput"
+                       @bind="prizeFontSize"
+                       @bind:event="onchange"
                        @bind:after="SetPrizeFontSize" />
             </div>
             <div style="width: 60px; text-align: center;">
@@ -133,13 +224,13 @@
         <div class="d-flex gap-2 align-items-center">
             <div class="flex-grow-1">
                 <label class="form-label">Timer Font Size</label>
-                <input type="range" 
-                       class="form-range" 
-                       min="1.0" 
-                       max="6.0" 
+                <input type="range"
+                       class="form-range"
+                       min="1.0"
+                       max="6.0"
                        step="0.1"
-                       @bind="timerFontSize" 
-                       @bind:event="oninput"
+                       @bind="timerFontSize"
+                       @bind:event="onchange"
                        @bind:after="SetTimerFontSize" />
             </div>
             <div style="width: 60px; text-align: center;">
@@ -152,13 +243,13 @@
         <div class="d-flex gap-2 align-items-center">
             <div class="flex-grow-1">
                 <label class="form-label">Entries Font Size</label>
-                <input type="range" 
-                       class="form-range" 
-                       min="1.0" 
-                       max="6.0" 
+                <input type="range"
+                       class="form-range"
+                       min="1.0"
+                       max="6.0"
                        step="0.1"
-                       @bind="entriesFontSize" 
-                       @bind:event="oninput"
+                       @bind="entriesFontSize"
+                       @bind:event="onchange"
                        @bind:after="SetEntriesFontSize" />
             </div>
             <div style="width: 60px; text-align: center;">
@@ -181,6 +272,14 @@
     private double timerFontSize = GiveAwayHelpers.GetTimerFontSize();
     private double entriesFontSize = GiveAwayHelpers.GetEntriesFontSize();
 
+    // Theme-related fields
+    private List<ThemeConfig> presetThemes = GiveAwayHelpers.GetAllPresetThemes();
+    private ThemeConfig currentTheme = GiveAwayHelpers.GetCurrentTheme();
+    private string selectedThemeName = GiveAwayHelpers.GetCurrentTheme().Name;
+    private string customPrimaryColor = "#00fff9";
+    private string customSecondaryColor = "#ff00c8";
+    private string customTimerExpiredColor = "#ff3333";
+
     protected override void OnInitialized()
     {
         var (hours, minutes, seconds) = GiveAwayHelpers.GetCountdownTime();
@@ -188,6 +287,13 @@
         countdownMinutes = minutes;
         countdownSeconds = seconds;
         countdownTimerEnabled = GiveAwayHelpers.GetCountdownTimerEnabled();
+
+        // Initialize theme fields
+        currentTheme = GiveAwayHelpers.GetCurrentTheme();
+        selectedThemeName = GiveAwayHelpers.IsUsingCustomTheme() ? "Custom" : currentTheme.Name;
+        customPrimaryColor = currentTheme.PrimaryColor;
+        customSecondaryColor = currentTheme.SecondaryColor;
+        customTimerExpiredColor = currentTheme.TimerExpiredColor;
     }
 
     private void SetFirebotFilePath()
@@ -258,5 +364,36 @@
     private void SetEntriesFontSize()
     {
         GiveAwayHelpers.SetEntriesFontSize(entriesFontSize);
+    }
+
+    private void OnPresetThemeChanged()
+    {
+        if (selectedThemeName == "Custom")
+        {
+            // When switching to Custom, apply current custom colors
+            GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.PrimaryColor), customPrimaryColor);
+            GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.SecondaryColor), customSecondaryColor);
+            GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.TimerExpiredColor), customTimerExpiredColor);
+            currentTheme = GiveAwayHelpers.GetCurrentTheme();
+        }
+        else
+        {
+            GiveAwayHelpers.SetPresetTheme(selectedThemeName);
+            currentTheme = GiveAwayHelpers.GetCurrentTheme();
+            customPrimaryColor = currentTheme.PrimaryColor;
+            customSecondaryColor = currentTheme.SecondaryColor;
+            customTimerExpiredColor = currentTheme.TimerExpiredColor;
+        }
+        ThemeService.NotifyThemeChanged();
+    }
+
+    private void OnCustomColorChanged()
+    {
+        selectedThemeName = "Custom";
+        GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.PrimaryColor), customPrimaryColor);
+        GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.SecondaryColor), customSecondaryColor);
+        GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.TimerExpiredColor), customTimerExpiredColor);
+        currentTheme = GiveAwayHelpers.GetCurrentTheme();
+        ThemeService.NotifyThemeChanged();
     }
 }

@@ -25,11 +25,14 @@ Firebot Giveaway OBS Overlay is a specialized streaming tool that provides a rea
 - Winner announcement overlay with celebratory effects
 
 ### Customization Options
+- **Theme System**: 7 preset themes (Warframe, Cyberpunk, Neon, Classic, Ocean, Fire, Purple) with custom color support
+- **Custom Colors**: Primary, secondary, and timer expired colors configurable via color pickers
 - Configurable font sizes for all text elements
 - Adjustable layout proportions (prize section width)
 - Customizable countdown timer settings (hours, minutes, seconds)
 - Optional countdown timer enable/disable for different giveaway types
 - Firebot file directory configuration
+- Live preview of theme changes in Setup page
 
 ### Technical Features
 - File system monitoring for real-time updates
@@ -51,6 +54,7 @@ Firebot Giveaway OBS Overlay is a specialized streaming tool that provides a rea
 - Designed specifically for single giveaway display (not multiple simultaneous)
 - Browser source compatibility requirements for OBS Studio
 
+[2025-12-08 - Added comprehensive theme system with 7 presets and custom color support]
 [2025-07-26 - Added configurable timer enable/disable feature for flexible giveaway types without explicit durations]
 [2025-07-26 - Enhanced countdown timer to support hours configuration for extended giveaway durations]
 [2025-01-26 - Initial product context documentation]

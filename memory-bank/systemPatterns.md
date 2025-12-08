@@ -154,4 +154,58 @@
 - Professional appearance matching standard UI conventions
 - Improved accessibility through proper disabled state handling
 
+### [2025-12-08] Event-Based Cross-Page Communication Pattern
+**Pattern**: Singleton services with events for real-time cross-page state synchronization
+**Implementation**:
+- Service registered as singleton (ThemeService, TimerService)
+- Service exposes Action event for state change notifications
+- Source page calls service method to trigger notification
+- Target page subscribes to event in OnInitializedAsync, unsubscribes in Dispose
+- Event handler updates local state and calls InvokeAsync(StateHasChanged)
+**Benefits**:
+- Immediate updates without polling or page refresh
+- Clean separation between pages with loose coupling
+- Reusable pattern for any cross-page communication need
+- Works with Blazor Server's SignalR architecture
+
+### [2025-12-08] Inline Style Theme Application Pattern
+**Pattern**: Dynamic inline styles for reliable theme color application
+**Implementation**:
+- Helper methods generate CSS style strings from theme configuration (GetContainerStyle, GetPrimarySpanStyle)
+- Styles applied directly to elements via style attribute
+- Color values embedded from currentTheme object properties
+- StateHasChanged triggers re-render with updated style strings
+**Benefits**:
+- Guaranteed color application regardless of CSS cascade issues
+- Predictable behavior across browsers and OBS browser source
+- Immediate visual updates when theme changes
+- No dependency on CSS custom property inheritance
+
+### [2025-12-08] Preset with Custom Override Pattern
+**Pattern**: Predefined options with ability to override individual properties
+**Implementation**:
+- ThemeConfig model defines all customizable properties
+- ThemeConfig.Presets provides named preset configurations
+- Dropdown allows preset selection or "Custom" option
+- Custom selection reveals color pickers for individual property editing
+- InitializeTheme checks if colors match preset to determine custom state
+**Benefits**:
+- Quick selection for common configurations via presets
+- Full flexibility for personalized customization
+- Clear UI distinction between preset and custom modes
+- Configuration can be initialized from preset or custom values
+
+### [2025-12-08] Delayed Input Binding Pattern
+**Pattern**: Use onchange instead of oninput for form controls in Blazor Server
+**Implementation**:
+- Range sliders use @bind:event="onchange" instead of oninput
+- Value updates only on input release, not during drag
+- Prevents SignalR round-trip race conditions
+**Benefits**:
+- Eliminates glitchy slider behavior from race conditions
+- Reduced server load during user input
+- Stable user experience for form controls
+- Appropriate for settings that don't need real-time preview
+
+[2025-12-08 - Added theme system and cross-page communication patterns]
 [2025-01-26 - Initial system patterns documentation]

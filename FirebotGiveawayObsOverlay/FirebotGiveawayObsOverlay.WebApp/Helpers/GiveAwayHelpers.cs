@@ -1,4 +1,6 @@
-﻿namespace FirebotGiveawayObsOverlay.WebApp.Helpers;
+using FirebotGiveawayObsOverlay.WebApp.Models;
+
+namespace FirebotGiveawayObsOverlay.WebApp.Helpers;
 
 public static class GiveAwayHelpers
 {
@@ -10,6 +12,8 @@ public static class GiveAwayHelpers
     private static double _prizeFontSizeRem = 3.5;
     private static double _timerFontSizeRem = 3.0;
     private static double _entriesFontSizeRem = 2.5;
+    private static ThemeConfig _currentTheme = ThemeConfig.Presets.Warframe.Clone();
+    private static bool _useCustomTheme = false;
 
     public static void SetCountdownTime(int hours, int minutes, int seconds)
     {
@@ -81,5 +85,90 @@ public static class GiveAwayHelpers
     public static string GetFireBotFileFolder()
     {
         return FireBotFileReader.GetFireBotFileFolder();
+    }
+
+    public static ThemeConfig GetCurrentTheme()
+    {
+        return _currentTheme;
+    }
+
+    public static void SetPresetTheme(string themeName)
+    {
+        _currentTheme = ThemeConfig.Presets.GetByName(themeName).Clone();
+        _useCustomTheme = false;
+    }
+
+    public static void SetCustomTheme(ThemeConfig theme)
+    {
+        _currentTheme = theme.Clone();
+        _currentTheme.Name = "Custom";
+        _useCustomTheme = true;
+    }
+
+    public static void UpdateCustomColor(string property, string value)
+    {
+        _useCustomTheme = true;
+        _currentTheme.Name = "Custom";
+
+        switch (property)
+        {
+            case nameof(ThemeConfig.PrimaryColor):
+                _currentTheme.PrimaryColor = value;
+                break;
+            case nameof(ThemeConfig.SecondaryColor):
+                _currentTheme.SecondaryColor = value;
+                break;
+            case nameof(ThemeConfig.BackgroundStart):
+                _currentTheme.BackgroundStart = value;
+                break;
+            case nameof(ThemeConfig.BackgroundEnd):
+                _currentTheme.BackgroundEnd = value;
+                break;
+            case nameof(ThemeConfig.BorderGlowColor):
+                _currentTheme.BorderGlowColor = value;
+                break;
+            case nameof(ThemeConfig.TextColor):
+                _currentTheme.TextColor = value;
+                break;
+            case nameof(ThemeConfig.TimerExpiredColor):
+                _currentTheme.TimerExpiredColor = value;
+                break;
+            case nameof(ThemeConfig.SeparatorColor):
+                _currentTheme.SeparatorColor = value;
+                break;
+        }
+    }
+
+    public static bool IsUsingCustomTheme()
+    {
+        return _useCustomTheme;
+    }
+
+    public static List<ThemeConfig> GetAllPresetThemes()
+    {
+        return ThemeConfig.Presets.All;
+    }
+
+    public static void InitializeTheme(ThemeConfig theme)
+    {
+        _currentTheme = theme.Clone();
+        // Check if this matches a preset theme by name
+        var preset = ThemeConfig.Presets.All.FirstOrDefault(p =>
+            p.Name.Equals(theme.Name, StringComparison.OrdinalIgnoreCase));
+
+        if (preset != null &&
+            preset.PrimaryColor == theme.PrimaryColor &&
+            preset.SecondaryColor == theme.SecondaryColor &&
+            preset.TimerExpiredColor == theme.TimerExpiredColor)
+        {
+            // Matches a preset, not custom
+            _useCustomTheme = false;
+        }
+        else
+        {
+            // Custom theme or modified preset
+            _useCustomTheme = true;
+            _currentTheme.Name = "Custom";
+        }
     }
 }

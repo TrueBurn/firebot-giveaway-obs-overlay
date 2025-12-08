@@ -11,15 +11,18 @@ This is an ASP.NET Core 8.0 Blazor Server application that provides an OBS overl
 - **Framework**: ASP.NET Core 8.0 with Blazor Server
 - **Frontend**: Razor components with Bootstrap 5.1 and custom CSS animations
 - **File Monitoring**: Real-time file system monitoring for Firebot integration
-- **Services**: Singleton TimerService for countdown management
+- **Services**: Singleton services for timer and theme management with event-based communication
 
 ### Key Components
 
-- `GiveAway.razor`: Main overlay component displaying prize, timer, entries, and winner announcements
+- `GiveAway.razor`: Main overlay component displaying prize, timer, entries, and winner announcements with dynamic theming
+- `Setup.razor`: Configuration page with theme selector, color pickers, and live preview
 - `FireBotFileReader`: Monitors and reads Firebot giveaway files (prize, entries, winner data)
-- `TimerService`: Manages countdown timer functionality
-- `GiveAwayHelpers`: Static configuration helpers for runtime settings
-- `giveaway.css`: Warframe-inspired styling with animations and gradients
+- `TimerService`: Manages countdown timer functionality with event notifications
+- `ThemeService`: Manages theme change notifications between pages
+- `GiveAwayHelpers`: Static configuration helpers for runtime settings including theme management
+- `ThemeConfig`: Theme model with preset themes and custom color support
+- `giveaway.css`: Base styling with CSS custom properties for theming
 
 ### Project Structure
 
@@ -30,7 +33,8 @@ FirebotGiveawayObsOverlay.WebApp/
 │   └── Pages/           # Page components (GiveAway, Setup, Home, Error)
 ├── Extensions/          # Extension methods (TimeSpanExtensions)
 ├── Helpers/            # Helper classes (GiveAwayHelpers, FireBotFileReader)
-├── Services/           # Application services (TimerService)
+├── Models/             # Data models (ThemeConfig)
+├── Services/           # Application services (TimerService, ThemeService)
 └── wwwroot/           # Static assets and CSS
 ```
 
@@ -87,8 +91,9 @@ The application is configured through `appsettings.json` with the following key 
 - `CountdownHours/CountdownMinutes/CountdownSeconds`: Giveaway duration configuration
 - `PrizeSectionWidthPercent`: Layout width distribution (50-90%)
 - Font size settings: `PrizeFontSizeRem`, `TimerFontSizeRem`, `EntriesFontSizeRem`
+- `Theme`: Color scheme configuration with preset or custom colors
 
-Configuration is applied at application startup in `Program.cs:27-47` and managed through `GiveAwayHelpers` static methods.
+Configuration is applied at application startup in `Program.cs` and managed through `GiveAwayHelpers` static methods.
 
 ### Timer Configuration
 The countdown timer supports hours, minutes, and seconds configuration with optional enable/disable:
@@ -101,6 +106,27 @@ Timer behavior:
 - When enabled: Display format automatically adapts (HH:MM:SS when hours > 0, MM:SS when only minutes/seconds, SS when only seconds)
 - When disabled: Timer hidden from overlay, file monitoring continues for winner detection
 - Setup page provides toggle control with disabled state styling for all timer inputs and reset button
+
+### Theme Configuration
+The overlay supports customizable color themes with 7 presets and custom color options:
+
+**Preset Themes**: Warframe (default), Cyberpunk, Neon, Classic, Ocean, Fire, Purple
+
+**Theme Properties**:
+- `Name`: Preset theme name or "Custom" for custom colors
+- `PrimaryColor`: Main gradient color (e.g., "#00fff9")
+- `SecondaryColor`: Secondary gradient color (e.g., "#ff00c8")
+- `BackgroundStart`/`BackgroundEnd`: Container background gradient colors
+- `BorderGlowColor`: Border glow effect color
+- `TextColor`: General text color
+- `TimerExpiredColor`: Color when timer reaches zero
+- `SeparatorColor`: Divider line between prize and info sections
+
+Theme behavior:
+- Themes can be changed at runtime via Setup page with immediate effect on overlay
+- `ThemeService` notifies giveaway page of changes via event-based communication
+- Setup page shows live preview of selected theme
+- Custom colors section appears when "Custom" is selected from dropdown
 
 ## OBS Integration
 
@@ -122,14 +148,24 @@ Files are read from the configured `FireBotFileFolder` directory.
 ## Styling and Animations
 
 The overlay features:
-- Warframe-inspired color schemes and gradients
+- Customizable color themes with 7 presets and custom color support
 - CSS animations for entry counters and winner announcements
 - Responsive layout with configurable proportions
 - Animated borders and pulsing text effects
+- Theme colors applied via inline styles for reliable real-time updates
 
 Winner overlay uses solid black background (`rgb(0, 0, 0)`) without trophy emojis for clean appearance.
 
 ## Recent Project Changes
+
+### December 8, 2025 - Customizable Theme System
+- Added comprehensive theme system with 7 preset themes (Warframe, Cyberpunk, Neon, Classic, Ocean, Fire, Purple)
+- Implemented custom color picker support for personalized themes (Primary, Secondary, Timer Expired colors)
+- Created ThemeConfig model and ThemeService for theme management and real-time updates
+- Added theme configuration to appsettings.json for startup configuration
+- Fixed slider glitchy behavior by changing from oninput to onchange events
+- Implemented live theme preview on Setup page
+- Theme changes apply immediately to giveaway overlay via event-based communication
 
 ### July 26, 2025 - Comprehensive Timer System Enhancement
 - Extended countdown timer to support hours in addition to minutes and seconds
@@ -148,7 +184,6 @@ Winner overlay uses solid black background (`rgb(0, 0, 0)`) without trophy emoji
 ## Future Enhancement Ideas
 
 Based on project roadmap:
-- Customizable color schemes for the overlay
 - Option to adjust animation speeds or disable specific animations
 - Additional winner announcement styles
 - Support for displaying multiple winners

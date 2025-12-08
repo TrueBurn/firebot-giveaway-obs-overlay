@@ -1,5 +1,6 @@
 using FirebotGiveawayObsOverlay.WebApp.Components;
 using FirebotGiveawayObsOverlay.WebApp.Helpers;
+using FirebotGiveawayObsOverlay.WebApp.Models;
 using FirebotGiveawayObsOverlay.WebApp.Services;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -13,6 +14,9 @@ builder.Services
 
 // Add TimerService as a singleton
 builder.Services.AddSingleton<TimerService>();
+
+// Add ThemeService as a singleton
+builder.Services.AddSingleton<ThemeService>();
 
 WebApplication app = builder.Build();
 
@@ -48,6 +52,21 @@ app.Lifetime.ApplicationStarted.Register(() =>
     GiveAwayHelpers.SetPrizeFontSize(prizeFontSize);
     GiveAwayHelpers.SetTimerFontSize(timerFontSize);
     GiveAwayHelpers.SetEntriesFontSize(entriesFontSize);
+
+    // Initialize theme settings from configuration
+    var themeConfig = new ThemeConfig
+    {
+        Name = app.Configuration.GetValue<string>("AppSettings:Theme:Name", "Warframe") ?? "Warframe",
+        PrimaryColor = app.Configuration.GetValue<string>("AppSettings:Theme:PrimaryColor", "#00fff9") ?? "#00fff9",
+        SecondaryColor = app.Configuration.GetValue<string>("AppSettings:Theme:SecondaryColor", "#ff00c8") ?? "#ff00c8",
+        BackgroundStart = app.Configuration.GetValue<string>("AppSettings:Theme:BackgroundStart", "rgba(0, 0, 0, 0.9)") ?? "rgba(0, 0, 0, 0.9)",
+        BackgroundEnd = app.Configuration.GetValue<string>("AppSettings:Theme:BackgroundEnd", "rgba(15, 25, 35, 0.98)") ?? "rgba(15, 25, 35, 0.98)",
+        BorderGlowColor = app.Configuration.GetValue<string>("AppSettings:Theme:BorderGlowColor", "rgba(0, 255, 255, 0.15)") ?? "rgba(0, 255, 255, 0.15)",
+        TextColor = app.Configuration.GetValue<string>("AppSettings:Theme:TextColor", "#ffffff") ?? "#ffffff",
+        TimerExpiredColor = app.Configuration.GetValue<string>("AppSettings:Theme:TimerExpiredColor", "#ff3333") ?? "#ff3333",
+        SeparatorColor = app.Configuration.GetValue<string>("AppSettings:Theme:SeparatorColor", "rgba(0, 255, 255, 0.5)") ?? "rgba(0, 255, 255, 0.5)"
+    };
+    GiveAwayHelpers.InitializeTheme(themeConfig);
 
     // Launch browser with correct port
     string url = "http://localhost:5000/giveaway";
