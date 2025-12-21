@@ -182,5 +182,56 @@
 - Less real-time feedback during drag (value updates on release)
 - Significantly reduced server load during slider adjustments
 
+### [2025-12-21] Version-Bump Triggered Release Workflow
+**Decision**: Implemented GitHub Actions workflow triggered by version changes in .csproj
+**Rationale**:
+- User preference for simple release process: edit version in .csproj, push to main
+- Eliminates need for manual tag creation or separate release commands
+- Version is single source of truth in the codebase
+- Automatic skip when version unchanged prevents accidental duplicate releases
+**Implementation Details**:
+- Workflow triggers on push to main branch when .csproj changes
+- Extracts version from .csproj using grep
+- Checks if git tag v{version} already exists
+- If new version: builds win-x86 and win-x64 artifacts, creates release
+- If existing version: exits cleanly (silent skip)
+**Implications**:
+- Simple release process: edit version → commit → push = automatic release
+- Version must be updated for every release (enforces versioning discipline)
+- Both 32-bit and 64-bit Windows platforms supported
+
+### [2025-12-21] VersionService for Runtime Version Access
+**Decision**: Created VersionService singleton to provide assembly version at runtime
+**Rationale**:
+- Setup page needs to display current version to users
+- Version information embedded in assembly via .csproj properties
+- Consistent with existing service patterns (TimerService, ThemeService)
+**Implementation Details**:
+- Uses Assembly.GetExecutingAssembly() to read version metadata
+- GetDisplayVersion() cleans up InformationalVersion (removes git hash suffix)
+- Registered as singleton in Program.cs
+- Injected into Setup.razor for display
+**Implications**:
+- Version automatically updates when .csproj version changes
+- No hardcoded version strings anywhere in code
+- Single source of truth for version information
+
+### [2025-12-21] Comprehensive Documentation Structure
+**Decision**: Created /docs folder with getting-started.md, usage.md, and architecture.md
+**Rationale**:
+- README.md was becoming too long for comprehensive documentation
+- Separate files allow focused content for different audiences
+- Supports GitHub Releases with clear user documentation
+**Implementation Details**:
+- getting-started.md: Quick start, prerequisites, download, first run
+- usage.md: All configuration options, OBS integration, troubleshooting
+- architecture.md: Technical documentation for developers
+- README.md enhanced with quick start and links to full docs
+**Implications**:
+- Better user experience with organized documentation
+- Easier to maintain and update individual sections
+- Supports both end users and developers
+
+[2025-12-21 - Added release workflow, versioning, and documentation decisions]
 [2025-12-08 - Added theme system and slider fix architectural decisions]
 [2025-01-26 - Initial decision log documentation with historical decisions]

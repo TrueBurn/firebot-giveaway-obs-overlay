@@ -18,6 +18,9 @@ builder.Services.AddSingleton<TimerService>();
 // Add ThemeService as a singleton
 builder.Services.AddSingleton<ThemeService>();
 
+// Add VersionService as a singleton
+builder.Services.AddSingleton<VersionService>();
+
 WebApplication app = builder.Build();
 
 // Configure the HTTP request pipeline.

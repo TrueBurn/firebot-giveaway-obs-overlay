@@ -4,6 +4,17 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Version properties -->
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <InformationalVersion>1.0.0</InformationalVersion>
+
+    <!-- Product metadata -->
+    <Product>Firebot Giveaway OBS Overlay</Product>
+    <Company>TrueBurn</Company>
+    <Description>A stylish, animated OBS overlay for Firebot giveaways with customizable themes</Description>
   </PropertyGroup>
 
 </Project>

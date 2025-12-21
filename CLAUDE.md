@@ -20,6 +20,7 @@ This is an ASP.NET Core 8.0 Blazor Server application that provides an OBS overl
 - `FireBotFileReader`: Monitors and reads Firebot giveaway files (prize, entries, winner data)
 - `TimerService`: Manages countdown timer functionality with event notifications
 - `ThemeService`: Manages theme change notifications between pages
+- `VersionService`: Provides runtime access to assembly version information
 - `GiveAwayHelpers`: Static configuration helpers for runtime settings including theme management
 - `ThemeConfig`: Theme model with preset themes and custom color support
 - `giveaway.css`: Base styling with CSS custom properties for theming
@@ -34,8 +35,13 @@ FirebotGiveawayObsOverlay.WebApp/
 ├── Extensions/          # Extension methods (TimeSpanExtensions)
 ├── Helpers/            # Helper classes (GiveAwayHelpers, FireBotFileReader)
 ├── Models/             # Data models (ThemeConfig)
-├── Services/           # Application services (TimerService, ThemeService)
+├── Services/           # Application services (TimerService, ThemeService, VersionService)
 └── wwwroot/           # Static assets and CSS
+
+docs/                   # User documentation
+├── getting-started.md  # Installation and first run guide
+├── usage.md           # Configuration and daily use
+└── architecture.md    # Technical documentation
 ```
 
 ## Development Commands
@@ -82,6 +88,66 @@ This validation step is mandatory for:
 - Component modifications (Razor files with code-behind)
 - Service and helper class updates
 - Extension method changes
+
+## Versioning and Releases
+
+### Version Location
+The application version is defined in the `.csproj` file:
+- **File**: `FirebotGiveawayObsOverlay/FirebotGiveawayObsOverlay.WebApp/FirebotGiveawayObsOverlay.WebApp.csproj`
+- **Current Version**: Check the `<Version>` property in the file
+
+### Version Properties
+```xml
+<Version>1.0.0</Version>
+<AssemblyVersion>1.0.0.0</AssemblyVersion>
+<FileVersion>1.0.0.0</FileVersion>
+<InformationalVersion>1.0.0</InformationalVersion>
+```
+
+### How to Create a New Release
+
+**When the user says "bump the version" or "create a new release":**
+
+1. **Edit the .csproj file** to update ALL version properties:
+   ```xml
+   <Version>X.Y.Z</Version>
+   <AssemblyVersion>X.Y.Z.0</AssemblyVersion>
+   <FileVersion>X.Y.Z.0</FileVersion>
+   <InformationalVersion>X.Y.Z</InformationalVersion>
+   ```
+
+2. **Version bump types** (Semantic Versioning):
+   - **Patch** (1.0.0 → 1.0.1): Bug fixes, minor changes
+   - **Minor** (1.0.0 → 1.1.0): New features, backward compatible
+   - **Major** (1.0.0 → 2.0.0): Breaking changes
+
+3. **Commit and push to main branch**
+   - The GitHub Actions workflow automatically:
+     - Detects the version change
+     - Creates a git tag (v1.0.0)
+     - Builds for win-x86 and win-x64
+     - Creates a GitHub Release with both ZIP artifacts
+
+### Automated Release Workflow
+
+The workflow (`.github/workflows/release.yml`) triggers on:
+- Push to `main` branch when `.csproj` version changes
+- Manual dispatch from GitHub Actions UI
+
+**Workflow behavior:**
+- Reads version from `.csproj`
+- Checks if tag already exists → skips if version unchanged
+- Builds self-contained single-file executables for both win-x86 and win-x64
+- Creates GitHub Release with auto-generated release notes
+
+### Version Display
+- Version is shown in the Setup page footer
+- `VersionService` provides runtime version access via `Assembly.GetExecutingAssembly()`
+
+### Release Artifacts
+Each release includes:
+- `FirebotGiveawayOverlay-{version}-win-x86.zip` - 32-bit Windows
+- `FirebotGiveawayOverlay-{version}-win-x64.zip` - 64-bit Windows
 
 ## Configuration
 
@@ -157,6 +223,19 @@ The overlay features:
 Winner overlay uses solid black background (`rgb(0, 0, 0)`) without trophy emojis for clean appearance.
 
 ## Recent Project Changes
+
+### December 21, 2025 - GitHub Releases, Versioning, and Documentation
+- Added automated GitHub Actions release workflow triggered by version bumps
+- Implemented semantic versioning in .csproj (Version, AssemblyVersion, FileVersion, InformationalVersion)
+- Created VersionService for runtime version access
+- Added version display footer to Setup page
+- Created comprehensive documentation folder (/docs):
+  - getting-started.md: Installation and first run guide
+  - usage.md: Configuration and daily use guide
+  - architecture.md: Technical documentation
+- Enhanced README.md with badges, quick start, system requirements, and documentation links
+- Release workflow builds for both win-x86 and win-x64 platforms
+- Releases are automatically created when version is bumped and pushed to main
 
 ### December 8, 2025 - Customizable Theme System
 - Added comprehensive theme system with 7 preset themes (Warframe, Cyberpunk, Neon, Classic, Ocean, Fire, Purple)

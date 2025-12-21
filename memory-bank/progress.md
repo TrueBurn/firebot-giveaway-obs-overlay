@@ -89,6 +89,28 @@
 - ✅ Changed all range input bindings from oninput to onchange events
 - ✅ Validated fix resolves user-reported glitchy behavior
 
+## 2025-12-21 - GitHub Releases, Versioning, and Documentation
+
+### [2025-12-21 12:00:00] - Complete Release System and Documentation
+- ✅ Added version properties to .csproj (Version, AssemblyVersion, FileVersion, InformationalVersion at 1.0.0)
+- ✅ Created GitHub Actions workflow (.github/workflows/release.yml) for automated releases
+  - Triggers on push to main when version in .csproj changes
+  - Checks if version tag already exists (skips if so)
+  - Builds for both win-x86 and win-x64 platforms
+  - Creates self-contained single-file executables
+  - Publishes GitHub Release with ZIP artifacts
+- ✅ Created VersionService.cs for runtime version access from assembly metadata
+- ✅ Registered VersionService as singleton in Program.cs
+- ✅ Added version display footer to Setup.razor with badge
+- ✅ Created /docs folder with comprehensive documentation:
+  - getting-started.md: Installation and first run guide
+  - usage.md: Configuration and daily use guide
+  - architecture.md: Technical documentation
+- ✅ Enhanced README.md with badges, quick start, system requirements, downloads section, and docs links
+- ✅ Updated CLAUDE.md with complete versioning instructions for future sessions
+- ✅ Updated memory bank files (activeContext.md, progress.md, decisionLog.md)
+- ✅ Validated with successful dotnet build
+
 ## Upcoming Tasks
 
 ### Immediate
@@ -102,6 +124,7 @@
 - Configurable overlay size and position
 - Mobile-responsive design for monitoring on different devices
 
+[2025-12-21 - Updated with GitHub releases, versioning, and documentation implementation]
 [2025-12-08 - Updated with theme system implementation]
 [2025-07-26 - Updated with hours support implementation completion and detailed progress tracking]
 [2025-01-26 - Initial progress documentation with historical context]

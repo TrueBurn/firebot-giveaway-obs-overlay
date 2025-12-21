@@ -3,6 +3,7 @@
 @using FirebotGiveawayObsOverlay.WebApp.Services
 @inject TimerService TimerService
 @inject ThemeService ThemeService
+@inject VersionService VersionService
 
 @page "/setup"
 @rendermode InteractiveServer
@@ -259,7 +260,17 @@
     </div>
 </div>
 
+<hr />
+
+<div class="mt-4 pt-2">
+    <div class="d-flex justify-content-between align-items-center text-muted small">
+        <span class="fw-semibold">Firebot Giveaway OBS Overlay</span>
+        <span>Version <span class="badge bg-secondary">v@(versionDisplay)</span></span>
+    </div>
+</div>
+
 @code {
+    private string versionDisplay = "";
     private string firebotFilePath = GiveAwayHelpers.GetFireBotFileFolder();
     private bool countdownTimerEnabled;
     private int countdownHours;
@@ -282,6 +293,9 @@
 
     protected override void OnInitialized()
     {
+        // Initialize version display
+        versionDisplay = VersionService.GetDisplayVersion();
+
         var (hours, minutes, seconds) = GiveAwayHelpers.GetCountdownTime();
         countdownHours = hours;
         countdownMinutes = minutes;

@@ -1,18 +1,56 @@
 # Firebot Giveaway OBS Overlay
 
+[![Release](https://img.shields.io/github/v/release/trueburn/firebot-giveaway-obs-overlay)](https://github.com/trueburn/firebot-giveaway-obs-overlay/releases)
+[![License](https://img.shields.io/github/license/trueburn/firebot-giveaway-obs-overlay)](LICENSE)
+
 A stylish, animated overlay for Firebot giveaways with customizable themes and Warframe-inspired design.
 
-## Usage
+## Quick Start
 
-1. Start the application
-2. Add a Browser Source in OBS Studio pointing to `http://localhost:5243/giveaway`
-3. Configure the overlay settings through the Setup page
-4. Start your giveaway in Firebot
-5. The overlay will automatically update based on the giveaway status
+1. **Download** the latest release for your system from [Releases](https://github.com/trueburn/firebot-giveaway-obs-overlay/releases)
+2. **Extract** and run `FirebotGiveawayObsOverlay.WebApp.exe`
+3. **Add browser source** in OBS: `http://localhost:5000/giveaway`
+4. **Configure** at: `http://localhost:5000/setup`
+
+For detailed instructions, see [Getting Started](docs/getting-started.md).
+
+## System Requirements
+
+- Windows 10/11 (x86 or x64)
+- Firebot with file-based giveaway output
+- OBS Studio (or compatible streaming software)
+
+## Downloads
+
+Download the latest version from the [Releases](https://github.com/trueburn/firebot-giveaway-obs-overlay/releases) page:
+
+| File | Description |
+|------|-------------|
+| `FirebotGiveawayOverlay-x.x.x-win-x64.zip` | 64-bit Windows (recommended) |
+| `FirebotGiveawayOverlay-x.x.x-win-x86.zip` | 32-bit Windows |
+
+## Features
+
+- 7 preset themes: Warframe, Cyberpunk, Neon, Classic, Ocean, Fire, Purple
+- Custom color picker for personalized themes
+- Animated effects and transitions
+- Real-time entry counter with animations
+- Celebratory winner announcement overlay
+- Gradient color schemes with animated borders
+- Responsive layout with customizable dimensions
+- Configurable countdown timer (hours, minutes, seconds) with enable/disable option
+- Easy setup page with live preview
+- Version display for easy troubleshooting
+
+## Documentation
+
+- [Getting Started](docs/getting-started.md) - Installation and first run
+- [Usage Guide](docs/usage.md) - Configuration and daily use
+- [Architecture](docs/architecture.md) - Technical documentation
 
 ## Configuration
 
-The application can be configured through the `appsettings.json` file:
+Configure through the Setup page or `appsettings.json`:
 
 ```json
 {
@@ -41,68 +79,24 @@ The application can be configured through the `appsettings.json` file:
 }
 ```
 
-### Configuration Options:
-- `FireBotFileFolder`: Directory where Firebot stores your giveaway files
-- `CountdownTimerEnabled`: Enable/disable the countdown timer display
-- `CountdownHours`, `CountdownMinutes`, `CountdownSeconds`: Default duration for giveaways
-- `PrizeSectionWidthPercent`: Controls the layout width distribution (50-90%)
-- `PrizeFontSizeRem`, `TimerFontSizeRem`, `EntriesFontSizeRem`: Font size settings
-- `Theme`: Color scheme configuration (see Theme Configuration below)
-
-### Theme Configuration
-You can use a preset theme by name or customize individual colors:
-
-**Preset Themes**: Warframe, Cyberpunk, Neon, Classic, Ocean, Fire, Purple
-
-To use a preset, just set the `Name` field. To customize, modify the color values:
-- `PrimaryColor`: Main accent color for text gradients
-- `SecondaryColor`: Secondary color for gradients and effects
-- `BackgroundStart`/`BackgroundEnd`: Container background gradient
-- `BorderGlowColor`: Border glow effect color
-- `TextColor`: General text color
-- `TimerExpiredColor`: Color when timer reaches zero
-- `SeparatorColor`: Divider line color
-
 ## OBS Integration
 
-1. In OBS Studio, add a new Browser Source
-2. Set the URL to `http://localhost:5243/giveaway`
-3. Recommended dimensions:
-   - Width: 1200px
-   - Height: 300px
-4. Important Browser Source settings:
-   - Enable "Refresh browser when scene becomes active"
-   - Enable "Shutdown source when not visible" for better performance
-   - Set custom CSS to `body { background-color: rgba(0, 0, 0, 0); margin: 0px auto; overflow: hidden; }`
-
-## Features
-
-- 🎮 Customizable themes with 7 presets (Warframe, Cyberpunk, Neon, Classic, Ocean, Fire, Purple)
-- 🎨 Custom color picker for personalized themes
-- ✨ Animated effects and transitions
-- 🎯 Real-time entry counter with animations
-- 🏆 Celebratory winner announcement overlay
-- 🌈 Gradient color schemes with animated borders
-- 📱 Responsive layout with customizable dimensions
-- ⏱️ Configurable countdown timer (hours, minutes, seconds) with enable/disable option
-- 🔧 Easy setup page for all customization options with live preview
-
-## Setup Page Options
-
-The setup page allows you to configure:
-- **Theme**: Select from preset themes or customize colors (primary, secondary, timer expired)
-- **Countdown Timer**: Duration (hours/minutes/seconds) with enable/disable toggle
-- **Firebot File Path**: Directory where Firebot stores giveaway files
-- **Layout Proportions**: Prize section width percentage
-- **Font Sizes**: Individual sizing for prize, timer, and entries text
+1. Add a new Browser Source in OBS Studio
+2. Set URL to `http://localhost:5000/giveaway`
+3. Recommended dimensions: 1200px x 300px
+4. Custom CSS for transparency:
+   ```css
+   body { background-color: rgba(0, 0, 0, 0); margin: 0px auto; overflow: hidden; }
+   ```
 
 ## Development
 
-The project is built using:
-- ASP.NET Core 8.0
-- Blazor Server
-- Bootstrap 5.1
-- CSS animations
+Built with ASP.NET Core 8.0, Blazor Server, and Bootstrap 5.1.
+
+```bash
+cd FirebotGiveawayObsOverlay/FirebotGiveawayObsOverlay.WebApp
+dotnet run
+```
 
 ## License
 
