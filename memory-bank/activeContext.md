@@ -2,6 +2,16 @@
 
 ## Current Focus
 
+### [2025-12-22] .NET 10 Upgrade (v2.0.0)
+- Upgraded from .NET 8.0 to .NET 10 (LTS) with C# 14 support
+- Updated target framework to `net10.0` in project file
+- Updated GitHub Actions workflow to use .NET 10.0.x SDK
+- Updated dotnet-ef tool to version 10.0.0
+- Migrated from legacy `.sln` to new `.slnx` XML solution format
+- Version bumped to 2.0.0 to reflect major framework upgrade
+- No code changes required - codebase already uses modern patterns
+- Automatic Blazor 10 benefits: 76% smaller blazor.web.js, asset fingerprinting, improved reconnection
+
 ### [2025-12-21] GitHub Releases, Versioning, and Documentation
 - Implemented automated GitHub Actions release workflow triggered by version bumps
 - Added semantic versioning to .csproj (Version, AssemblyVersion, FileVersion, InformationalVersion)
@@ -26,6 +36,16 @@
 - Updated configuration system to handle three-parameter time settings and timer state
 
 ## Recent Changes
+
+### [2025-12-22] .NET 10 Framework Upgrade
+- Updated `.csproj` TargetFramework from `net8.0` to `net10.0`
+- Updated version properties to 2.0.0 (major version bump for framework change)
+- Updated `.github/workflows/release.yml` DOTNET_VERSION from `8.0.x` to `10.0.x`
+- Updated `.config/dotnet-tools.json` dotnet-ef version from `8.0.2` to `10.0.0`
+- Migrated `FirebotGiveawayObsOverlay.sln` to `FirebotGiveawayObsOverlay.slnx` (new XML format)
+- Updated CLAUDE.md to reflect .NET 10 architecture
+- No breaking changes affected this codebase (no cookie auth, no NavLink query matching)
+- Blazor 10 automatic improvements: smaller JS bundle, asset fingerprinting, improved reconnection
 
 ### [2025-12-21] GitHub Releases and Documentation
 - Created `.github/workflows/release.yml` for automated releases
@@ -83,6 +103,7 @@
 3. Animation speed/disable configuration
 4. Additional winner announcement styles
 
+[2025-12-22 - Updated with .NET 10 upgrade (v2.0.0)]
 [2025-12-21 - Updated with GitHub releases, versioning, and documentation implementation]
 [2025-12-08 - Updated with theme system implementation]
 [2025-07-26 - Updated with hours support implementation progress and current focus]

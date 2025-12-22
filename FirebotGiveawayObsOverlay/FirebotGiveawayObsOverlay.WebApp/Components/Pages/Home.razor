@@ -1,7 +1,116 @@
-﻿@page "/"
+@page "/"
+@using FirebotGiveawayObsOverlay.WebApp.Services
+@inject VersionService VersionService
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Firebot Giveaway Overlay</PageTitle>
 
-<h1>Twitch Give Away Overlay</h1>
+<div class="container py-4">
+    <div class="text-center mb-5">
+        <h1 class="display-4 fw-bold">Firebot Giveaway Overlay</h1>
+        <p class="lead text-muted">A stylish, animated OBS overlay for your Twitch giveaways</p>
+    </div>
 
- Overlay landing page for Firebot Giveaway workflow
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="card h-100 border-primary">
+                <div class="card-body text-center">
+                    <h2 class="card-title h4">Overlay</h2>
+                    <p class="card-text">The display for OBS Browser Source. Shows prize, timer, entries, and winner.</p>
+                    <a href="/giveaway" class="btn btn-primary btn-lg" target="_blank">/giveaway</a>
+                    <p class="text-muted mt-2 small">Open in new tab for OBS</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100 border-success">
+                <div class="card-body text-center">
+                    <h2 class="card-title h4">Setup</h2>
+                    <p class="card-text">Configure themes, timer, fonts, layout, and Firebot file path.</p>
+                    <a href="/setup" class="btn btn-success btn-lg">/setup</a>
+                    <p class="text-muted mt-2 small">Customize your overlay</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-5">
+        <div class="card-header bg-dark text-white">
+            <h2 class="h5 mb-0">Quick Start: OBS Integration</h2>
+        </div>
+        <div class="card-body">
+            <ol class="mb-0">
+                <li class="mb-2">In OBS, click <strong>+</strong> in Sources panel and select <strong>Browser</strong></li>
+                <li class="mb-2">Set the URL to: <code class="bg-light px-2 py-1 rounded">http://localhost:5000/giveaway</code></li>
+                <li class="mb-2">Set dimensions: <strong>Width: 1200</strong>, <strong>Height: 300</strong></li>
+                <li class="mb-2">Add Custom CSS for transparency:
+                    <pre class="bg-light p-2 rounded mt-1 mb-0"><code>body { background-color: rgba(0, 0, 0, 0); margin: 0; overflow: hidden; }</code></pre>
+                </li>
+                <li>Position the overlay on your scene and you're ready!</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h3 class="h5">7 Theme Presets</h3>
+                    <p class="card-text small">Warframe, Cyberpunk, Neon, Classic, Ocean, Fire, and Purple. Plus custom colors!</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h3 class="h5">Real-Time Updates</h3>
+                    <p class="card-text small">Entry count updates live as viewers join. Timer counts down automatically.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h3 class="h5">Winner Animation</h3>
+                    <p class="card-text small">Automatic winner display with celebration styling when Firebot picks a winner.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-5">
+        <div class="card-header">
+            <h2 class="h5 mb-0">How It Works</h2>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h4 class="h6">Firebot Integration</h4>
+                    <p class="small">The overlay monitors your Firebot giveaway folder for:</p>
+                    <ul class="small">
+                        <li><strong>Prize</strong> - What you're giving away</li>
+                        <li><strong>Entries</strong> - Who has entered (real-time count)</li>
+                        <li><strong>Winner</strong> - Triggers winner display mode</li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h4 class="h6">Giveaway Workflow</h4>
+                    <ol class="small mb-0">
+                        <li>Start the overlay application</li>
+                        <li>Configure settings on the Setup page</li>
+                        <li>Add Browser Source in OBS</li>
+                        <li>Start giveaway in Firebot</li>
+                        <li>Overlay displays automatically!</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center text-muted small">
+        <p class="mb-1">Firebot Giveaway Overlay v@(VersionService.GetDisplayVersion())</p>
+        <p class="mb-0">
+            <a href="https://github.com/trueburn/firebot-giveaway-obs-overlay" target="_blank" class="text-muted">GitHub</a>
+        </p>
+    </div>
+</div>
+

@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is an ASP.NET Core 8.0 Blazor Server application that provides an OBS overlay for Firebot giveaways. The application monitors Firebot files and displays real-time giveaway information with Warframe-inspired styling and animations.
+This is an ASP.NET Core 10 Blazor Server application that provides an OBS overlay for Firebot giveaways. The application monitors Firebot files and displays real-time giveaway information with Warframe-inspired styling and animations.
 
 ## Architecture
 
-- **Framework**: ASP.NET Core 8.0 with Blazor Server
+- **Framework**: ASP.NET Core 10 (LTS) with Blazor Server and C# 14
 - **Frontend**: Razor components with Bootstrap 5.1 and custom CSS animations
 - **File Monitoring**: Real-time file system monitoring for Firebot integration
 - **Services**: Singleton services for timer and theme management with event-based communication
@@ -223,6 +223,16 @@ The overlay features:
 Winner overlay uses solid black background (`rgb(0, 0, 0)`) without trophy emojis for clean appearance.
 
 ## Recent Project Changes
+
+### December 22, 2025 - .NET 10 Upgrade (v2.0.0)
+- Upgraded from .NET 8.0 to .NET 10 (LTS) with C# 14 support
+- Updated target framework to `net10.0` in project file
+- Updated GitHub Actions workflow to use .NET 10.0.x SDK
+- Updated dotnet-ef tool to version 10.0.0
+- Migrated from legacy `.sln` to new `.slnx` XML solution format (cleaner, fewer merge conflicts)
+- Enhanced Home page with quick start guide, OBS integration steps, and feature overview
+- Version bumped to 2.0.0 to reflect major framework upgrade
+- Automatic Blazor 10 benefits: 76% smaller blazor.web.js, asset fingerprinting, improved reconnection handling
 
 ### December 21, 2025 - GitHub Releases, Versioning, and Documentation
 - Added automated GitHub Actions release workflow triggered by version bumps
