@@ -31,6 +31,8 @@ Download the latest version from the [Releases](https://github.com/trueburn/fire
 
 ## Features
 
+- **Persistent Settings** - All settings automatically saved and persist across restarts
+- **Settings Management** - View changes vs defaults, reset individual or all settings
 - 7 preset themes: Warframe, Cyberpunk, Neon, Classic, Ocean, Fire, Purple
 - Custom color picker for personalized themes
 - Animated effects and transitions
@@ -50,7 +52,9 @@ Download the latest version from the [Releases](https://github.com/trueburn/fire
 
 ## Configuration
 
-Configure through the Setup page or `appsettings.json`:
+Configure through the Setup page - **all settings are automatically saved** and persist across restarts.
+
+Default settings in `appsettings.json` (your customizations are saved separately to `usersettings.json`):
 
 ```json
 {
@@ -91,7 +95,7 @@ Configure through the Setup page or `appsettings.json`:
 
 ## Development
 
-Built with ASP.NET Core 8.0, Blazor Server, and Bootstrap 5.1.
+Built with ASP.NET Core 10, Blazor Server, and Bootstrap 5.1.
 
 ```bash
 cd FirebotGiveawayObsOverlay/FirebotGiveawayObsOverlay.WebApp

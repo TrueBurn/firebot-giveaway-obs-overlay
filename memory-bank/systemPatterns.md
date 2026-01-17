@@ -207,5 +207,33 @@
 - Stable user experience for form controls
 - Appropriate for settings that don't need real-time preview
 
+### [2026-01-17] File-Based Settings Persistence Pattern
+**Pattern**: User settings persisted to JSON file separate from application defaults
+**Implementation**:
+- `AppSettings` model with non-nullable properties and sensible defaults
+- `UserSettingsService` singleton for load/save operations
+- Settings file (`usersettings.json`) stored in application directory
+- Startup logic: load user settings if exists, fall back to appsettings.json
+- Setup page triggers save after each setting change
+**Benefits**:
+- Settings persist across application restarts
+- User settings survive application updates (git-ignored file)
+- Single source of truth with non-nullable properties prevents drift
+- Self-documenting JSON file users can manually edit if needed
+
+### [2026-01-17] Centralized Settings Application Pattern
+**Pattern**: Single method applies all settings from a settings object
+**Implementation**:
+- `GiveAwayHelpers.ApplySettings(AppSettings)` applies all settings at once
+- `GiveAwayHelpers.GetCurrentSettings()` exports current state to AppSettings
+- Startup uses ApplySettings for both user and default settings
+- Eliminates code duplication between loading paths
+**Benefits**:
+- Consistent settings application regardless of source
+- Easy to add new settings (single point of change)
+- Simplifies testing and debugging of settings logic
+- Reduces risk of missing settings during load/save
+
+[2026-01-17 - Added settings persistence and centralized application patterns]
 [2025-12-08 - Added theme system and cross-page communication patterns]
 [2025-01-26 - Initial system patterns documentation]

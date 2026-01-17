@@ -149,6 +149,41 @@ public static class GiveAwayHelpers
         return ThemeConfig.Presets.All;
     }
 
+    /// <summary>
+    /// Gets all current settings as an AppSettings object for persistence.
+    /// </summary>
+    public static AppSettings GetCurrentSettings()
+    {
+        return new AppSettings
+        {
+            FireBotFileFolder = GetFireBotFileFolder(),
+            CountdownTimerEnabled = _countdownTimerEnabled,
+            CountdownHours = _countdownHours,
+            CountdownMinutes = _countdownMinutes,
+            CountdownSeconds = _countdownSeconds,
+            PrizeSectionWidthPercent = _prizeSectionWidthPercent,
+            PrizeFontSizeRem = _prizeFontSizeRem,
+            TimerFontSizeRem = _timerFontSizeRem,
+            EntriesFontSizeRem = _entriesFontSizeRem,
+            Theme = ThemeSettings.FromThemeConfig(_currentTheme)
+        };
+    }
+
+    /// <summary>
+    /// Applies all settings from an AppSettings object.
+    /// </summary>
+    public static void ApplySettings(AppSettings settings)
+    {
+        SetFireBotFileFolder(settings.FireBotFileFolder);
+        SetCountdownTimerEnabled(settings.CountdownTimerEnabled);
+        SetCountdownTime(settings.CountdownHours, settings.CountdownMinutes, settings.CountdownSeconds);
+        SetPrizeSectionWidth(settings.PrizeSectionWidthPercent);
+        SetPrizeFontSize(settings.PrizeFontSizeRem);
+        SetTimerFontSize(settings.TimerFontSizeRem);
+        SetEntriesFontSize(settings.EntriesFontSizeRem);
+        InitializeTheme(settings.Theme.ToThemeConfig());
+    }
+
     public static void InitializeTheme(ThemeConfig theme)
     {
         _currentTheme = theme.Clone();

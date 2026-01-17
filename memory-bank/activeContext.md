@@ -2,6 +2,20 @@
 
 ## Current Focus
 
+### [2026-01-17] User-Specific Persistent Settings (v2.1.0)
+- Implemented settings persistence across application restarts
+- Created `AppSettings` model with non-nullable properties for type-safe configuration
+- Created `UserSettingsService` singleton for loading/saving `usersettings.json`
+- Added `ApplySettings()` method to `GiveAwayHelpers` for centralized settings application
+- Settings saved to `usersettings.json` in application directory (git-ignored)
+- Startup loads `usersettings.json` if exists, otherwise falls back to `appsettings.json`
+- All Setup page changes automatically persist to `usersettings.json`
+- Added Settings Management section to Setup page with:
+  - Status indicator showing custom vs default settings
+  - Collapsible diff view comparing current settings to defaults
+  - Individual reset buttons for each changed setting
+  - Full reset to defaults with confirmation
+
 ### [2025-12-22] .NET 10 Upgrade (v2.0.0)
 - Upgraded from .NET 8.0 to .NET 10 (LTS) with C# 14 support
 - Updated target framework to `net10.0` in project file
@@ -36,6 +50,22 @@
 - Updated configuration system to handle three-parameter time settings and timer state
 
 ## Recent Changes
+
+### [2026-01-17] User Settings Persistence System (v2.1.0)
+- Created `Models/AppSettings.cs` with non-nullable properties and `ThemeSettings` helper class
+- Added `GetDefaults()` and `GetDifferences()` methods to AppSettings for reset functionality
+- Added `SettingsDiff` record for tracking setting changes
+- Created `Services/UserSettingsService.cs` for JSON file-based settings persistence
+- Added `DeleteUserSettings()` method for reset functionality
+- Updated `GiveAwayHelpers.cs` with `GetCurrentSettings()` and `ApplySettings()` methods
+- Modified `Program.cs` to load user settings first, fall back to appsettings.json
+- Updated `Setup.razor` with comprehensive Settings Management UI:
+  - Status badge showing "Custom settings active" or "Using defaults"
+  - Collapsible diff table with color swatches for color values
+  - Individual reset buttons (↻) for each changed setting
+  - Full "Reset to Defaults" with two-step confirmation
+- Added `usersettings.json` to `.gitignore` for user-specific settings exclusion
+- Version bumped to 2.1.0
 
 ### [2025-12-22] .NET 10 Framework Upgrade
 - Updated `.csproj` TargetFramework from `net8.0` to `net10.0`
@@ -103,6 +133,7 @@
 3. Animation speed/disable configuration
 4. Additional winner announcement styles
 
+[2026-01-17 - Updated with user settings persistence system]
 [2025-12-22 - Updated with .NET 10 upgrade (v2.0.0)]
 [2025-12-21 - Updated with GitHub releases, versioning, and documentation implementation]
 [2025-12-08 - Updated with theme system implementation]

@@ -111,10 +111,49 @@
 - ✅ Updated memory bank files (activeContext.md, progress.md, decisionLog.md)
 - ✅ Validated with successful dotnet build
 
+## 2026-01-17 - User-Specific Persistent Settings (v2.1.0)
+
+### [2026-01-17 15:00:00] - Version 2.1.0 Release
+- ✅ Bumped version to 2.1.0 in .csproj
+- ✅ Updated all memory bank and documentation files
+- ✅ Feature complete: settings persistence with reset functionality
+
+### [2026-01-17 14:30:00] - Reset Settings Feature Complete
+- ✅ Added `GetDefaults()` static method to AppSettings
+- ✅ Added `GetDifferences()` method to compare settings and generate diff list
+- ✅ Added `SettingsDiff` record for structured diff representation
+- ✅ Added `DeleteUserSettings()` method to UserSettingsService
+- ✅ Implemented Settings Management UI section in Setup.razor:
+  - Status indicator (badge) showing custom vs default state
+  - Collapsible diff table with Show/Hide Details toggle
+  - Color swatches displayed for color values in diff
+  - Individual reset button (↻) for each changed setting
+  - Full reset with two-step confirmation (Reset → Confirm/Cancel)
+- ✅ Implemented `ResetIndividualSetting()` method handling all setting types
+- ✅ Validated with successful dotnet build
+
+### [2026-01-17 14:00:00] - User Settings Persistence System Complete
+- ✅ Created `Models/AppSettings.cs` with non-nullable properties for type-safe configuration
+- ✅ Created `ThemeSettings` class for theme serialization with conversion methods
+- ✅ Created `Services/UserSettingsService.cs` for loading/saving `usersettings.json`
+- ✅ Updated `GiveAwayHelpers.cs` with `GetCurrentSettings()` to export current state
+- ✅ Added `ApplySettings(AppSettings)` method for centralized settings application
+- ✅ Modified `Program.cs` to load user settings first, fall back to appsettings.json
+- ✅ Updated `Setup.razor` to inject `UserSettingsService` and save on every change
+- ✅ Added `usersettings.json` to `.gitignore`
+- ✅ Refactored from nullable `UserSettings` to single non-nullable `AppSettings` class
+- ✅ Validated with successful dotnet build
+
+### [2026-01-17 13:30:00] - User Settings Persistence Planning
+- Analyzed existing settings architecture in Program.cs and GiveAwayHelpers
+- Designed settings load order: usersettings.json → appsettings.json fallback
+- Chose single non-nullable AppSettings class over nullable override approach
+- Identified all files requiring modification
+
 ## Upcoming Tasks
 
 ### Immediate
-- Memory bank documentation complete
+- Memory bank and documentation complete
 
 ### Future Enhancements (from roadmap)
 - Option to adjust animation speeds or disable specific animations
@@ -124,6 +163,7 @@
 - Configurable overlay size and position
 - Mobile-responsive design for monitoring on different devices
 
+[2026-01-17 - Updated with user settings persistence system implementation]
 [2025-12-21 - Updated with GitHub releases, versioning, and documentation implementation]
 [2025-12-08 - Updated with theme system implementation]
 [2025-07-26 - Updated with hours support implementation completion and detailed progress tracking]

@@ -6,7 +6,7 @@ Technical documentation for developers and contributors.
 
 The Firebot Giveaway OBS Overlay is built using:
 
-- **Framework**: ASP.NET Core 8.0
+- **Framework**: ASP.NET Core 10
 - **UI**: Blazor Server with interactive components
 - **Styling**: Bootstrap 5.1 + custom CSS animations
 - **Deployment**: Self-contained single-file executable
@@ -33,11 +33,13 @@ FirebotGiveawayObsOverlay/
     │   ├── GiveAwayHelpers.cs             # Static configuration management
     │   └── FireBotFileReader.cs           # File monitoring system
     ├── Models/
-    │   └── ThemeConfig.cs                 # Theme configuration model
+    │   ├── ThemeConfig.cs                 # Theme configuration model
+    │   └── AppSettings.cs                 # Settings model for persistence
     ├── Services/
     │   ├── TimerService.cs                # Countdown timer management
     │   ├── ThemeService.cs                # Theme change notifications
-    │   └── VersionService.cs              # Assembly version access
+    │   ├── VersionService.cs              # Assembly version access
+    │   └── UserSettingsService.cs         # User settings persistence
     ├── Properties/
     │   ├── launchSettings.json            # Development launch settings
     │   └── PublishProfiles/               # Publish configurations
@@ -128,6 +130,46 @@ public class VersionService
 - Reads version from assembly metadata
 - Cleans up version string for display (removes git hash suffix)
 
+### UserSettingsService
+
+Singleton service for persisting user settings:
+
+```csharp
+public class UserSettingsService
+{
+    public AppSettings? LoadUserSettings();
+    public void SaveUserSettings(AppSettings settings);
+    public bool UserSettingsExist();
+    public string GetUserSettingsPath();
+    public bool DeleteUserSettings();
+}
+```
+
+- Saves/loads settings to `usersettings.json` in application directory
+- Uses System.Text.Json for serialization with camelCase naming
+- Returns null if settings file doesn't exist or is invalid
+- `DeleteUserSettings()` removes the file for reset functionality
+
+### AppSettings Model
+
+Settings model with comparison capabilities:
+
+```csharp
+public class AppSettings
+{
+    // Properties for all settings...
+
+    public static AppSettings GetDefaults();
+    public List<SettingsDiff> GetDifferences(AppSettings other);
+}
+
+public record SettingsDiff(string Name, string DefaultValue, string CurrentValue);
+```
+
+- `GetDefaults()` returns a new instance with default values
+- `GetDifferences()` compares two settings objects and returns changed values
+- Used by Setup page to show diff view and enable individual resets
+
 ## Configuration System
 
 ### Static Configuration (GiveAwayHelpers)
@@ -141,20 +183,33 @@ Central static class managing runtime configuration:
 - Font sizes: Prize, Timer, Entries
 - Theme configuration with preset and custom support
 
-### appsettings.json
+### Configuration Files
 
-Initial configuration loaded at startup in `Program.cs`:
+The application uses a two-file configuration approach:
 
+1. **appsettings.json**: Ships with application, contains defaults
+2. **usersettings.json**: User customizations, git-ignored, persists across updates
+
+**Startup Load Order:**
 ```csharp
 app.Lifetime.ApplicationStarted.Register(() =>
 {
-    string fileBotFileFolder = app.Configuration.GetValue(...);
-    GiveAwayHelpers.SetFireBotFileFolder(fileBotFileFolder);
-    // ... more configuration
+    var userSettings = userSettingsService.LoadUserSettings();
+    if (userSettings != null)
+    {
+        GiveAwayHelpers.ApplySettings(userSettings);  // Use user settings
+    }
+    else
+    {
+        GiveAwayHelpers.ApplySettings(defaultSettings);  // Fall back to appsettings.json
+    }
 });
 ```
 
-Settings are applied once at startup. Runtime changes are made through Setup page and stored in `GiveAwayHelpers`.
+**Runtime Persistence:**
+- Setup page changes call `SaveSettings()` after each modification
+- Full settings object saved to `usersettings.json`
+- Changes apply immediately and persist across restarts
 
 ## File Monitoring System
 
@@ -273,3 +328,5 @@ dotnet publish --configuration Release --runtime win-x64 --self-contained true -
 5. **Self-contained Deployment**: Users don't need .NET runtime installed, simplifying distribution.
 
 6. **Version-triggered Releases**: Bumping version in .csproj automatically triggers release, reducing manual steps.
+
+7. **Separate User Settings File**: User customizations stored in `usersettings.json` separate from shipped `appsettings.json`, surviving updates and avoiding git conflicts.

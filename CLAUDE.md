@@ -23,6 +23,8 @@ This is an ASP.NET Core 10 Blazor Server application that provides an OBS overla
 - `VersionService`: Provides runtime access to assembly version information
 - `GiveAwayHelpers`: Static configuration helpers for runtime settings including theme management
 - `ThemeConfig`: Theme model with preset themes and custom color support
+- `AppSettings`: Settings model with non-nullable properties for persistence
+- `UserSettingsService`: Loads/saves user settings to `usersettings.json`
 - `giveaway.css`: Base styling with CSS custom properties for theming
 
 ### Project Structure
@@ -34,8 +36,8 @@ FirebotGiveawayObsOverlay.WebApp/
 │   └── Pages/           # Page components (GiveAway, Setup, Home, Error)
 ├── Extensions/          # Extension methods (TimeSpanExtensions)
 ├── Helpers/            # Helper classes (GiveAwayHelpers, FireBotFileReader)
-├── Models/             # Data models (ThemeConfig)
-├── Services/           # Application services (TimerService, ThemeService, VersionService)
+├── Models/             # Data models (ThemeConfig, AppSettings)
+├── Services/           # Application services (TimerService, ThemeService, VersionService, UserSettingsService)
 └── wwwroot/           # Static assets and CSS
 
 docs/                   # User documentation
@@ -194,6 +196,22 @@ Theme behavior:
 - Setup page shows live preview of selected theme
 - Custom colors section appears when "Custom" is selected from dropdown
 
+### User Settings Persistence
+User settings are automatically saved and persist across application restarts:
+
+**How it works:**
+- Settings saved to `usersettings.json` in application directory
+- On startup: loads `usersettings.json` if exists, otherwise uses `appsettings.json` defaults
+- Setup page automatically saves all settings after each change
+- `usersettings.json` is git-ignored so user preferences don't affect the repository
+
+**Key files:**
+- `Models/AppSettings.cs`: Settings model with non-nullable properties
+- `Services/UserSettingsService.cs`: Load/save operations for `usersettings.json`
+- `Helpers/GiveAwayHelpers.cs`: `GetCurrentSettings()` and `ApplySettings()` methods
+
+**Settings file location:** Same directory as executable (`./usersettings.json`)
+
 ## OBS Integration
 
 The overlay is designed to be used as an OBS Browser Source:
@@ -223,6 +241,21 @@ The overlay features:
 Winner overlay uses solid black background (`rgb(0, 0, 0)`) without trophy emojis for clean appearance.
 
 ## Recent Project Changes
+
+### January 17, 2026 - User Settings Persistence (v2.1.0)
+- Implemented settings persistence across application restarts
+- Created `AppSettings` model with non-nullable properties for type-safe configuration
+- Created `UserSettingsService` singleton for loading/saving `usersettings.json`
+- Added `ApplySettings()` and `GetCurrentSettings()` methods to `GiveAwayHelpers`
+- Modified `Program.cs` to load user settings first, fall back to `appsettings.json`
+- Updated `Setup.razor` to automatically save settings on every change
+- Added `usersettings.json` to `.gitignore`
+- Chose single non-nullable settings class over nullable override approach for simplicity
+- Added Settings Management UI to Setup page:
+  - Status indicator showing custom vs default settings
+  - Collapsible diff view comparing current to default values
+  - Individual reset buttons for each changed setting
+  - Full reset to defaults with confirmation dialog
 
 ### December 22, 2025 - .NET 10 Upgrade (v2.0.0)
 - Upgraded from .NET 8.0 to .NET 10 (LTS) with C# 14 support

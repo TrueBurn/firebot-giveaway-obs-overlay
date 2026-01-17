@@ -147,32 +147,73 @@ After the giveaway:
 - Clear the winner file in Firebot or
 - Start a new giveaway to reset the display
 
-## Configuration File
+## Settings Persistence
 
-Settings can also be configured via `appsettings.json`:
+All settings configured through the Setup page are automatically saved and persist across application restarts.
+
+### How It Works
+
+- Settings are saved to `usersettings.json` in the application directory
+- Changes take effect immediately and are saved automatically
+- On startup, the app loads your saved settings (or defaults if no saved settings exist)
+
+### Settings Files
+
+| File | Purpose |
+|------|---------|
+| `appsettings.json` | Default settings shipped with the app |
+| `usersettings.json` | Your customized settings (auto-generated) |
+
+### Manual Configuration
+
+You can also edit `usersettings.json` directly:
 
 ```json
 {
-  "AppSettings": {
-    "FireBotFileFolder": "G:\\Giveaway",
-    "CountdownTimerEnabled": true,
-    "CountdownHours": 0,
-    "CountdownMinutes": 59,
-    "CountdownSeconds": 59,
-    "PrizeSectionWidthPercent": 75,
-    "PrizeFontSizeRem": 4.5,
-    "TimerFontSizeRem": 3.0,
-    "EntriesFontSizeRem": 3.0,
-    "Theme": {
-      "Name": "Warframe",
-      "PrimaryColor": "#00fff9",
-      "SecondaryColor": "#ff00c8"
-    }
+  "fireBotFileFolder": "G:\\Giveaway",
+  "countdownTimerEnabled": true,
+  "countdownHours": 0,
+  "countdownMinutes": 59,
+  "countdownSeconds": 59,
+  "prizeSectionWidthPercent": 75,
+  "prizeFontSizeRem": 4.5,
+  "timerFontSizeRem": 3.0,
+  "entriesFontSizeRem": 3.0,
+  "theme": {
+    "name": "Warframe",
+    "primaryColor": "#00fff9",
+    "secondaryColor": "#ff00c8",
+    "backgroundStart": "rgba(0, 0, 0, 0.9)",
+    "backgroundEnd": "rgba(15, 25, 35, 0.98)",
+    "borderGlowColor": "rgba(0, 255, 255, 0.15)",
+    "textColor": "#ffffff",
+    "timerExpiredColor": "#ff3333",
+    "separatorColor": "rgba(0, 255, 255, 0.5)"
   }
 }
 ```
 
-Changes to this file require application restart.
+**Note:** Manual edits require application restart to take effect.
+
+### Resetting Settings
+
+The Setup page includes a **Settings Management** section that shows:
+
+- **Status badge**: Shows "Custom settings active" or "Using defaults"
+- **Diff view**: Expandable table comparing your settings to defaults
+- **Individual reset**: Click the ↻ button next to any setting to reset just that one
+- **Full reset**: "Reset to Defaults" button to restore all settings at once
+
+**To reset individual settings:**
+1. Click "Show Details" to expand the diff view
+2. Find the setting you want to reset
+3. Click the ↻ button in the Action column
+
+**To reset all settings:**
+1. Click "Reset to Defaults" button
+2. Click "Confirm Reset" to proceed (or "Cancel" to abort)
+
+**Manual reset:** You can also delete `usersettings.json` from the application directory and restart.
 
 ## Troubleshooting
 

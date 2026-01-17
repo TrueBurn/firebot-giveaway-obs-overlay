@@ -396,3 +396,6 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# User-specific settings (persisted across restarts, git-ignored)
+usersettings.json

@@ -4,6 +4,7 @@
 @inject TimerService TimerService
 @inject ThemeService ThemeService
 @inject VersionService VersionService
+@inject UserSettingsService UserSettingsService
 
 @page "/setup"
 @rendermode InteractiveServer
@@ -262,12 +263,145 @@
 
 <hr />
 
+<div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <label class="form-label mb-0">Settings Management</label>
+        @if (hasCustomSettings)
+        {
+            <span class="badge bg-info">Custom settings active</span>
+        }
+        else
+        {
+            <span class="badge bg-secondary">Using defaults</span>
+        }
+    </div>
+
+    @if (hasCustomSettings)
+    {
+        <div class="card border-warning">
+            <div class="card-header bg-warning bg-opacity-10 d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-sliders me-2" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M11.5 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M9.05 3a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0V3zM4.5 7a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M2.05 8a2.5 2.5 0 0 1 4.9 0H16v1H6.95a2.5 2.5 0 0 1-4.9 0H0V8zm9.45 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3m-2.45 1a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0v-1z"/>
+                    </svg>
+                    Customized Settings (@settingsDiff.Count changes)
+                </span>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="ToggleDiffView">
+                    @(showDiff ? "Hide Details" : "Show Details")
+                </button>
+            </div>
+
+            @if (showDiff)
+            {
+                <div class="card-body p-0">
+                    <table class="table table-sm table-striped mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 30%">Setting</th>
+                                <th style="width: 25%">Default</th>
+                                <th style="width: 5%; text-align: center;"></th>
+                                <th style="width: 25%">Current</th>
+                                <th style="width: 15%; text-align: center;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var diff in settingsDiff)
+                            {
+                                <tr>
+                                    <td class="fw-medium">@diff.Name</td>
+                                    <td>
+                                        @if (diff.DefaultValue.StartsWith("#"))
+                                        {
+                                            <span class="d-inline-flex align-items-center gap-1">
+                                                <span class="color-swatch" style="background-color: @diff.DefaultValue;"></span>
+                                                <code class="small">@diff.DefaultValue</code>
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">@diff.DefaultValue</span>
+                                        }
+                                    </td>
+                                    <td class="text-center text-muted">→</td>
+                                    <td>
+                                        @if (diff.CurrentValue.StartsWith("#"))
+                                        {
+                                            <span class="d-inline-flex align-items-center gap-1">
+                                                <span class="color-swatch" style="background-color: @diff.CurrentValue;"></span>
+                                                <code class="small fw-bold">@diff.CurrentValue</code>
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="fw-bold">@diff.CurrentValue</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-outline-secondary btn-sm py-0 px-2"
+                                                title="Reset to default"
+                                                @onclick="() => ResetIndividualSetting(diff.Name)">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
+                                                <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
+                                                <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
+                                            </svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <div class="card-footer bg-transparent">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">Reset will restore all settings to their default values</small>
+                    @if (!showResetConfirm)
+                    {
+                        <button class="btn btn-outline-danger btn-sm" @onclick="ShowResetConfirm">
+                            Reset to Defaults
+                        </button>
+                    }
+                    else
+                    {
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-secondary btn-sm" @onclick="CancelReset">Cancel</button>
+                            <button class="btn btn-danger btn-sm" @onclick="ConfirmReset">
+                                Confirm Reset
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-light border mb-0">
+            <small class="text-muted">All settings are at their default values. Changes you make will be saved automatically.</small>
+        </div>
+    }
+</div>
+
+<hr />
+
 <div class="mt-4 pt-2">
     <div class="d-flex justify-content-between align-items-center text-muted small">
         <span class="fw-semibold">Firebot Giveaway OBS Overlay</span>
         <span>Version <span class="badge bg-secondary">v@(versionDisplay)</span></span>
     </div>
 </div>
+
+<style>
+    .color-swatch {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border-radius: 3px;
+        border: 1px solid rgba(0,0,0,0.2);
+        vertical-align: middle;
+    }
+</style>
 
 @code {
     private string versionDisplay = "";
@@ -291,6 +425,12 @@
     private string customSecondaryColor = "#ff00c8";
     private string customTimerExpiredColor = "#ff3333";
 
+    // Reset settings fields
+    private bool hasCustomSettings = false;
+    private bool showDiff = false;
+    private bool showResetConfirm = false;
+    private List<SettingsDiff> settingsDiff = new();
+
     protected override void OnInitialized()
     {
         // Initialize version display
@@ -308,23 +448,179 @@
         customPrimaryColor = currentTheme.PrimaryColor;
         customSecondaryColor = currentTheme.SecondaryColor;
         customTimerExpiredColor = currentTheme.TimerExpiredColor;
+
+        // Calculate settings diff
+        UpdateSettingsDiff();
+    }
+
+    private void UpdateSettingsDiff()
+    {
+        var defaults = AppSettings.GetDefaults();
+        var current = GiveAwayHelpers.GetCurrentSettings();
+        settingsDiff = current.GetDifferences(defaults);
+        hasCustomSettings = settingsDiff.Count > 0;
+    }
+
+    private void SaveSettings()
+    {
+        UserSettingsService.SaveUserSettings(GiveAwayHelpers.GetCurrentSettings());
+        UpdateSettingsDiff();
+    }
+
+    private void ToggleDiffView()
+    {
+        showDiff = !showDiff;
+    }
+
+    private void ShowResetConfirm()
+    {
+        showResetConfirm = true;
+    }
+
+    private void CancelReset()
+    {
+        showResetConfirm = false;
+    }
+
+    private void ResetIndividualSetting(string settingName)
+    {
+        var defaults = AppSettings.GetDefaults();
+
+        switch (settingName)
+        {
+            case "Firebot File Path":
+                firebotFilePath = defaults.FireBotFileFolder;
+                GiveAwayHelpers.SetFireBotFileFolder(firebotFilePath);
+                break;
+
+            case "Timer Enabled":
+                countdownTimerEnabled = defaults.CountdownTimerEnabled;
+                GiveAwayHelpers.SetCountdownTimerEnabled(countdownTimerEnabled);
+                break;
+
+            case "Countdown Hours":
+                countdownHours = defaults.CountdownHours;
+                GiveAwayHelpers.SetCountdownTime(countdownHours, countdownMinutes, countdownSeconds);
+                break;
+
+            case "Countdown Minutes":
+                countdownMinutes = defaults.CountdownMinutes;
+                GiveAwayHelpers.SetCountdownTime(countdownHours, countdownMinutes, countdownSeconds);
+                break;
+
+            case "Countdown Seconds":
+                countdownSeconds = defaults.CountdownSeconds;
+                GiveAwayHelpers.SetCountdownTime(countdownHours, countdownMinutes, countdownSeconds);
+                break;
+
+            case "Prize Section Width":
+                prizeSectionWidth = defaults.PrizeSectionWidthPercent;
+                GiveAwayHelpers.SetPrizeSectionWidth(prizeSectionWidth);
+                break;
+
+            case "Prize Font Size":
+                prizeFontSize = defaults.PrizeFontSizeRem;
+                GiveAwayHelpers.SetPrizeFontSize(prizeFontSize);
+                break;
+
+            case "Timer Font Size":
+                timerFontSize = defaults.TimerFontSizeRem;
+                GiveAwayHelpers.SetTimerFontSize(timerFontSize);
+                break;
+
+            case "Entries Font Size":
+                entriesFontSize = defaults.EntriesFontSizeRem;
+                GiveAwayHelpers.SetEntriesFontSize(entriesFontSize);
+                break;
+
+            case "Theme":
+                GiveAwayHelpers.SetPresetTheme(defaults.Theme.Name);
+                currentTheme = GiveAwayHelpers.GetCurrentTheme();
+                selectedThemeName = currentTheme.Name;
+                customPrimaryColor = currentTheme.PrimaryColor;
+                customSecondaryColor = currentTheme.SecondaryColor;
+                customTimerExpiredColor = currentTheme.TimerExpiredColor;
+                ThemeService.NotifyThemeChanged();
+                break;
+
+            case "Primary Color":
+                customPrimaryColor = defaults.Theme.PrimaryColor;
+                GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.PrimaryColor), customPrimaryColor);
+                currentTheme = GiveAwayHelpers.GetCurrentTheme();
+                ThemeService.NotifyThemeChanged();
+                break;
+
+            case "Secondary Color":
+                customSecondaryColor = defaults.Theme.SecondaryColor;
+                GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.SecondaryColor), customSecondaryColor);
+                currentTheme = GiveAwayHelpers.GetCurrentTheme();
+                ThemeService.NotifyThemeChanged();
+                break;
+
+            case "Timer Expired Color":
+                customTimerExpiredColor = defaults.Theme.TimerExpiredColor;
+                GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.TimerExpiredColor), customTimerExpiredColor);
+                currentTheme = GiveAwayHelpers.GetCurrentTheme();
+                ThemeService.NotifyThemeChanged();
+                break;
+        }
+
+        SaveSettings();
+    }
+
+    private void ConfirmReset()
+    {
+        // Delete user settings file
+        UserSettingsService.DeleteUserSettings();
+
+        // Apply default settings
+        var defaults = AppSettings.GetDefaults();
+        GiveAwayHelpers.ApplySettings(defaults);
+
+        // Update local UI state
+        firebotFilePath = defaults.FireBotFileFolder;
+        countdownTimerEnabled = defaults.CountdownTimerEnabled;
+        countdownHours = defaults.CountdownHours;
+        countdownMinutes = defaults.CountdownMinutes;
+        countdownSeconds = defaults.CountdownSeconds;
+        prizeSectionWidth = defaults.PrizeSectionWidthPercent;
+        prizeFontSize = defaults.PrizeFontSizeRem;
+        timerFontSize = defaults.TimerFontSizeRem;
+        entriesFontSize = defaults.EntriesFontSizeRem;
+
+        // Update theme state
+        currentTheme = GiveAwayHelpers.GetCurrentTheme();
+        selectedThemeName = currentTheme.Name;
+        customPrimaryColor = currentTheme.PrimaryColor;
+        customSecondaryColor = currentTheme.SecondaryColor;
+        customTimerExpiredColor = currentTheme.TimerExpiredColor;
+
+        // Notify theme change
+        ThemeService.NotifyThemeChanged();
+
+        // Reset UI state
+        showResetConfirm = false;
+        showDiff = false;
+        UpdateSettingsDiff();
     }
 
     private void SetFirebotFilePath()
     {
         GiveAwayHelpers.SetFireBotFileFolder(firebotFilePath);
+        SaveSettings();
     }
 
     private void SetCountdownTime()
     {
         GiveAwayHelpers.SetCountdownTime(countdownHours, countdownMinutes, countdownSeconds);
+        SaveSettings();
     }
 
     private void SetCountdownTimerEnabled()
     {
         bool wasEnabled = GiveAwayHelpers.GetCountdownTimerEnabled();
         GiveAwayHelpers.SetCountdownTimerEnabled(countdownTimerEnabled);
-        
+
         // If timer was disabled, stop the current timer
         if (wasEnabled && !countdownTimerEnabled)
         {
@@ -335,6 +631,8 @@
         {
             TimerService.ResetTimer();
         }
+
+        SaveSettings();
     }
 
     private void ResetGiveawayTimer()
@@ -363,21 +661,25 @@
     private void SetPrizeSectionWidth()
     {
         GiveAwayHelpers.SetPrizeSectionWidth(prizeSectionWidth);
+        SaveSettings();
     }
 
     private void SetPrizeFontSize()
     {
         GiveAwayHelpers.SetPrizeFontSize(prizeFontSize);
+        SaveSettings();
     }
 
     private void SetTimerFontSize()
     {
         GiveAwayHelpers.SetTimerFontSize(timerFontSize);
+        SaveSettings();
     }
 
     private void SetEntriesFontSize()
     {
         GiveAwayHelpers.SetEntriesFontSize(entriesFontSize);
+        SaveSettings();
     }
 
     private void OnPresetThemeChanged()
@@ -399,6 +701,7 @@
             customTimerExpiredColor = currentTheme.TimerExpiredColor;
         }
         ThemeService.NotifyThemeChanged();
+        SaveSettings();
     }
 
     private void OnCustomColorChanged()
@@ -409,5 +712,6 @@
         GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.TimerExpiredColor), customTimerExpiredColor);
         currentTheme = GiveAwayHelpers.GetCurrentTheme();
         ThemeService.NotifyThemeChanged();
+        SaveSettings();
     }
 }

@@ -232,6 +232,44 @@
 - Easier to maintain and update individual sections
 - Supports both end users and developers
 
+### [2026-01-17] User Settings Persistence with Single Non-Nullable Model
+**Decision**: Implemented settings persistence using a single `AppSettings` class with non-nullable properties instead of nullable overrides
+**Rationale**:
+- Nullable override approach requires merge logic and can lead to drift between models
+- Single model ensures system and user settings share the same contract
+- Non-nullable properties with defaults make the settings file self-documenting
+- Full settings saved each time eliminates partial state issues
+**Implementation Details**:
+- Created `AppSettings` class with all settings as non-nullable with default values
+- Created `ThemeSettings` class with conversion methods to/from `ThemeConfig`
+- `UserSettingsService` loads/saves `usersettings.json` in application directory
+- `GiveAwayHelpers.ApplySettings()` centralizes settings application
+- Startup: load usersettings.json if exists, else load from appsettings.json
+- Setup page saves full settings on every change
+**Implications**:
+- Settings persist across restarts and updates
+- Users can manually edit usersettings.json if needed
+- Adding new settings requires only updating AppSettings class
+- usersettings.json is git-ignored so user preferences don't affect repo
+
+### [2026-01-17] Separate User Settings File from Application Configuration
+**Decision**: Store user settings in `usersettings.json` separate from `appsettings.json`
+**Rationale**:
+- `appsettings.json` ships with application and contains defaults
+- User modifications should survive application updates
+- Git-ignored file prevents accidental commits of user-specific settings
+- Clear separation between "shipped defaults" and "user customizations"
+**Implementation Details**:
+- `usersettings.json` stored in `AppContext.BaseDirectory` (same as executable)
+- Added to `.gitignore` to prevent version control
+- Startup checks for existence before attempting to load
+- Falls back to appsettings.json defaults if user file missing or invalid
+**Implications**:
+- Users can backup/restore their settings by copying usersettings.json
+- Clean installs start with defaults from appsettings.json
+- Portable settings that can be shared between machines
+
+[2026-01-17 - Added user settings persistence architectural decisions]
 [2025-12-21 - Added release workflow, versioning, and documentation decisions]
 [2025-12-08 - Added theme system and slider fix architectural decisions]
 [2025-01-26 - Initial decision log documentation with historical decisions]
