@@ -39,7 +39,9 @@ FirebotGiveawayObsOverlay/
     │   ├── TimerService.cs                # Countdown timer management
     │   ├── ThemeService.cs                # Theme change notifications
     │   ├── VersionService.cs              # Assembly version access
-    │   └── UserSettingsService.cs         # User settings persistence
+    │   ├── UserSettingsService.cs         # User settings persistence
+    │   ├── SettingsPersistenceService.cs  # Debounced async persistence queue
+    │   └── BackgroundSettingsWriterService.cs  # Background disk writer
     ├── Properties/
     │   ├── launchSettings.json            # Development launch settings
     │   └── PublishProfiles/               # Publish configurations
@@ -76,13 +78,16 @@ Configuration interface providing:
 - Custom color pickers (when Custom theme selected)
 - Timer configuration (hours, minutes, seconds, enable/disable)
 - Firebot file path input
-- Layout and font size adjustments
+- Layout and font size adjustments with slider/numeric input toggle
+- Settings management with diff view and reset functionality
 - Version display footer
 
 **Patterns Used:**
 - Two-way binding with `@bind` and `@bind:after`
-- Conditional rendering for custom colors section
+- Conditional rendering for custom colors section and input modes
 - Disabled state management for timer controls
+- Async persistence via `SettingsPersistenceService` with debouncing
+- Input mode toggle (slider vs numeric) for precise value entry
 
 ## Services
 
@@ -139,6 +144,7 @@ public class UserSettingsService
 {
     public AppSettings? LoadUserSettings();
     public void SaveUserSettings(AppSettings settings);
+    public Task SaveUserSettingsAsync(AppSettings settings, CancellationToken cancellationToken);
     public bool UserSettingsExist();
     public string GetUserSettingsPath();
     public bool DeleteUserSettings();
@@ -149,6 +155,48 @@ public class UserSettingsService
 - Uses System.Text.Json for serialization with camelCase naming
 - Returns null if settings file doesn't exist or is invalid
 - `DeleteUserSettings()` removes the file for reset functionality
+- `SaveUserSettingsAsync()` provides non-blocking async file writes
+
+### SettingsPersistenceService
+
+Singleton service for debounced async settings persistence:
+
+```csharp
+public class SettingsPersistenceService : IDisposable
+{
+    public const int DebounceDelayMs = 500;
+    public ChannelReader<AppSettings> Reader { get; }
+
+    public void QueueSave(AppSettings settings);
+    public void Flush();
+}
+```
+
+- Uses `System.Threading.Channels` with bounded capacity 1 (DropOldest mode)
+- Implements 500ms debounce timer that resets on each `QueueSave()` call
+- Thread-safe with lock around CancellationTokenSource
+- Only latest settings matter; older queued values are dropped
+- `Flush()` immediately writes pending settings (used during shutdown)
+- Exposes `ChannelReader` for background service consumption
+
+### BackgroundSettingsWriterService
+
+Hosted service for background settings persistence:
+
+```csharp
+public class BackgroundSettingsWriterService : BackgroundService
+{
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken);
+    public override async Task StopAsync(CancellationToken cancellationToken);
+}
+```
+
+- Inherits from `BackgroundService` (built-in .NET hosted service)
+- Consumes from `SettingsPersistenceService.Reader` via `ReadAllAsync()`
+- Uses `UserSettingsService.SaveUserSettingsAsync()` for non-blocking I/O
+- Registered via `AddHostedService<T>()` in Program.cs
+- Graceful shutdown completes pending writes before stopping
+- Logging for diagnostics and monitoring
 
 ### AppSettings Model
 
@@ -206,10 +254,26 @@ app.Lifetime.ApplicationStarted.Register(() =>
 });
 ```
 
-**Runtime Persistence:**
-- Setup page changes call `SaveSettings()` after each modification
-- Full settings object saved to `usersettings.json`
-- Changes apply immediately and persist across restarts
+**Runtime Persistence (Async with Debouncing):**
+- Setup page changes call `QueueSave()` via `SettingsPersistenceService`
+- In-memory settings update immediately (instant UI feedback)
+- Disk writes debounced with 500ms delay to prevent lag
+- Multiple rapid changes result in single disk write after idle
+- `BackgroundSettingsWriterService` handles async file writes
+- Graceful shutdown ensures pending settings are written
+
+**Persistence Flow:**
+```
+User changes slider → GiveAwayHelpers.Set*() [instant memory update]
+                    → SettingsPersistenceService.QueueSave() [non-blocking]
+                    → 500ms debounce timer [resets on each call]
+                    → Channel.Writer.TryWrite() [when timer expires]
+                    → BackgroundSettingsWriterService reads from channel
+                    → UserSettingsService.SaveUserSettingsAsync() [async I/O]
+                    → File.WriteAllTextAsync() to usersettings.json
+```
+
+This architecture eliminates slider lag by keeping UI updates synchronous (memory-only) while making disk I/O async and debounced.
 
 ## File Monitoring System
 
@@ -330,3 +394,9 @@ dotnet publish --configuration Release --runtime win-x64 --self-contained true -
 6. **Version-triggered Releases**: Bumping version in .csproj automatically triggers release, reducing manual steps.
 
 7. **Separate User Settings File**: User customizations stored in `usersettings.json` separate from shipped `appsettings.json`, surviving updates and avoiding git conflicts.
+
+8. **Channel-Based Async Persistence with Debouncing**: Settings changes update memory immediately for instant UI feedback, while disk writes are debounced (500ms) and handled asynchronously by a background service. This eliminates slider lag caused by synchronous file I/O blocking the UI thread.
+
+9. **Slider/Numeric Input Mode Toggle**: Provides both slider (visual feedback) and numeric input (precision) for range-based settings. Users can switch between modes with toggle buttons, combining ease of use with exact value entry when needed.
+
+10. **Slider oninput Binding**: Changed from `onchange` to `oninput` for real-time visual feedback during slider drag. Safe to use with async persistence pattern, as debouncing prevents high-frequency disk writes.

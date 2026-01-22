@@ -252,6 +252,67 @@
 - Adding new settings requires only updating AppSettings class
 - usersettings.json is git-ignored so user preferences don't affect repo
 
+### [2026-01-22] Channel-Based Async Settings Persistence with Debouncing
+**Decision**: Implemented async settings persistence using `System.Threading.Channels` with 500ms debouncing instead of synchronous file writes
+**Rationale**:
+- User-reported slider lag and snap-back caused by synchronous `File.WriteAllText()` blocking UI thread
+- Rapid slider movements triggered multiple synchronous disk writes, creating race conditions
+- Blazor Server's SignalR round-trips combined with blocking I/O created visible UI lag
+- Settings changes need to feel instant to user while eventual persistence is acceptable
+**Implementation Details**:
+- Created `SettingsPersistenceService` with bounded channel (capacity 1, DropOldest mode)
+- Implemented 500ms debounce timer that resets on each `QueueSave()` call
+- Only latest settings matter, so dropping older queued values is appropriate
+- `BackgroundSettingsWriterService` as IHostedService consumes from channel
+- Uses `File.WriteAllTextAsync()` for non-blocking disk I/O
+- Thread-safe with lock around debounce CancellationTokenSource
+- Graceful shutdown with `Flush()` method writes pending settings before app stops
+**Implications**:
+- UI updates are instant (memory only), disk writes are debounced in background
+- Multiple rapid slider changes result in single disk write after 500ms idle
+- Improved user experience with smooth slider interactions
+- Settings still reliably persist, just with slight delay (imperceptible to users)
+
+### [2026-01-22] Slider/Numeric Input Mode Toggle for Precise Adjustments
+**Decision**: Added toggle buttons to switch between slider and numeric input for range-based settings
+**Rationale**:
+- Sliders provide good visual feedback but lack precision for exact values
+- Users may want to enter specific values (e.g., "3.5rem" exactly) without trial and error
+- Common pattern in professional applications (e.g., Adobe products, Figma)
+- Minimal UI complexity with small toggle button group
+**Implementation Details**:
+- Added `InputMode` enum with Slider and Numeric options
+- Separate state variable for each setting (widthInputMode, prizeFontInputMode, etc.)
+- Toggle buttons use Bootstrap button group styling
+- Conditional rendering shows either slider or numeric input based on mode
+- Sliders use `oninput` for real-time feedback (safe now with debouncing)
+- Numeric inputs use `onchange` for commit-on-blur behavior
+- Clamped setter methods validate and constrain numeric input values
+- Both modes share same setter method for consistent state management
+**Implications**:
+- Improved user experience with flexibility for different workflows
+- Visual users can use sliders, precision users can type exact values
+- Input validation prevents out-of-range values in numeric mode
+- Pattern can be reused for other range-based settings in future
+
+### [2026-01-22] Slider Event Binding Change from onchange to oninput
+**Decision**: Changed slider bindings back to `oninput` after implementing async persistence (reverses 2025-12-08 decision)
+**Rationale**:
+- Previous `onchange` binding (2025-12-08) fixed glitchy behavior but sacrificed real-time visual feedback
+- Async persistence with debouncing eliminates the root cause (blocking disk writes)
+- Users now get instant visual feedback during slider drag without UI lag
+- Debouncing handles the high-frequency events efficiently
+**Implementation Details**:
+- Changed `@bind:event="onchange"` to `@bind:event="oninput"` for all slider inputs
+- Memory updates happen immediately on every input event
+- Debounce timer in SettingsPersistenceService handles rapid events
+- Disk writes only occur 500ms after user stops moving slider
+**Implications**:
+- Best of both worlds: real-time visual feedback + stable performance
+- No more "guess and release" with sliders
+- Aligns with user expectations for modern UI sliders
+- Validates that async persistence truly solved the original problem
+
 ### [2026-01-17] Separate User Settings File from Application Configuration
 **Decision**: Store user settings in `usersettings.json` separate from `appsettings.json`
 **Rationale**:
@@ -269,6 +330,7 @@
 - Clean installs start with defaults from appsettings.json
 - Portable settings that can be shared between machines
 
+[2026-01-22 - Added async settings persistence and input mode toggle architectural decisions]
 [2026-01-17 - Added user settings persistence architectural decisions]
 [2025-12-21 - Added release workflow, versioning, and documentation decisions]
 [2025-12-08 - Added theme system and slider fix architectural decisions]

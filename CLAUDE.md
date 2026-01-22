@@ -242,6 +242,22 @@ Winner overlay uses solid black background (`rgb(0, 0, 0)`) without trophy emoji
 
 ## Recent Project Changes
 
+### January 22, 2026 - Async Settings Persistence and Input Mode Toggle (v2.2.0)
+- Implemented channel-based async settings persistence to eliminate slider lag/snap-back
+- Created `SettingsPersistenceService` with System.Threading.Channels and 500ms debouncing
+- Created `BackgroundSettingsWriterService` as IHostedService for non-blocking disk I/O
+- Added `SaveUserSettingsAsync()` method to `UserSettingsService` for async file writes
+- Replaced synchronous `SaveSettings()` with `QueueSave()` pattern in Setup.razor
+- Added slider/numeric input mode toggle for precise value adjustments:
+  - Prize Section Width (50-90%)
+  - Prize Font Size (1.0-6.0 rem)
+  - Timer Font Size (1.0-6.0 rem)
+  - Entries Font Size (1.0-6.0 rem)
+- Changed slider binding from `onchange` to `oninput` for real-time visual feedback (debouncing handles disk I/O)
+- Implemented value clamping with `Math.Clamp()` for numeric input validation
+- Graceful shutdown flushes pending settings before application stops
+- Performance fix provides smooth slider interaction without UI blocking
+
 ### January 17, 2026 - User Settings Persistence (v2.1.0)
 - Implemented settings persistence across application restarts
 - Created `AppSettings` model with non-nullable properties for type-safe configuration

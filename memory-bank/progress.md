@@ -150,6 +150,51 @@
 - Chose single non-nullable AppSettings class over nullable override approach
 - Identified all files requiring modification
 
+## 2026-01-22 - Async Settings Persistence and Input Mode Toggle (v2.2.0)
+
+### [2026-01-22 16:00:00] - Version 2.2.0 Release
+- ✅ Bumped version to 2.2.0 in .csproj
+- ✅ Feature complete: async settings persistence with slider/numeric input toggles
+- ✅ Updated all memory bank files with implementation details
+
+### [2026-01-22 15:45:00] - Async Persistence Implementation Complete
+- ✅ Created `Services/SettingsPersistenceService.cs` with channel-based debouncing
+  - Bounded channel with capacity 1 and DropOldest mode
+  - 500ms debounce timer with CancellationTokenSource pattern
+  - Thread-safe QueueSave() method for UI calls
+  - Flush() method for graceful shutdown
+  - Exposes ChannelReader for consumer service
+- ✅ Created `Services/BackgroundSettingsWriterService.cs` as IHostedService
+  - Inherits from BackgroundService base class
+  - Consumes from channel via ReadAllAsync()
+  - Uses File.WriteAllTextAsync() for async I/O
+  - Handles graceful shutdown with pending write completion
+  - Logging for diagnostics
+- ✅ Added SaveUserSettingsAsync() method to UserSettingsService
+- ✅ Registered services in Program.cs (singleton + hosted service)
+- ✅ Validated with successful dotnet build
+
+### [2026-01-22 15:30:00] - Input Mode Toggle Implementation Complete
+- ✅ Added InputMode enum (Slider, Numeric) to Setup.razor
+- ✅ Added state variables for each setting's input mode
+- ✅ Implemented toggle button groups with Bootstrap styling
+- ✅ Added conditional rendering for slider vs numeric input
+- ✅ Changed slider binding from onchange to oninput for real-time feedback
+- ✅ Implemented clamped setter methods for numeric input validation:
+  - SetPrizeSectionWidthClamped() with Math.Clamp(50, 90)
+  - SetPrizeFontSizeClamped() with Math.Clamp(1.0, 6.0)
+  - SetTimerFontSizeClamped() with Math.Clamp(1.0, 6.0)
+  - SetEntriesFontSizeClamped() with Math.Clamp(1.0, 6.0)
+- ✅ Applied to Prize Section Width, Prize Font Size, Timer Font Size, Entries Font Size
+- ✅ Validated with successful dotnet build
+
+### [2026-01-22 15:00:00] - Setup Page Performance Fix Planning
+- Analyzed user-reported slider lag/snap-back issue
+- Root cause identified: synchronous File.WriteAllText() blocking UI thread
+- Designed solution: channel-based async persistence with debouncing
+- Planned input mode toggle for precision adjustments
+- Created implementation task breakdown
+
 ## Upcoming Tasks
 
 ### Immediate
@@ -163,6 +208,7 @@
 - Configurable overlay size and position
 - Mobile-responsive design for monitoring on different devices
 
+[2026-01-22 - Updated with async settings persistence and input mode toggle implementation (v2.2.0)]
 [2026-01-17 - Updated with user settings persistence system implementation]
 [2025-12-21 - Updated with GitHub releases, versioning, and documentation implementation]
 [2025-12-08 - Updated with theme system implementation]

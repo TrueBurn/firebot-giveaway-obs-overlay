@@ -2,6 +2,18 @@
 
 ## Current Focus
 
+### [2026-01-22] Async Settings Persistence with Input Mode Toggle (v2.2.0)
+- Implemented channel-based async settings persistence to eliminate slider lag/snap-back
+- Created `SettingsPersistenceService` with System.Threading.Channels and 500ms debouncing
+- Created `BackgroundSettingsWriterService` as IHostedService for non-blocking disk writes
+- Added `SaveUserSettingsAsync()` method to `UserSettingsService` for async I/O
+- Replaced synchronous `SaveSettings()` with `QueueSave()` pattern in Setup page
+- Added slider/numeric input mode toggle for Prize Section Width and all font size settings
+- Changed slider binding from `onchange` to `oninput` for real-time visual feedback (debouncing handles I/O)
+- Implemented value clamping for numeric inputs with `Math.Clamp()`
+- Graceful shutdown flushes pending settings before application stops
+- Performance fix resolves UI blocking during rapid slider adjustments
+
 ### [2026-01-17] User-Specific Persistent Settings (v2.1.0)
 - Implemented settings persistence across application restarts
 - Created `AppSettings` model with non-nullable properties for type-safe configuration
@@ -50,6 +62,21 @@
 - Updated configuration system to handle three-parameter time settings and timer state
 
 ## Recent Changes
+
+### [2026-01-22] Async Settings Persistence Implementation (v2.2.0)
+- Created `Services/SettingsPersistenceService.cs` with bounded channel (capacity 1, DropOldest mode)
+- Implemented 500ms debounce timer using CancellationTokenSource pattern
+- Created `Services/BackgroundSettingsWriterService.cs` inheriting from BackgroundService
+- Background service consumes from channel via `ReadAllAsync()` and writes asynchronously
+- Added `SaveUserSettingsAsync(AppSettings, CancellationToken)` to UserSettingsService
+- Registered SettingsPersistenceService as singleton and BackgroundSettingsWriterService as hosted service in Program.cs
+- Added `InputMode` enum (Slider, Numeric) to Setup.razor
+- Added toggle buttons for each slider setting (Prize Width, Prize Font, Timer Font, Entries Font)
+- Changed slider `@bind:event` from `onchange` to `oninput` for real-time feedback
+- Added clamped setter methods (`SetPrizeSectionWidthClamped`, etc.) for numeric input validation
+- Replaced all `SaveSettings()` calls with `QueueSettingsSave()` for non-blocking persistence
+- Implemented `Flush()` method for graceful shutdown with pending settings completion
+- Version bumped to 2.2.0
 
 ### [2026-01-17] User Settings Persistence System (v2.1.0)
 - Created `Models/AppSettings.cs` with non-nullable properties and `ThemeSettings` helper class
@@ -133,6 +160,7 @@
 3. Animation speed/disable configuration
 4. Additional winner announcement styles
 
+[2026-01-22 - Updated with async settings persistence and input mode toggle (v2.2.0)]
 [2026-01-17 - Updated with user settings persistence system]
 [2025-12-22 - Updated with .NET 10 upgrade (v2.0.0)]
 [2025-12-21 - Updated with GitHub releases, versioning, and documentation implementation]

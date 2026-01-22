@@ -70,6 +70,10 @@ Ensure this matches your Firebot configuration. The application monitors this fo
 - 75%: Default, more space for prize text
 - 90%: Maximum space for long prize names
 
+**Input Mode**: Toggle between slider and numeric input for precise adjustments
+- **Slider mode** (slider icon): Visual feedback with drag interaction
+- **Numeric mode** (#): Type exact values for precision
+
 ### Font Sizes
 
 Adjust the text size for each element (in rem units):
@@ -79,6 +83,10 @@ Adjust the text size for each element (in rem units):
 | Prize Font Size | 1.0 - 6.0 rem | 4.5 rem |
 | Timer Font Size | 1.0 - 6.0 rem | 3.0 rem |
 | Entries Font Size | 1.0 - 6.0 rem | 3.0 rem |
+
+**Input Mode**: Each font size setting has a toggle button to switch between:
+- **Slider mode**: Visual feedback with real-time preview
+- **Numeric mode**: Type exact values (e.g., "3.5" for 3.5rem)
 
 Larger values make text more visible on stream but may cause overflow.
 

@@ -221,6 +221,54 @@
 - Single source of truth with non-nullable properties prevents drift
 - Self-documenting JSON file users can manually edit if needed
 
+### [2026-01-22] Channel-Based Debounced Persistence Pattern
+**Pattern**: Use System.Threading.Channels with debouncing for async eventual persistence
+**Implementation**:
+- Bounded channel with capacity 1 and DropOldest mode (only latest value matters)
+- Producer pattern: UI calls `QueueSave()` which triggers debounce timer
+- 500ms debounce delay resets on each call (cancellable timer pattern)
+- Consumer pattern: BackgroundService reads from channel via `ReadAllAsync()`
+- Async file writes via `File.WriteAllTextAsync()` for non-blocking I/O
+- Graceful shutdown with `Flush()` method for pending writes
+**Benefits**:
+- UI updates are instant (memory-only operations)
+- High-frequency events (slider drag) don't overwhelm disk I/O
+- Only final value persists, avoiding redundant disk writes
+- Thread-safe with minimal locking
+- Works naturally with ASP.NET Core hosted services
+
+### [2026-01-22] Input Mode Toggle Pattern
+**Pattern**: Provide both slider and numeric input for range-based settings
+**Implementation**:
+- Enum defines input modes (Slider, Numeric)
+- State variable per setting tracks current mode
+- Toggle button group switches between modes
+- Conditional rendering shows appropriate input control
+- Both modes bind to same property and setter method
+- Clamped setter methods for numeric input validation
+**Benefits**:
+- Visual users get slider with real-time feedback
+- Precision users can type exact values
+- Single source of truth for value storage
+- Consistent validation regardless of input method
+- Familiar pattern from professional design tools
+
+### [2026-01-22] Background Service Persistence Pattern
+**Pattern**: IHostedService consumer for async background work
+**Implementation**:
+- Service inherits from `BackgroundService` base class
+- Registered via `AddHostedService<T>()` in dependency injection
+- `ExecuteAsync()` runs continuous loop reading from channel
+- Handles cancellation tokens for graceful shutdown
+- `StopAsync()` override flushes pending work before shutdown
+- Logging for diagnostics and monitoring
+**Benefits**:
+- Decouples persistence from UI thread
+- Automatic lifecycle management by ASP.NET Core
+- Clean shutdown with pending work completion
+- Testable with dependency injection
+- Standard pattern for background tasks
+
 ### [2026-01-17] Centralized Settings Application Pattern
 **Pattern**: Single method applies all settings from a settings object
 **Implementation**:
@@ -234,6 +282,7 @@
 - Simplifies testing and debugging of settings logic
 - Reduces risk of missing settings during load/save
 
+[2026-01-22 - Added async persistence, debouncing, input mode toggle, and background service patterns]
 [2026-01-17 - Added settings persistence and centralized application patterns]
 [2025-12-08 - Added theme system and cross-page communication patterns]
 [2025-01-26 - Initial system patterns documentation]
