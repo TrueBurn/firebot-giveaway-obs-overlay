@@ -5,6 +5,7 @@
 @inject ThemeService ThemeService
 @inject VersionService VersionService
 @inject UserSettingsService UserSettingsService
+@inject SettingsPersistenceService PersistenceService
 
 @page "/setup"
 @rendermode InteractiveServer
@@ -185,15 +186,48 @@
     <label class="form-label">Layout Settings</label>
     <div class="d-flex gap-2 align-items-center">
         <div class="flex-grow-1">
-            <label class="form-label">Prize Section Width (%)</label>
-            <input type="range"
-                   class="form-range"
-                   min="50"
-                   max="90"
-                   step="5"
-                   @bind="prizeSectionWidth"
-                   @bind:event="onchange"
-                   @bind:after="SetPrizeSectionWidth" />
+            <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label mb-0">Prize Section Width (%)</label>
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button"
+                            class="btn @(widthInputMode == InputMode.Slider ? "btn-primary" : "btn-outline-secondary")"
+                            @onclick="() => widthInputMode = InputMode.Slider"
+                            title="Slider">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M11.5 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M9.05 3a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0V3z"/>
+                        </svg>
+                    </button>
+                    <button type="button"
+                            class="btn @(widthInputMode == InputMode.Numeric ? "btn-primary" : "btn-outline-secondary")"
+                            @onclick="() => widthInputMode = InputMode.Numeric"
+                            title="Numeric">
+                        #
+                    </button>
+                </div>
+            </div>
+            @if (widthInputMode == InputMode.Slider)
+            {
+                <input type="range"
+                       class="form-range"
+                       min="50"
+                       max="90"
+                       step="5"
+                       @bind="prizeSectionWidth"
+                       @bind:event="oninput"
+                       @bind:after="SetPrizeSectionWidth" />
+            }
+            else
+            {
+                <input type="number"
+                       class="form-control"
+                       min="50"
+                       max="90"
+                       step="5"
+                       inputmode="numeric"
+                       @bind="prizeSectionWidth"
+                       @bind:event="onchange"
+                       @bind:after="SetPrizeSectionWidthClamped" />
+            }
         </div>
         <div style="width: 50px; text-align: center;">
             <span class="badge bg-primary">@prizeSectionWidth%</span>
@@ -206,53 +240,152 @@
     <div class="mb-2">
         <div class="d-flex gap-2 align-items-center">
             <div class="flex-grow-1">
-                <label class="form-label">Prize Font Size</label>
-                <input type="range"
-                       class="form-range"
-                       min="1.0"
-                       max="6.0"
-                       step="0.1"
-                       @bind="prizeFontSize"
-                       @bind:event="onchange"
-                       @bind:after="SetPrizeFontSize" />
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label mb-0">Prize Font Size</label>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button"
+                                class="btn @(prizeFontInputMode == InputMode.Slider ? "btn-primary" : "btn-outline-secondary")"
+                                @onclick="() => prizeFontInputMode = InputMode.Slider"
+                                title="Slider">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M11.5 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M9.05 3a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0V3z"/>
+                            </svg>
+                        </button>
+                        <button type="button"
+                                class="btn @(prizeFontInputMode == InputMode.Numeric ? "btn-primary" : "btn-outline-secondary")"
+                                @onclick="() => prizeFontInputMode = InputMode.Numeric"
+                                title="Numeric">
+                            #
+                        </button>
+                    </div>
+                </div>
+                @if (prizeFontInputMode == InputMode.Slider)
+                {
+                    <input type="range"
+                           class="form-range"
+                           min="1.0"
+                           max="6.0"
+                           step="0.1"
+                           @bind="prizeFontSize"
+                           @bind:event="oninput"
+                           @bind:after="SetPrizeFontSize" />
+                }
+                else
+                {
+                    <input type="number"
+                           class="form-control"
+                           min="1.0"
+                           max="6.0"
+                           step="0.1"
+                           inputmode="decimal"
+                           @bind="prizeFontSize"
+                           @bind:event="onchange"
+                           @bind:after="SetPrizeFontSizeClamped" />
+                }
             </div>
             <div style="width: 60px; text-align: center;">
                 <span class="badge bg-primary">@prizeFontSize.ToString("0.0")rem</span>
             </div>
         </div>
     </div>
-    
+
     <div class="mb-2">
         <div class="d-flex gap-2 align-items-center">
             <div class="flex-grow-1">
-                <label class="form-label">Timer Font Size</label>
-                <input type="range"
-                       class="form-range"
-                       min="1.0"
-                       max="6.0"
-                       step="0.1"
-                       @bind="timerFontSize"
-                       @bind:event="onchange"
-                       @bind:after="SetTimerFontSize" />
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label mb-0">Timer Font Size</label>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button"
+                                class="btn @(timerFontInputMode == InputMode.Slider ? "btn-primary" : "btn-outline-secondary")"
+                                @onclick="() => timerFontInputMode = InputMode.Slider"
+                                title="Slider">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M11.5 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M9.05 3a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0V3z"/>
+                            </svg>
+                        </button>
+                        <button type="button"
+                                class="btn @(timerFontInputMode == InputMode.Numeric ? "btn-primary" : "btn-outline-secondary")"
+                                @onclick="() => timerFontInputMode = InputMode.Numeric"
+                                title="Numeric">
+                            #
+                        </button>
+                    </div>
+                </div>
+                @if (timerFontInputMode == InputMode.Slider)
+                {
+                    <input type="range"
+                           class="form-range"
+                           min="1.0"
+                           max="6.0"
+                           step="0.1"
+                           @bind="timerFontSize"
+                           @bind:event="oninput"
+                           @bind:after="SetTimerFontSize" />
+                }
+                else
+                {
+                    <input type="number"
+                           class="form-control"
+                           min="1.0"
+                           max="6.0"
+                           step="0.1"
+                           inputmode="decimal"
+                           @bind="timerFontSize"
+                           @bind:event="onchange"
+                           @bind:after="SetTimerFontSizeClamped" />
+                }
             </div>
             <div style="width: 60px; text-align: center;">
                 <span class="badge bg-primary">@timerFontSize.ToString("0.0")rem</span>
             </div>
         </div>
     </div>
-    
+
     <div class="mb-2">
         <div class="d-flex gap-2 align-items-center">
             <div class="flex-grow-1">
-                <label class="form-label">Entries Font Size</label>
-                <input type="range"
-                       class="form-range"
-                       min="1.0"
-                       max="6.0"
-                       step="0.1"
-                       @bind="entriesFontSize"
-                       @bind:event="onchange"
-                       @bind:after="SetEntriesFontSize" />
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label mb-0">Entries Font Size</label>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button"
+                                class="btn @(entriesFontInputMode == InputMode.Slider ? "btn-primary" : "btn-outline-secondary")"
+                                @onclick="() => entriesFontInputMode = InputMode.Slider"
+                                title="Slider">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M11.5 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M9.05 3a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0V3z"/>
+                            </svg>
+                        </button>
+                        <button type="button"
+                                class="btn @(entriesFontInputMode == InputMode.Numeric ? "btn-primary" : "btn-outline-secondary")"
+                                @onclick="() => entriesFontInputMode = InputMode.Numeric"
+                                title="Numeric">
+                            #
+                        </button>
+                    </div>
+                </div>
+                @if (entriesFontInputMode == InputMode.Slider)
+                {
+                    <input type="range"
+                           class="form-range"
+                           min="1.0"
+                           max="6.0"
+                           step="0.1"
+                           @bind="entriesFontSize"
+                           @bind:event="oninput"
+                           @bind:after="SetEntriesFontSize" />
+                }
+                else
+                {
+                    <input type="number"
+                           class="form-control"
+                           min="1.0"
+                           max="6.0"
+                           step="0.1"
+                           inputmode="decimal"
+                           @bind="entriesFontSize"
+                           @bind:event="onchange"
+                           @bind:after="SetEntriesFontSizeClamped" />
+                }
             </div>
             <div style="width: 60px; text-align: center;">
                 <span class="badge bg-primary">@entriesFontSize.ToString("0.0")rem</span>
@@ -404,6 +537,9 @@
 </style>
 
 @code {
+    // Input mode enum for slider/numeric toggle
+    private enum InputMode { Slider, Numeric }
+
     private string versionDisplay = "";
     private string firebotFilePath = GiveAwayHelpers.GetFireBotFileFolder();
     private bool countdownTimerEnabled;
@@ -416,6 +552,12 @@
     private double prizeFontSize = GiveAwayHelpers.GetPrizeFontSize();
     private double timerFontSize = GiveAwayHelpers.GetTimerFontSize();
     private double entriesFontSize = GiveAwayHelpers.GetEntriesFontSize();
+
+    // Input mode state for each slider setting
+    private InputMode widthInputMode = InputMode.Slider;
+    private InputMode prizeFontInputMode = InputMode.Slider;
+    private InputMode timerFontInputMode = InputMode.Slider;
+    private InputMode entriesFontInputMode = InputMode.Slider;
 
     // Theme-related fields
     private List<ThemeConfig> presetThemes = GiveAwayHelpers.GetAllPresetThemes();
@@ -461,7 +603,20 @@
         hasCustomSettings = settingsDiff.Count > 0;
     }
 
-    private void SaveSettings()
+    /// <summary>
+    /// Queues settings for async persistence with debouncing.
+    /// UI updates are immediate; disk writes are debounced to prevent lag.
+    /// </summary>
+    private void QueueSettingsSave()
+    {
+        PersistenceService.QueueSave(GiveAwayHelpers.GetCurrentSettings());
+        UpdateSettingsDiff();
+    }
+
+    /// <summary>
+    /// Legacy sync save - only used during reset operations.
+    /// </summary>
+    private void SaveSettingsSync()
     {
         UserSettingsService.SaveUserSettings(GiveAwayHelpers.GetCurrentSettings());
         UpdateSettingsDiff();
@@ -565,7 +720,7 @@
                 break;
         }
 
-        SaveSettings();
+        QueueSettingsSave();
     }
 
     private void ConfirmReset()
@@ -607,13 +762,13 @@
     private void SetFirebotFilePath()
     {
         GiveAwayHelpers.SetFireBotFileFolder(firebotFilePath);
-        SaveSettings();
+        QueueSettingsSave();
     }
 
     private void SetCountdownTime()
     {
         GiveAwayHelpers.SetCountdownTime(countdownHours, countdownMinutes, countdownSeconds);
-        SaveSettings();
+        QueueSettingsSave();
     }
 
     private void SetCountdownTimerEnabled()
@@ -632,7 +787,7 @@
             TimerService.ResetTimer();
         }
 
-        SaveSettings();
+        QueueSettingsSave();
     }
 
     private void ResetGiveawayTimer()
@@ -661,25 +816,49 @@
     private void SetPrizeSectionWidth()
     {
         GiveAwayHelpers.SetPrizeSectionWidth(prizeSectionWidth);
-        SaveSettings();
+        QueueSettingsSave();
+    }
+
+    private void SetPrizeSectionWidthClamped()
+    {
+        prizeSectionWidth = Math.Clamp(prizeSectionWidth, 50, 90);
+        SetPrizeSectionWidth();
     }
 
     private void SetPrizeFontSize()
     {
         GiveAwayHelpers.SetPrizeFontSize(prizeFontSize);
-        SaveSettings();
+        QueueSettingsSave();
+    }
+
+    private void SetPrizeFontSizeClamped()
+    {
+        prizeFontSize = Math.Clamp(prizeFontSize, 1.0, 6.0);
+        SetPrizeFontSize();
     }
 
     private void SetTimerFontSize()
     {
         GiveAwayHelpers.SetTimerFontSize(timerFontSize);
-        SaveSettings();
+        QueueSettingsSave();
+    }
+
+    private void SetTimerFontSizeClamped()
+    {
+        timerFontSize = Math.Clamp(timerFontSize, 1.0, 6.0);
+        SetTimerFontSize();
     }
 
     private void SetEntriesFontSize()
     {
         GiveAwayHelpers.SetEntriesFontSize(entriesFontSize);
-        SaveSettings();
+        QueueSettingsSave();
+    }
+
+    private void SetEntriesFontSizeClamped()
+    {
+        entriesFontSize = Math.Clamp(entriesFontSize, 1.0, 6.0);
+        SetEntriesFontSize();
     }
 
     private void OnPresetThemeChanged()
@@ -701,7 +880,7 @@
             customTimerExpiredColor = currentTheme.TimerExpiredColor;
         }
         ThemeService.NotifyThemeChanged();
-        SaveSettings();
+        QueueSettingsSave();
     }
 
     private void OnCustomColorChanged()
@@ -712,6 +891,6 @@
         GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.TimerExpiredColor), customTimerExpiredColor);
         currentTheme = GiveAwayHelpers.GetCurrentTheme();
         ThemeService.NotifyThemeChanged();
-        SaveSettings();
+        QueueSettingsSave();
     }
 }

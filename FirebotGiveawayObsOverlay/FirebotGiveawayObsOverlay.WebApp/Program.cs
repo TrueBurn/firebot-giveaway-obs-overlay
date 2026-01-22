@@ -24,6 +24,10 @@ builder.Services.AddSingleton<VersionService>();
 // Add UserSettingsService as a singleton
 builder.Services.AddSingleton<UserSettingsService>();
 
+// Add settings persistence services for async/debounced saving
+builder.Services.AddSingleton<SettingsPersistenceService>();
+builder.Services.AddHostedService<BackgroundSettingsWriterService>();
+
 WebApplication app = builder.Build();
 
 // Configure the HTTP request pipeline.

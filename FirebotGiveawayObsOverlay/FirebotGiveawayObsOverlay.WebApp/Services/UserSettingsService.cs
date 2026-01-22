@@ -52,7 +52,7 @@ public class UserSettingsService
     }
 
     /// <summary>
-    /// Saves user settings to usersettings.json.
+    /// Saves user settings to usersettings.json synchronously.
     /// </summary>
     /// <param name="settings">The settings to save.</param>
     public void SaveUserSettings(AppSettings settings)
@@ -61,6 +61,29 @@ public class UserSettingsService
         {
             var json = JsonSerializer.Serialize(settings, JsonOptions);
             File.WriteAllText(_userSettingsPath, json);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to save user settings: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Saves user settings to usersettings.json asynchronously.
+    /// Used by background writer service for non-blocking disk I/O.
+    /// </summary>
+    /// <param name="settings">The settings to save.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    public async Task SaveUserSettingsAsync(AppSettings settings, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(settings, JsonOptions);
+            await File.WriteAllTextAsync(_userSettingsPath, json, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            throw; // Re-throw to allow proper cancellation handling
         }
         catch (Exception ex)
         {
