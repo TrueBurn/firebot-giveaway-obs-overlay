@@ -598,7 +598,7 @@
     private void UpdateSettingsDiff()
     {
         var defaults = AppSettings.GetDefaults();
-        var current = GiveAwayHelpers.GetCurrentSettings();
+        var current = BuildCurrentSettings();
         settingsDiff = current.GetDifferences(defaults);
         hasCustomSettings = settingsDiff.Count > 0;
     }
@@ -606,19 +606,46 @@
     /// <summary>
     /// Queues settings for async persistence with debouncing.
     /// UI updates are immediate; disk writes are debounced to prevent lag.
+    /// IMPORTANT: Uses BuildCurrentSettings() to read from component fields directly,
+    /// avoiding race condition with @bind:after timing where static fields may not
+    /// be updated yet.
     /// </summary>
     private void QueueSettingsSave()
     {
-        PersistenceService.QueueSave(GiveAwayHelpers.GetCurrentSettings());
+        PersistenceService.QueueSave(BuildCurrentSettings());
         UpdateSettingsDiff();
     }
 
     /// <summary>
+    /// Builds an AppSettings snapshot from component fields (not static GiveAwayHelpers fields).
+    /// This prevents the @bind:after timing race condition where the callback executes
+    /// before Blazor finishes updating the backing field, which would cause stale values
+    /// to be read from static fields and persisted.
+    /// </summary>
+    private AppSettings BuildCurrentSettings()
+    {
+        return new AppSettings
+        {
+            FireBotFileFolder = firebotFilePath,
+            CountdownTimerEnabled = countdownTimerEnabled,
+            CountdownHours = countdownHours,
+            CountdownMinutes = countdownMinutes,
+            CountdownSeconds = countdownSeconds,
+            PrizeSectionWidthPercent = prizeSectionWidth,
+            PrizeFontSizeRem = prizeFontSize,
+            TimerFontSizeRem = timerFontSize,
+            EntriesFontSizeRem = entriesFontSize,
+            Theme = ThemeSettings.FromThemeConfig(currentTheme)
+        };
+    }
+
+    /// <summary>
     /// Legacy sync save - only used during reset operations.
+    /// Uses BuildCurrentSettings() for consistency with async persistence.
     /// </summary>
     private void SaveSettingsSync()
     {
-        UserSettingsService.SaveUserSettings(GiveAwayHelpers.GetCurrentSettings());
+        UserSettingsService.SaveUserSettings(BuildCurrentSettings());
         UpdateSettingsDiff();
     }
 

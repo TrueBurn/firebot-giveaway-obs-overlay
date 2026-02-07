@@ -4,7 +4,9 @@
       "Bash(find:*)",
       "Bash(ls:*)",
       "mcp__context7__get-library-docs",
-      "Bash(dotnet build:*)"
+      "Bash(dotnet build:*)",
+      "Skill(frontend-design)",
+      "Skill(moai-lang-csharp)"
     ],
     "deny": []
   }

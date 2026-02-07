@@ -242,6 +242,16 @@ Winner overlay uses solid black background (`rgb(0, 0, 0)`) without trophy emoji
 
 ## Recent Project Changes
 
+### February 7, 2026 - Heisenbug Fix: Slider Value Snap-back (v2.2.1)
+- Fixed Blazor `@bind:after` timing race condition causing slider values to snap back in Release mode
+- Root cause: `@bind:after` callbacks executed before backing field updates completed, causing stale values to be read from GiveAwayHelpers static fields
+- Created `BuildCurrentSettings()` method in Setup.razor that reads from component fields (not static fields)
+- Updated `QueueSettingsSave()`, `SaveSettingsSync()`, and `UpdateSettingsDiff()` to use `BuildCurrentSettings()`
+- Added `volatile` keyword to applicable GiveAwayHelpers static fields (bool, int) for thread safety
+- Bug only manifested in Release mode because debug mode's slower execution enforced proper ordering
+- Investigation conducted by 5-agent team: race-condition, blazor-binding, compiler-opt, float-precision, thread-sync
+- Full investigation documented in `HEISENBUG-INVESTIGATION-FINDINGS.md`
+
 ### January 22, 2026 - Async Settings Persistence and Input Mode Toggle (v2.2.0)
 - Implemented channel-based async settings persistence to eliminate slider lag/snap-back
 - Created `SettingsPersistenceService` with System.Threading.Channels and 500ms debouncing

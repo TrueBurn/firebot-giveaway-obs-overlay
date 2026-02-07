@@ -4,16 +4,21 @@ namespace FirebotGiveawayObsOverlay.WebApp.Helpers;
 
 public static class GiveAwayHelpers
 {
-    private static bool _countdownTimerEnabled = true;
-    private static int _countdownHours = 0;
-    private static int _countdownMinutes = 60;
-    private static int _countdownSeconds = 0;
-    private static int _prizeSectionWidthPercent = 75;
+    // Note: volatile keyword ensures thread-safe reads/writes for primitive types.
+    // This prevents JIT optimization from caching stale values in registers when
+    // accessed from multiple threads (Blazor UI thread + background persistence service).
+    // C# doesn't allow volatile on double types, so those rely on the primary fix
+    // in Setup.razor (BuildCurrentSettings reads from component fields, not static fields).
+    private static volatile bool _countdownTimerEnabled = true;
+    private static volatile int _countdownHours = 0;
+    private static volatile int _countdownMinutes = 60;
+    private static volatile int _countdownSeconds = 0;
+    private static volatile int _prizeSectionWidthPercent = 75;
     private static double _prizeFontSizeRem = 3.5;
     private static double _timerFontSizeRem = 3.0;
     private static double _entriesFontSizeRem = 2.5;
     private static ThemeConfig _currentTheme = ThemeConfig.Presets.Warframe.Clone();
-    private static bool _useCustomTheme = false;
+    private static volatile bool _useCustomTheme = false;
 
     public static void SetCountdownTime(int hours, int minutes, int seconds)
     {
