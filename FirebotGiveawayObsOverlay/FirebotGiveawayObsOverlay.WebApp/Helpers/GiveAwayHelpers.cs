@@ -2,85 +2,14 @@ using FirebotGiveawayObsOverlay.WebApp.Models;
 
 namespace FirebotGiveawayObsOverlay.WebApp.Helpers;
 
+/// <summary>
+/// Static helpers for theme management and Firebot file path delegation.
+/// Settings management has been moved to ISettingsService singleton.
+/// </summary>
 public static class GiveAwayHelpers
 {
-    // Note: volatile keyword ensures thread-safe reads/writes for primitive types.
-    // This prevents JIT optimization from caching stale values in registers when
-    // accessed from multiple threads (Blazor UI thread + background persistence service).
-    // C# doesn't allow volatile on double types, so those rely on the primary fix
-    // in Setup.razor (BuildCurrentSettings reads from component fields, not static fields).
-    private static volatile bool _countdownTimerEnabled = true;
-    private static volatile int _countdownHours = 0;
-    private static volatile int _countdownMinutes = 60;
-    private static volatile int _countdownSeconds = 0;
-    private static volatile int _prizeSectionWidthPercent = 75;
-    private static double _prizeFontSizeRem = 3.5;
-    private static double _timerFontSizeRem = 3.0;
-    private static double _entriesFontSizeRem = 2.5;
     private static ThemeConfig _currentTheme = ThemeConfig.Presets.Warframe.Clone();
     private static volatile bool _useCustomTheme = false;
-
-    public static void SetCountdownTime(int hours, int minutes, int seconds)
-    {
-        _countdownHours = hours;
-        _countdownMinutes = minutes;
-        _countdownSeconds = seconds;
-    }
-
-    public static (int hours, int minutes, int seconds) GetCountdownTime()
-    {
-        return (_countdownHours, _countdownMinutes, _countdownSeconds);
-    }
-
-    public static void SetCountdownTimerEnabled(bool enabled)
-    {
-        _countdownTimerEnabled = enabled;
-    }
-
-    public static bool GetCountdownTimerEnabled()
-    {
-        return _countdownTimerEnabled;
-    }
-
-    public static void SetPrizeSectionWidth(int widthPercent)
-    {
-        _prizeSectionWidthPercent = Math.Clamp(widthPercent, 50, 90);
-    }
-
-    public static int GetPrizeSectionWidth()
-    {
-        return _prizeSectionWidthPercent;
-    }
-
-    public static void SetPrizeFontSize(double sizeRem)
-    {
-        _prizeFontSizeRem = Math.Clamp(sizeRem, 1.0, 6.0);
-    }
-
-    public static double GetPrizeFontSize()
-    {
-        return _prizeFontSizeRem;
-    }
-
-    public static void SetTimerFontSize(double sizeRem)
-    {
-        _timerFontSizeRem = Math.Clamp(sizeRem, 1.0, 6.0);
-    }
-
-    public static double GetTimerFontSize()
-    {
-        return _timerFontSizeRem;
-    }
-
-    public static void SetEntriesFontSize(double sizeRem)
-    {
-        _entriesFontSizeRem = Math.Clamp(sizeRem, 1.0, 6.0);
-    }
-
-    public static double GetEntriesFontSize()
-    {
-        return _entriesFontSizeRem;
-    }
 
     public static void SetFireBotFileFolder(string folderPath)
     {
@@ -155,37 +84,12 @@ public static class GiveAwayHelpers
     }
 
     /// <summary>
-    /// Gets all current settings as an AppSettings object for persistence.
-    /// </summary>
-    public static AppSettings GetCurrentSettings()
-    {
-        return new AppSettings
-        {
-            FireBotFileFolder = GetFireBotFileFolder(),
-            CountdownTimerEnabled = _countdownTimerEnabled,
-            CountdownHours = _countdownHours,
-            CountdownMinutes = _countdownMinutes,
-            CountdownSeconds = _countdownSeconds,
-            PrizeSectionWidthPercent = _prizeSectionWidthPercent,
-            PrizeFontSizeRem = _prizeFontSizeRem,
-            TimerFontSizeRem = _timerFontSizeRem,
-            EntriesFontSizeRem = _entriesFontSizeRem,
-            Theme = ThemeSettings.FromThemeConfig(_currentTheme)
-        };
-    }
-
-    /// <summary>
-    /// Applies all settings from an AppSettings object.
+    /// Applies settings that GiveAwayHelpers still owns: file path and theme.
+    /// All other settings are managed by ISettingsService.
     /// </summary>
     public static void ApplySettings(AppSettings settings)
     {
         SetFireBotFileFolder(settings.FireBotFileFolder);
-        SetCountdownTimerEnabled(settings.CountdownTimerEnabled);
-        SetCountdownTime(settings.CountdownHours, settings.CountdownMinutes, settings.CountdownSeconds);
-        SetPrizeSectionWidth(settings.PrizeSectionWidthPercent);
-        SetPrizeFontSize(settings.PrizeFontSizeRem);
-        SetTimerFontSize(settings.TimerFontSizeRem);
-        SetEntriesFontSize(settings.EntriesFontSizeRem);
         InitializeTheme(settings.Theme.ToThemeConfig());
     }
 
@@ -201,12 +105,10 @@ public static class GiveAwayHelpers
             preset.SecondaryColor == theme.SecondaryColor &&
             preset.TimerExpiredColor == theme.TimerExpiredColor)
         {
-            // Matches a preset, not custom
             _useCustomTheme = false;
         }
         else
         {
-            // Custom theme or modified preset
             _useCustomTheme = true;
             _currentTheme.Name = "Custom";
         }

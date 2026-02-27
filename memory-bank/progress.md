@@ -195,6 +195,24 @@
 - Planned input mode toggle for precision adjustments
 - Created implementation task breakdown
 
+## 2026-02-27 - Serilog Logging, Bug Fixes, and Settings Refactor (v2.3.0)
+
+### [2026-02-27] - Version 2.3.0 Release
+- ✅ Added Serilog NuGet packages (Serilog.AspNetCore 10.0.0, Serilog.Sinks.Console 6.1.1, Serilog.Sinks.File 7.0.0)
+- ✅ Bootstrapped Serilog in Program.cs with LoggingLevelSwitch for runtime level changes
+- ✅ Added LoggingSettings model (LogEventLevel MinimumLevel, LogFilePath, EnableFileLogging, EnableConsoleLogging)
+- ✅ Replaced default Logging config with Serilog section in appsettings.json
+- ✅ Created ISettingsService interface and SettingsService singleton implementation
+- ✅ Fixed FireBotFileReader with sticky cached reads to prevent timer reset on file lock
+- ✅ Registered ISettingsService in DI, updated Program.cs startup to use LoadFromFile()
+- ✅ Refactored GiveAway.razor to subscribe to OnSettingsChanged events instead of polling
+- ✅ Refactored Setup.razor: slider fix (@onpointerup), ISettingsService, datalist tick marks
+- ✅ Added Logging configuration UI section to Setup page
+- ✅ Cleaned up GiveAwayHelpers — removed all settings fields, kept theme-only logic
+- ✅ Version bumped to 2.3.0
+- ✅ Release build succeeded with 0 warnings, 0 errors
+- ✅ Updated CLAUDE.md, README.md, and memory bank documentation
+
 ## Upcoming Tasks
 
 ### Immediate

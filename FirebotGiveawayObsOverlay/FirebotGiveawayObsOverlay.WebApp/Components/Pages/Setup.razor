@@ -1,61 +1,78 @@
-﻿@using FirebotGiveawayObsOverlay.WebApp.Helpers
+@using FirebotGiveawayObsOverlay.WebApp.Helpers
 @using FirebotGiveawayObsOverlay.WebApp.Models
 @using FirebotGiveawayObsOverlay.WebApp.Services
+@using Serilog.Events
 @inject TimerService TimerService
 @inject ThemeService ThemeService
 @inject VersionService VersionService
-@inject UserSettingsService UserSettingsService
-@inject SettingsPersistenceService PersistenceService
+@inject ISettingsService SettingsService
+@inject Serilog.Core.LoggingLevelSwitch LogLevelSwitch
 
 @page "/setup"
 @rendermode InteractiveServer
 
 <PageTitle>Setup</PageTitle>
 
-<h3>Setup</h3>
+<div class="setup-page">
 
-<hr />
-
-<div class="mb-3">
-    <label class="form-label">Theme</label>
-    <div class="row">
-        <div class="col-md-6">
-            <label class="form-label">Preset Themes</label>
-            <select class="form-select" @bind="selectedThemeName" @bind:after="OnPresetThemeChanged">
-                @foreach (var theme in presetThemes)
-                {
-                    <option value="@theme.Name">@theme.Name</option>
-                }
-                <option value="Custom">Custom</option>
-            </select>
-        </div>
-        <div class="col-md-6">
-            <div class="theme-preview p-3 rounded"
-                 style="background: linear-gradient(135deg, @currentTheme.BackgroundStart 0%, @currentTheme.BackgroundEnd 100%);
-                        border: 2px solid @currentTheme.BorderGlowColor;
-                        min-height: 80px;">
-                <span style="background: linear-gradient(45deg, @currentTheme.PrimaryColor, @currentTheme.SecondaryColor);
-                             -webkit-background-clip: text;
-                             background-clip: text;
-                             color: transparent;
-                             font-weight: bold;
-                             font-size: 1.2rem;">
-                    Preview Text
-                </span>
-            </div>
-        </div>
-    </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Overlay Setup</h3>
+    <span class="text-muted small">v@(versionDisplay)</span>
 </div>
 
-@if (selectedThemeName == "Custom")
-{
-    <div class="mb-3">
-        <label class="form-label">Custom Colors</label>
-        <div class="card card-body">
-            <div class="row g-3">
+@* ═══════════════════════════════════════════════════════════════
+   SECTION 1: OVERLAY APPEARANCE
+   ═══════════════════════════════════════════════════════════════ *@
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="me-2 align-text-bottom" viewBox="0 0 16 16">
+                <path d="M8 5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m4 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3M5.5 7a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m.5 6a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3"/>
+                <path d="M16 8c0 3.15-1.866 2.585-3.567 2.07C11.42 9.763 10.465 9.473 10 10c-.603.683-.475 1.819-.351 2.92C9.826 14.495 9.996 16 8 16a8 8 0 1 1 8-8m-8 7c.611 0 .654-.171.655-.176.078-.146.124-.464.07-1.119-.014-.168-.033-.353-.053-.541-.096-.879-.212-2.058.26-2.847.514-.857 1.363-.952 2.853-.526 1.249.357 2.655.761 3.59.345.88-.393 1.14-1.476 1.297-2.549A7 7 0 1 0 8 15"/>
+            </svg>
+            Overlay Appearance
+        </h5>
+    </div>
+    <div class="card-body">
+
+        @* --- Theme Selection --- *@
+        <h6 class="text-uppercase text-muted small fw-bold mb-2 tracking-wide">Theme</h6>
+        <div class="row mb-3">
+            <div class="col-md-5">
+                <select class="form-select" @bind="selectedThemeName" @bind:after="OnPresetThemeChanged">
+                    @foreach (var theme in presetThemes)
+                    {
+                        <option value="@theme.Name">@theme.Name</option>
+                    }
+                    <option value="Custom">Custom</option>
+                </select>
+            </div>
+            <div class="col-md-7">
+                <div class="theme-preview p-3 rounded d-flex align-items-center justify-content-between"
+                     style="background: linear-gradient(135deg, @currentTheme.BackgroundStart 0%, @currentTheme.BackgroundEnd 100%);
+                            border: 2px solid @currentTheme.BorderGlowColor;
+                            min-height: 64px;">
+                    <span style="background: linear-gradient(45deg, @currentTheme.PrimaryColor, @currentTheme.SecondaryColor);
+                                 -webkit-background-clip: text;
+                                 background-clip: text;
+                                 color: transparent;
+                                 font-weight: bold;
+                                 font-size: 1.1rem;">
+                        Prize Name Here
+                    </span>
+                    <span style="color: @currentTheme.TextColor; font-size: 0.85rem; opacity: 0.7;">
+                        00:59 &middot; 42 Entries
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        @if (selectedThemeName == "Custom")
+        {
+            <div class="row g-3 mb-3 ps-2 border-start border-3 border-primary">
                 <div class="col-md-4">
-                    <label class="form-label">Primary Color</label>
-                    <div class="input-group">
+                    <label class="form-label small">Primary Color</label>
+                    <div class="input-group input-group-sm">
                         <input type="color"
                                class="form-control form-control-color"
                                @bind="customPrimaryColor"
@@ -69,8 +86,8 @@
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Secondary Color</label>
-                    <div class="input-group">
+                    <label class="form-label small">Secondary Color</label>
+                    <div class="input-group input-group-sm">
                         <input type="color"
                                class="form-control form-control-color"
                                @bind="customSecondaryColor"
@@ -84,8 +101,8 @@
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label">Timer Expired Color</label>
-                    <div class="input-group">
+                    <label class="form-label small">Timer Expired Color</label>
+                    <div class="input-group input-group-sm">
                         <input type="color"
                                class="form-control form-control-color"
                                @bind="customTimerExpiredColor"
@@ -99,342 +116,484 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-}
+        }
 
-<hr />
+        <hr class="my-3" />
 
-<div class="mb-3">
-    <label class="form-label">Countdown Timer</label>
-    
-    <div class="mb-3">
-        <div class="form-check">
-            <input class="form-check-input" 
-                   type="checkbox" 
-                   id="timerEnabledCheck"
-                   @bind="countdownTimerEnabled"
-                   @bind:after="SetCountdownTimerEnabled" />
-            <label class="form-check-label" for="timerEnabledCheck">
-                Enable Countdown Timer
-            </label>
-        </div>
-        <small class="form-text text-muted">When disabled, only entry count will be shown (file monitoring continues)</small>
-    </div>
-    
-    <div class="d-flex gap-2">
-        <div class="flex-grow-1">
-            <label class="form-label">Hours</label>
-            <input type="number" required
-                   placeholder="Hours"
-                   class="form-control"
-                   min="0"
-                   max="23"
-                   disabled="@(!countdownTimerEnabled)"
-                   @bind="countdownHours"
-                   @bind:event="oninput"
-                   @bind:after="SetCountdownTime" />
-        </div>
-        <div class="flex-grow-1">
-            <label class="form-label">Minutes</label>
-            <input type="number" required
-                   placeholder="Minutes"
-                   class="form-control"
-                   min="0"
-                   max="59"
-                   disabled="@(!countdownTimerEnabled)"
-                   @bind="countdownMinutes"
-                   @bind:event="oninput"
-                   @bind:after="SetCountdownTime" />
-        </div>
-        <div class="flex-grow-1">
-            <label class="form-label">Seconds</label>
-            <input type="number" required
-                   placeholder="Seconds"
-                   class="form-control"
-                   min="0"
-                   max="59"
-                   disabled="@(!countdownTimerEnabled)"
-                   @bind="countdownSeconds"
-                   @bind:event="oninput"
-                   @bind:after="SetCountdownTime" />
-        </div>
-    </div>
-</div>
-
-<div class="mb-3">
-    <button class="btn btn-primary" 
-            disabled="@(!countdownTimerEnabled)"
-            @onclick="ResetGiveawayTimer">
-        Reset Timer
-    </button>
-    <span class="ms-2 @(resetSuccess ? "text-success" : "text-danger")">@resetMessage</span>
-</div>
-
-<div class="mb-3">
-    <label class="form-label">Firebot file path</label>
-    <input 
-        type="text" required
-        placeholder="Set the path where to find the Firebot files" 
-        class="form-control"
-        @bind="firebotFilePath"
-        @bind:event="oninput"
-        @bind:after="SetFirebotFilePath" />
-</div>
-
-<div class="mb-3">
-    <label class="form-label">Layout Settings</label>
-    <div class="d-flex gap-2 align-items-center">
-        <div class="flex-grow-1">
-            <div class="d-flex justify-content-between align-items-center mb-1">
-                <label class="form-label mb-0">Prize Section Width (%)</label>
-                <div class="btn-group btn-group-sm" role="group">
+        @* --- Layout --- *@
+        <h6 class="text-uppercase text-muted small fw-bold mb-2 tracking-wide">Layout</h6>
+        <div class="slider-row mb-3">
+            <div class="slider-label">
+                <span>Prize Section Width</span>
+                <span class="slider-value">@prizeSectionWidth%</span>
+            </div>
+            <div class="slider-controls">
+                <div class="slider-input-area">
+                    @if (widthInputMode == InputMode.Slider)
+                    {
+                        <input type="range"
+                               class="form-range"
+                               min="50"
+                               max="90"
+                               step="5"
+                               list="widthTicks"
+                               @bind="prizeSectionWidth"
+                               @bind:event="oninput"
+                               @onpointerup="CommitPrizeSectionWidth" />
+                        <datalist id="widthTicks">
+                            @for (int i = 50; i <= 90; i += 5)
+                            {
+                                <option value="@i" label="@i"></option>
+                            }
+                        </datalist>
+                    }
+                    else
+                    {
+                        <input type="number"
+                               class="form-control form-control-sm"
+                               min="50"
+                               max="90"
+                               step="5"
+                               inputmode="numeric"
+                               @bind="prizeSectionWidth"
+                               @bind:event="onchange"
+                               @bind:after="CommitPrizeSectionWidthClamped" />
+                    }
+                </div>
+                <div class="btn-group btn-group-sm mode-toggle" role="group">
                     <button type="button"
-                            class="btn @(widthInputMode == InputMode.Slider ? "btn-primary" : "btn-outline-secondary")"
-                            @onclick="() => widthInputMode = InputMode.Slider"
-                            title="Slider">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                            <path fill-rule="evenodd" d="M11.5 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M9.05 3a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0V3z"/>
-                        </svg>
+                            class="btn @(widthInputMode == InputMode.Slider ? "btn-primary" : "btn-outline-secondary") btn-sm"
+                            @onclick="() => widthInputMode = InputMode.Slider">
+                        Slider
                     </button>
                     <button type="button"
-                            class="btn @(widthInputMode == InputMode.Numeric ? "btn-primary" : "btn-outline-secondary")"
-                            @onclick="() => widthInputMode = InputMode.Numeric"
-                            title="Numeric">
-                        #
+                            class="btn @(widthInputMode == InputMode.Numeric ? "btn-primary" : "btn-outline-secondary") btn-sm"
+                            @onclick="() => widthInputMode = InputMode.Numeric">
+                        Value
                     </button>
                 </div>
             </div>
-            @if (widthInputMode == InputMode.Slider)
-            {
-                <input type="range"
-                       class="form-range"
-                       min="50"
-                       max="90"
-                       step="5"
-                       @bind="prizeSectionWidth"
-                       @bind:event="oninput"
-                       @bind:after="SetPrizeSectionWidth" />
-            }
-            else
-            {
-                <input type="number"
+        </div>
+
+        <hr class="my-3" />
+
+        @* --- Font Sizes --- *@
+        <h6 class="text-uppercase text-muted small fw-bold mb-2 tracking-wide">Font Sizes</h6>
+
+        @* Prize Font *@
+        <div class="slider-row mb-2">
+            <div class="slider-label">
+                <span>Prize</span>
+                <span class="slider-value">@prizeFontSize.ToString("0.0") rem</span>
+            </div>
+            <div class="slider-controls">
+                <div class="slider-input-area">
+                    @if (prizeFontInputMode == InputMode.Slider)
+                    {
+                        <input type="range"
+                               class="form-range"
+                               min="1.0"
+                               max="6.0"
+                               step="0.1"
+                               list="prizeFontTicks"
+                               @bind="prizeFontSize"
+                               @bind:event="oninput"
+                               @onpointerup="CommitPrizeFontSize" />
+                        <datalist id="prizeFontTicks">
+                            @for (double v = 1.0; v <= 6.0; v += 0.5)
+                            {
+                                var isWhole = v == Math.Floor(v);
+                                if (isWhole)
+                                {
+                                    <option value="@v.ToString("0.0")" label="@v.ToString("0")"></option>
+                                }
+                                else
+                                {
+                                    <option value="@v.ToString("0.0")"></option>
+                                }
+                            }
+                        </datalist>
+                    }
+                    else
+                    {
+                        <input type="number"
+                               class="form-control form-control-sm"
+                               min="1.0"
+                               max="6.0"
+                               step="0.1"
+                               inputmode="decimal"
+                               @bind="prizeFontSize"
+                               @bind:event="onchange"
+                               @bind:after="CommitPrizeFontSizeClamped" />
+                    }
+                </div>
+                <div class="btn-group btn-group-sm mode-toggle" role="group">
+                    <button type="button"
+                            class="btn @(prizeFontInputMode == InputMode.Slider ? "btn-primary" : "btn-outline-secondary") btn-sm"
+                            @onclick="() => prizeFontInputMode = InputMode.Slider">
+                        Slider
+                    </button>
+                    <button type="button"
+                            class="btn @(prizeFontInputMode == InputMode.Numeric ? "btn-primary" : "btn-outline-secondary") btn-sm"
+                            @onclick="() => prizeFontInputMode = InputMode.Numeric">
+                        Value
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        @* Timer Font *@
+        <div class="slider-row mb-2">
+            <div class="slider-label">
+                <span>Timer</span>
+                <span class="slider-value">@timerFontSize.ToString("0.0") rem</span>
+            </div>
+            <div class="slider-controls">
+                <div class="slider-input-area">
+                    @if (timerFontInputMode == InputMode.Slider)
+                    {
+                        <input type="range"
+                               class="form-range"
+                               min="1.0"
+                               max="6.0"
+                               step="0.1"
+                               list="timerFontTicks"
+                               @bind="timerFontSize"
+                               @bind:event="oninput"
+                               @onpointerup="CommitTimerFontSize" />
+                        <datalist id="timerFontTicks">
+                            @for (double v = 1.0; v <= 6.0; v += 0.5)
+                            {
+                                var isWhole = v == Math.Floor(v);
+                                if (isWhole)
+                                {
+                                    <option value="@v.ToString("0.0")" label="@v.ToString("0")"></option>
+                                }
+                                else
+                                {
+                                    <option value="@v.ToString("0.0")"></option>
+                                }
+                            }
+                        </datalist>
+                    }
+                    else
+                    {
+                        <input type="number"
+                               class="form-control form-control-sm"
+                               min="1.0"
+                               max="6.0"
+                               step="0.1"
+                               inputmode="decimal"
+                               @bind="timerFontSize"
+                               @bind:event="onchange"
+                               @bind:after="CommitTimerFontSizeClamped" />
+                    }
+                </div>
+                <div class="btn-group btn-group-sm mode-toggle" role="group">
+                    <button type="button"
+                            class="btn @(timerFontInputMode == InputMode.Slider ? "btn-primary" : "btn-outline-secondary") btn-sm"
+                            @onclick="() => timerFontInputMode = InputMode.Slider">
+                        Slider
+                    </button>
+                    <button type="button"
+                            class="btn @(timerFontInputMode == InputMode.Numeric ? "btn-primary" : "btn-outline-secondary") btn-sm"
+                            @onclick="() => timerFontInputMode = InputMode.Numeric">
+                        Value
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        @* Entries Font *@
+        <div class="slider-row mb-1">
+            <div class="slider-label">
+                <span>Entries</span>
+                <span class="slider-value">@entriesFontSize.ToString("0.0") rem</span>
+            </div>
+            <div class="slider-controls">
+                <div class="slider-input-area">
+                    @if (entriesFontInputMode == InputMode.Slider)
+                    {
+                        <input type="range"
+                               class="form-range"
+                               min="1.0"
+                               max="6.0"
+                               step="0.1"
+                               list="entriesFontTicks"
+                               @bind="entriesFontSize"
+                               @bind:event="oninput"
+                               @onpointerup="CommitEntriesFontSize" />
+                        <datalist id="entriesFontTicks">
+                            @for (double v = 1.0; v <= 6.0; v += 0.5)
+                            {
+                                var isWhole = v == Math.Floor(v);
+                                if (isWhole)
+                                {
+                                    <option value="@v.ToString("0.0")" label="@v.ToString("0")"></option>
+                                }
+                                else
+                                {
+                                    <option value="@v.ToString("0.0")"></option>
+                                }
+                            }
+                        </datalist>
+                    }
+                    else
+                    {
+                        <input type="number"
+                               class="form-control form-control-sm"
+                               min="1.0"
+                               max="6.0"
+                               step="0.1"
+                               inputmode="decimal"
+                               @bind="entriesFontSize"
+                               @bind:event="onchange"
+                               @bind:after="CommitEntriesFontSizeClamped" />
+                    }
+                </div>
+                <div class="btn-group btn-group-sm mode-toggle" role="group">
+                    <button type="button"
+                            class="btn @(entriesFontInputMode == InputMode.Slider ? "btn-primary" : "btn-outline-secondary") btn-sm"
+                            @onclick="() => entriesFontInputMode = InputMode.Slider">
+                        Slider
+                    </button>
+                    <button type="button"
+                            class="btn @(entriesFontInputMode == InputMode.Numeric ? "btn-primary" : "btn-outline-secondary") btn-sm"
+                            @onclick="() => entriesFontInputMode = InputMode.Numeric">
+                        Value
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@* ═══════════════════════════════════════════════════════════════
+   SECTION 2: GIVEAWAY SETTINGS
+   ═══════════════════════════════════════════════════════════════ *@
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="me-2 align-text-bottom" viewBox="0 0 16 16">
+                <path d="M2.5.5A.5.5 0 0 1 3 0h10a.5.5 0 0 1 .5.5q0 .807-.034 1.536a3 3 0 1 1-1.133 5.89c-.79 1.865-1.878 2.777-2.833 3.011v2.173l1.425.356c.194.048.377.135.537.255L13.3 15.1a.5.5 0 0 1-.3.9H3a.5.5 0 0 1-.3-.9l1.838-1.379c.16-.12.343-.207.537-.255L6.5 13.11v-2.173c-.955-.234-2.043-1.146-2.833-3.012a3 3 0 1 1-1.132-5.89A33 33 0 0 1 2.5.5"/>
+            </svg>
+            Giveaway Settings
+        </h5>
+    </div>
+    <div class="card-body">
+
+        @* --- Countdown Timer --- *@
+        <h6 class="text-uppercase text-muted small fw-bold mb-2 tracking-wide">Countdown Timer</h6>
+        <div class="d-flex align-items-center gap-3 mb-3">
+            <div class="form-check form-switch mb-0">
+                <input class="form-check-input"
+                       type="checkbox"
+                       role="switch"
+                       id="timerEnabledCheck"
+                       @bind="countdownTimerEnabled"
+                       @bind:after="SetCountdownTimerEnabled" />
+                <label class="form-check-label" for="timerEnabledCheck">
+                    @(countdownTimerEnabled ? "Enabled" : "Disabled")
+                </label>
+            </div>
+            <small class="text-muted">@(countdownTimerEnabled ? "Timer shown on overlay" : "Only entry count shown (file monitoring continues)")</small>
+        </div>
+
+        <div class="row g-2 mb-3 align-items-end">
+            <div class="col">
+                <label class="form-label small mb-1">Hours</label>
+                <input type="number" required
+                       placeholder="0"
                        class="form-control"
-                       min="50"
-                       max="90"
-                       step="5"
-                       inputmode="numeric"
-                       @bind="prizeSectionWidth"
+                       min="0"
+                       max="23"
+                       disabled="@(!countdownTimerEnabled)"
+                       @bind="countdownHours"
+                       @bind:event="oninput"
+                       @bind:after="SetCountdownTime" />
+            </div>
+            <div class="col-auto pt-3 text-muted fw-bold">:</div>
+            <div class="col">
+                <label class="form-label small mb-1">Minutes</label>
+                <input type="number" required
+                       placeholder="0"
+                       class="form-control"
+                       min="0"
+                       max="59"
+                       disabled="@(!countdownTimerEnabled)"
+                       @bind="countdownMinutes"
+                       @bind:event="oninput"
+                       @bind:after="SetCountdownTime" />
+            </div>
+            <div class="col-auto pt-3 text-muted fw-bold">:</div>
+            <div class="col">
+                <label class="form-label small mb-1">Seconds</label>
+                <input type="number" required
+                       placeholder="0"
+                       class="form-control"
+                       min="0"
+                       max="59"
+                       disabled="@(!countdownTimerEnabled)"
+                       @bind="countdownSeconds"
+                       @bind:event="oninput"
+                       @bind:after="SetCountdownTime" />
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-outline-primary"
+                        disabled="@(!countdownTimerEnabled)"
+                        @onclick="ResetGiveawayTimer"
+                        title="Reset the countdown timer">
+                    Reset
+                </button>
+            </div>
+        </div>
+        @if (!string.IsNullOrEmpty(resetMessage))
+        {
+            <div class="small mb-3 @(resetSuccess ? "text-success" : "text-danger")">@resetMessage</div>
+        }
+
+        <hr class="my-3" />
+
+        @* --- Firebot File Path --- *@
+        <h6 class="text-uppercase text-muted small fw-bold mb-2 tracking-wide">Firebot Integration</h6>
+        <div class="mb-1">
+            <label class="form-label small mb-1">Giveaway files folder</label>
+            <input
+                type="text" required
+                placeholder="e.g. G:\Giveaway"
+                class="form-control"
+                @bind="firebotFilePath"
+                @bind:event="oninput"
+                @bind:after="SetFirebotFilePath" />
+            <small class="form-text text-muted">Path where Firebot writes prize.txt, winner.txt, and giveaway.txt</small>
+        </div>
+
+    </div>
+</div>
+
+@* ═══════════════════════════════════════════════════════════════
+   SECTION 3: LOGGING
+   ═══════════════════════════════════════════════════════════════ *@
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="me-2 align-text-bottom" viewBox="0 0 16 16">
+                <path d="M5 4a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1zm-.5 2.5A.5.5 0 0 1 5 6h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5M5 8a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1zm0 2a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1z"/>
+                <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zm10-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1"/>
+            </svg>
+            Logging
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3 mb-3">
+            <div class="col-md-4">
+                <label class="form-label small mb-1">Log Level</label>
+                <select class="form-select"
+                        @bind="logLevel"
+                        @bind:after="SetLogLevel">
+                    <option value="@LogEventLevel.Verbose">Verbose</option>
+                    <option value="@LogEventLevel.Debug">Debug</option>
+                    <option value="@LogEventLevel.Information">Information</option>
+                    <option value="@LogEventLevel.Warning">Warning</option>
+                    <option value="@LogEventLevel.Error">Error</option>
+                    <option value="@LogEventLevel.Fatal">Fatal</option>
+                </select>
+                <small class="form-text text-muted">Takes effect immediately</small>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small mb-1">Log File Path</label>
+                <input type="text"
+                       class="form-control"
+                       placeholder="logs/overlay-.log"
+                       @bind="logFilePath"
                        @bind:event="onchange"
-                       @bind:after="SetPrizeSectionWidthClamped" />
-            }
-        </div>
-        <div style="width: 50px; text-align: center;">
-            <span class="badge bg-primary">@prizeSectionWidth%</span>
-        </div>
-    </div>
-</div>
-
-<div class="mb-3">
-    <label class="form-label">Font Sizes</label>
-    <div class="mb-2">
-        <div class="d-flex gap-2 align-items-center">
-            <div class="flex-grow-1">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <label class="form-label mb-0">Prize Font Size</label>
-                    <div class="btn-group btn-group-sm" role="group">
-                        <button type="button"
-                                class="btn @(prizeFontInputMode == InputMode.Slider ? "btn-primary" : "btn-outline-secondary")"
-                                @onclick="() => prizeFontInputMode = InputMode.Slider"
-                                title="Slider">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                                <path fill-rule="evenodd" d="M11.5 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M9.05 3a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0V3z"/>
-                            </svg>
-                        </button>
-                        <button type="button"
-                                class="btn @(prizeFontInputMode == InputMode.Numeric ? "btn-primary" : "btn-outline-secondary")"
-                                @onclick="() => prizeFontInputMode = InputMode.Numeric"
-                                title="Numeric">
-                            #
-                        </button>
+                       @bind:after="SetLogFilePath" />
+                <small class="form-text text-muted">Requires restart</small>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small mb-1">Sinks</label>
+                <div class="d-flex flex-column gap-2 pt-1">
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               role="switch"
+                               id="enableFileLogging"
+                               @bind="enableFileLogging"
+                               @bind:after="SetEnableFileLogging" />
+                        <label class="form-check-label small" for="enableFileLogging">File</label>
+                    </div>
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               role="switch"
+                               id="enableConsoleLogging"
+                               @bind="enableConsoleLogging"
+                               @bind:after="SetEnableConsoleLogging" />
+                        <label class="form-check-label small" for="enableConsoleLogging">Console</label>
                     </div>
                 </div>
-                @if (prizeFontInputMode == InputMode.Slider)
-                {
-                    <input type="range"
-                           class="form-range"
-                           min="1.0"
-                           max="6.0"
-                           step="0.1"
-                           @bind="prizeFontSize"
-                           @bind:event="oninput"
-                           @bind:after="SetPrizeFontSize" />
-                }
-                else
-                {
-                    <input type="number"
-                           class="form-control"
-                           min="1.0"
-                           max="6.0"
-                           step="0.1"
-                           inputmode="decimal"
-                           @bind="prizeFontSize"
-                           @bind:event="onchange"
-                           @bind:after="SetPrizeFontSizeClamped" />
-                }
-            </div>
-            <div style="width: 60px; text-align: center;">
-                <span class="badge bg-primary">@prizeFontSize.ToString("0.0")rem</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="mb-2">
-        <div class="d-flex gap-2 align-items-center">
-            <div class="flex-grow-1">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <label class="form-label mb-0">Timer Font Size</label>
-                    <div class="btn-group btn-group-sm" role="group">
-                        <button type="button"
-                                class="btn @(timerFontInputMode == InputMode.Slider ? "btn-primary" : "btn-outline-secondary")"
-                                @onclick="() => timerFontInputMode = InputMode.Slider"
-                                title="Slider">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                                <path fill-rule="evenodd" d="M11.5 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M9.05 3a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0V3z"/>
-                            </svg>
-                        </button>
-                        <button type="button"
-                                class="btn @(timerFontInputMode == InputMode.Numeric ? "btn-primary" : "btn-outline-secondary")"
-                                @onclick="() => timerFontInputMode = InputMode.Numeric"
-                                title="Numeric">
-                            #
-                        </button>
-                    </div>
-                </div>
-                @if (timerFontInputMode == InputMode.Slider)
-                {
-                    <input type="range"
-                           class="form-range"
-                           min="1.0"
-                           max="6.0"
-                           step="0.1"
-                           @bind="timerFontSize"
-                           @bind:event="oninput"
-                           @bind:after="SetTimerFontSize" />
-                }
-                else
-                {
-                    <input type="number"
-                           class="form-control"
-                           min="1.0"
-                           max="6.0"
-                           step="0.1"
-                           inputmode="decimal"
-                           @bind="timerFontSize"
-                           @bind:event="onchange"
-                           @bind:after="SetTimerFontSizeClamped" />
-                }
-            </div>
-            <div style="width: 60px; text-align: center;">
-                <span class="badge bg-primary">@timerFontSize.ToString("0.0")rem</span>
-            </div>
-        </div>
-    </div>
-
-    <div class="mb-2">
-        <div class="d-flex gap-2 align-items-center">
-            <div class="flex-grow-1">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <label class="form-label mb-0">Entries Font Size</label>
-                    <div class="btn-group btn-group-sm" role="group">
-                        <button type="button"
-                                class="btn @(entriesFontInputMode == InputMode.Slider ? "btn-primary" : "btn-outline-secondary")"
-                                @onclick="() => entriesFontInputMode = InputMode.Slider"
-                                title="Slider">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
-                                <path fill-rule="evenodd" d="M11.5 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M9.05 3a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0V3z"/>
-                            </svg>
-                        </button>
-                        <button type="button"
-                                class="btn @(entriesFontInputMode == InputMode.Numeric ? "btn-primary" : "btn-outline-secondary")"
-                                @onclick="() => entriesFontInputMode = InputMode.Numeric"
-                                title="Numeric">
-                            #
-                        </button>
-                    </div>
-                </div>
-                @if (entriesFontInputMode == InputMode.Slider)
-                {
-                    <input type="range"
-                           class="form-range"
-                           min="1.0"
-                           max="6.0"
-                           step="0.1"
-                           @bind="entriesFontSize"
-                           @bind:event="oninput"
-                           @bind:after="SetEntriesFontSize" />
-                }
-                else
-                {
-                    <input type="number"
-                           class="form-control"
-                           min="1.0"
-                           max="6.0"
-                           step="0.1"
-                           inputmode="decimal"
-                           @bind="entriesFontSize"
-                           @bind:event="onchange"
-                           @bind:after="SetEntriesFontSizeClamped" />
-                }
-            </div>
-            <div style="width: 60px; text-align: center;">
-                <span class="badge bg-primary">@entriesFontSize.ToString("0.0")rem</span>
             </div>
         </div>
     </div>
 </div>
 
-<hr />
-
-<div class="mb-4">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-        <label class="form-label mb-0">Settings Management</label>
+@* ═══════════════════════════════════════════════════════════════
+   SECTION 4: SETTINGS MANAGEMENT
+   ═══════════════════════════════════════════════════════════════ *@
+<div class="card mb-4 @(hasCustomSettings ? "border-warning" : "")">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="me-2 align-text-bottom" viewBox="0 0 16 16">
+                <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0"/>
+                <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115z"/>
+            </svg>
+            Settings Management
+        </h5>
         @if (hasCustomSettings)
         {
-            <span class="badge bg-info">Custom settings active</span>
+            <span class="badge bg-info">@settingsDiff.Count custom</span>
         }
         else
         {
-            <span class="badge bg-secondary">Using defaults</span>
+            <span class="badge bg-secondary">Defaults</span>
         }
     </div>
-
-    @if (hasCustomSettings)
-    {
-        <div class="card border-warning">
-            <div class="card-header bg-warning bg-opacity-10 d-flex justify-content-between align-items-center">
-                <span class="fw-semibold">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-sliders me-2" viewBox="0 0 16 16">
-                        <path fill-rule="evenodd" d="M11.5 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M9.05 3a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0V3zM4.5 7a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M2.05 8a2.5 2.5 0 0 1 4.9 0H16v1H6.95a2.5 2.5 0 0 1-4.9 0H0V8zm9.45 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3m-2.45 1a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0v-1z"/>
-                    </svg>
-                    Customized Settings (@settingsDiff.Count changes)
-                </span>
+    <div class="card-body">
+        @if (hasCustomSettings)
+        {
+            <div class="d-flex justify-content-between align-items-center mb-2">
                 <button class="btn btn-sm btn-outline-secondary" @onclick="ToggleDiffView">
                     @(showDiff ? "Hide Details" : "Show Details")
                 </button>
+                @if (!showResetConfirm)
+                {
+                    <button class="btn btn-outline-danger btn-sm" @onclick="ShowResetConfirm">
+                        Reset to Defaults
+                    </button>
+                }
+                else
+                {
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-secondary btn-sm" @onclick="CancelReset">Cancel</button>
+                        <button class="btn btn-danger btn-sm" @onclick="ConfirmReset">
+                            Confirm Reset
+                        </button>
+                    </div>
+                }
             </div>
 
             @if (showDiff)
             {
-                <div class="card-body p-0">
-                    <table class="table table-sm table-striped mb-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped mb-0 small">
                         <thead class="table-light">
                             <tr>
-                                <th style="width: 30%">Setting</th>
-                                <th style="width: 25%">Default</th>
-                                <th style="width: 5%; text-align: center;"></th>
-                                <th style="width: 25%">Current</th>
-                                <th style="width: 15%; text-align: center;">Action</th>
+                                <th>Setting</th>
+                                <th>Default</th>
+                                <th></th>
+                                <th>Current</th>
+                                <th class="text-center" style="width: 50px;"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -455,7 +614,7 @@
                                             <span class="text-muted">@diff.DefaultValue</span>
                                         }
                                     </td>
-                                    <td class="text-center text-muted">→</td>
+                                    <td class="text-center text-muted px-1">&rarr;</td>
                                     <td>
                                         @if (diff.CurrentValue.StartsWith("#"))
                                         {
@@ -470,7 +629,7 @@
                                         }
                                     </td>
                                     <td class="text-center">
-                                        <button class="btn btn-outline-secondary btn-sm py-0 px-2"
+                                        <button class="btn btn-outline-secondary btn-sm py-0 px-1"
                                                 title="Reset to default"
                                                 @onclick="() => ResetIndividualSetting(diff.Name)">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
@@ -485,54 +644,166 @@
                     </table>
                 </div>
             }
-
-            <div class="card-footer bg-transparent">
-                <div class="d-flex justify-content-between align-items-center">
-                    <small class="text-muted">Reset will restore all settings to their default values</small>
-                    @if (!showResetConfirm)
-                    {
-                        <button class="btn btn-outline-danger btn-sm" @onclick="ShowResetConfirm">
-                            Reset to Defaults
-                        </button>
-                    }
-                    else
-                    {
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-secondary btn-sm" @onclick="CancelReset">Cancel</button>
-                            <button class="btn btn-danger btn-sm" @onclick="ConfirmReset">
-                                Confirm Reset
-                            </button>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-    }
-    else
-    {
-        <div class="alert alert-light border mb-0">
-            <small class="text-muted">All settings are at their default values. Changes you make will be saved automatically.</small>
-        </div>
-    }
-</div>
-
-<hr />
-
-<div class="mt-4 pt-2">
-    <div class="d-flex justify-content-between align-items-center text-muted small">
-        <span class="fw-semibold">Firebot Giveaway OBS Overlay</span>
-        <span>Version <span class="badge bg-secondary">v@(versionDisplay)</span></span>
+        }
+        else
+        {
+            <p class="text-muted small mb-0">All settings are at their default values. Changes are saved automatically.</p>
+        }
     </div>
 </div>
 
+@* ═══════════════════════════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════════════════════════ *@
+<div class="text-center text-muted small pb-3">
+    Firebot Giveaway OBS Overlay
+</div>
+
+</div>
+
 <style>
+    .setup-page {
+        max-width: 820px;
+        margin: 0 auto;
+        padding: 1rem 0;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .card-header .card-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #343a40;
+    }
+
+    .tracking-wide {
+        letter-spacing: 0.05em;
+    }
+
+    /* Slider rows -- label+value on top, slider+toggle below */
+    .slider-row {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .slider-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        font-size: 0.875rem;
+    }
+
+    .slider-value {
+        font-weight: 700;
+        font-size: 0.8rem;
+        color: #0d6efd;
+        font-variant-numeric: tabular-nums;
+        min-width: 65px;
+        text-align: right;
+    }
+
+    .slider-controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .slider-input-area {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .slider-input-area input[type="number"] {
+        max-width: 100px;
+    }
+
+    .mode-toggle {
+        flex-shrink: 0;
+    }
+
+    .mode-toggle .btn {
+        font-size: 0.7rem;
+        padding: 0.15rem 0.5rem;
+    }
+
+    /* Color swatch in diff table */
     .color-swatch {
         display: inline-block;
-        width: 16px;
-        height: 16px;
+        width: 14px;
+        height: 14px;
         border-radius: 3px;
         border: 1px solid rgba(0,0,0,0.2);
         vertical-align: middle;
+    }
+
+    /* Slider tick marks */
+    input[type="range"].form-range[list] {
+        padding-bottom: 14px;
+    }
+
+    datalist {
+        display: flex;
+        justify-content: space-between;
+        margin-top: -10px;
+        padding: 0 6px;
+        font-size: 0;
+        pointer-events: none;
+    }
+
+    /* Major ticks — whole numbers with labels */
+    datalist option[label] {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 0;
+        font-size: 0.6rem;
+        color: #868e96;
+        padding: 0;
+        line-height: 1;
+    }
+
+    datalist option[label]::before {
+        content: "";
+        display: block;
+        width: 1px;
+        height: 7px;
+        background: #868e96;
+        margin-bottom: 1px;
+    }
+
+    /* Minor ticks — sub-steps without labels */
+    datalist option:not([label]) {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 0;
+        font-size: 0;
+        padding: 0;
+        line-height: 1;
+    }
+
+    datalist option:not([label])::before {
+        content: "";
+        display: block;
+        width: 1px;
+        height: 4px;
+        background: #ced4da;
+    }
+
+    /* Form switch styling for better visibility */
+    .form-check-input[role="switch"] {
+        width: 2.5em;
+    }
+
+    /* Timer colon separators */
+    .col-auto.pt-3 {
+        font-size: 1.25rem;
+        line-height: 1;
+        padding-bottom: 0.5rem;
     }
 </style>
 
@@ -541,17 +812,17 @@
     private enum InputMode { Slider, Numeric }
 
     private string versionDisplay = "";
-    private string firebotFilePath = GiveAwayHelpers.GetFireBotFileFolder();
+    private string firebotFilePath = "";
     private bool countdownTimerEnabled;
     private int countdownHours;
     private int countdownMinutes;
     private int countdownSeconds;
     private string resetMessage = "";
     private bool resetSuccess = false;
-    private int prizeSectionWidth = GiveAwayHelpers.GetPrizeSectionWidth();
-    private double prizeFontSize = GiveAwayHelpers.GetPrizeFontSize();
-    private double timerFontSize = GiveAwayHelpers.GetTimerFontSize();
-    private double entriesFontSize = GiveAwayHelpers.GetEntriesFontSize();
+    private int prizeSectionWidth;
+    private double prizeFontSize;
+    private double timerFontSize;
+    private double entriesFontSize;
 
     // Input mode state for each slider setting
     private InputMode widthInputMode = InputMode.Slider;
@@ -561,11 +832,17 @@
 
     // Theme-related fields
     private List<ThemeConfig> presetThemes = GiveAwayHelpers.GetAllPresetThemes();
-    private ThemeConfig currentTheme = GiveAwayHelpers.GetCurrentTheme();
-    private string selectedThemeName = GiveAwayHelpers.GetCurrentTheme().Name;
+    private ThemeConfig currentTheme = new();
+    private string selectedThemeName = "";
     private string customPrimaryColor = "#00fff9";
     private string customSecondaryColor = "#ff00c8";
     private string customTimerExpiredColor = "#ff3333";
+
+    // Logging settings fields
+    private LogEventLevel logLevel;
+    private string logFilePath = "logs/overlay-.log";
+    private bool enableFileLogging = true;
+    private bool enableConsoleLogging = true;
 
     // Reset settings fields
     private bool hasCustomSettings = false;
@@ -575,78 +852,40 @@
 
     protected override void OnInitialized()
     {
-        // Initialize version display
         versionDisplay = VersionService.GetDisplayVersion();
 
-        var (hours, minutes, seconds) = GiveAwayHelpers.GetCountdownTime();
-        countdownHours = hours;
-        countdownMinutes = minutes;
-        countdownSeconds = seconds;
-        countdownTimerEnabled = GiveAwayHelpers.GetCountdownTimerEnabled();
+        var s = SettingsService.Current;
+        firebotFilePath = s.FireBotFileFolder;
+        countdownTimerEnabled = s.CountdownTimerEnabled;
+        countdownHours = s.CountdownHours;
+        countdownMinutes = s.CountdownMinutes;
+        countdownSeconds = s.CountdownSeconds;
+        prizeSectionWidth = s.PrizeSectionWidthPercent;
+        prizeFontSize = s.PrizeFontSizeRem;
+        timerFontSize = s.TimerFontSizeRem;
+        entriesFontSize = s.EntriesFontSizeRem;
 
-        // Initialize theme fields
         currentTheme = GiveAwayHelpers.GetCurrentTheme();
         selectedThemeName = GiveAwayHelpers.IsUsingCustomTheme() ? "Custom" : currentTheme.Name;
         customPrimaryColor = currentTheme.PrimaryColor;
         customSecondaryColor = currentTheme.SecondaryColor;
         customTimerExpiredColor = currentTheme.TimerExpiredColor;
 
-        // Calculate settings diff
+        // Initialize logging fields
+        logLevel = s.Logging.MinimumLevel;
+        logFilePath = s.Logging.LogFilePath;
+        enableFileLogging = s.Logging.EnableFileLogging;
+        enableConsoleLogging = s.Logging.EnableConsoleLogging;
+
         UpdateSettingsDiff();
     }
 
     private void UpdateSettingsDiff()
     {
         var defaults = AppSettings.GetDefaults();
-        var current = BuildCurrentSettings();
+        var current = SettingsService.Current;
         settingsDiff = current.GetDifferences(defaults);
         hasCustomSettings = settingsDiff.Count > 0;
-    }
-
-    /// <summary>
-    /// Queues settings for async persistence with debouncing.
-    /// UI updates are immediate; disk writes are debounced to prevent lag.
-    /// IMPORTANT: Uses BuildCurrentSettings() to read from component fields directly,
-    /// avoiding race condition with @bind:after timing where static fields may not
-    /// be updated yet.
-    /// </summary>
-    private void QueueSettingsSave()
-    {
-        PersistenceService.QueueSave(BuildCurrentSettings());
-        UpdateSettingsDiff();
-    }
-
-    /// <summary>
-    /// Builds an AppSettings snapshot from component fields (not static GiveAwayHelpers fields).
-    /// This prevents the @bind:after timing race condition where the callback executes
-    /// before Blazor finishes updating the backing field, which would cause stale values
-    /// to be read from static fields and persisted.
-    /// </summary>
-    private AppSettings BuildCurrentSettings()
-    {
-        return new AppSettings
-        {
-            FireBotFileFolder = firebotFilePath,
-            CountdownTimerEnabled = countdownTimerEnabled,
-            CountdownHours = countdownHours,
-            CountdownMinutes = countdownMinutes,
-            CountdownSeconds = countdownSeconds,
-            PrizeSectionWidthPercent = prizeSectionWidth,
-            PrizeFontSizeRem = prizeFontSize,
-            TimerFontSizeRem = timerFontSize,
-            EntriesFontSizeRem = entriesFontSize,
-            Theme = ThemeSettings.FromThemeConfig(currentTheme)
-        };
-    }
-
-    /// <summary>
-    /// Legacy sync save - only used during reset operations.
-    /// Uses BuildCurrentSettings() for consistency with async persistence.
-    /// </summary>
-    private void SaveSettingsSync()
-    {
-        UserSettingsService.SaveUserSettings(BuildCurrentSettings());
-        UpdateSettingsDiff();
     }
 
     private void ToggleDiffView()
@@ -664,157 +903,89 @@
         showResetConfirm = false;
     }
 
-    private void ResetIndividualSetting(string settingName)
+    // --- Commit methods: called on @onpointerup for sliders, @bind:after for numeric/other inputs ---
+
+    private void CommitPrizeSectionWidth()
     {
-        var defaults = AppSettings.GetDefaults();
-
-        switch (settingName)
-        {
-            case "Firebot File Path":
-                firebotFilePath = defaults.FireBotFileFolder;
-                GiveAwayHelpers.SetFireBotFileFolder(firebotFilePath);
-                break;
-
-            case "Timer Enabled":
-                countdownTimerEnabled = defaults.CountdownTimerEnabled;
-                GiveAwayHelpers.SetCountdownTimerEnabled(countdownTimerEnabled);
-                break;
-
-            case "Countdown Hours":
-                countdownHours = defaults.CountdownHours;
-                GiveAwayHelpers.SetCountdownTime(countdownHours, countdownMinutes, countdownSeconds);
-                break;
-
-            case "Countdown Minutes":
-                countdownMinutes = defaults.CountdownMinutes;
-                GiveAwayHelpers.SetCountdownTime(countdownHours, countdownMinutes, countdownSeconds);
-                break;
-
-            case "Countdown Seconds":
-                countdownSeconds = defaults.CountdownSeconds;
-                GiveAwayHelpers.SetCountdownTime(countdownHours, countdownMinutes, countdownSeconds);
-                break;
-
-            case "Prize Section Width":
-                prizeSectionWidth = defaults.PrizeSectionWidthPercent;
-                GiveAwayHelpers.SetPrizeSectionWidth(prizeSectionWidth);
-                break;
-
-            case "Prize Font Size":
-                prizeFontSize = defaults.PrizeFontSizeRem;
-                GiveAwayHelpers.SetPrizeFontSize(prizeFontSize);
-                break;
-
-            case "Timer Font Size":
-                timerFontSize = defaults.TimerFontSizeRem;
-                GiveAwayHelpers.SetTimerFontSize(timerFontSize);
-                break;
-
-            case "Entries Font Size":
-                entriesFontSize = defaults.EntriesFontSizeRem;
-                GiveAwayHelpers.SetEntriesFontSize(entriesFontSize);
-                break;
-
-            case "Theme":
-                GiveAwayHelpers.SetPresetTheme(defaults.Theme.Name);
-                currentTheme = GiveAwayHelpers.GetCurrentTheme();
-                selectedThemeName = currentTheme.Name;
-                customPrimaryColor = currentTheme.PrimaryColor;
-                customSecondaryColor = currentTheme.SecondaryColor;
-                customTimerExpiredColor = currentTheme.TimerExpiredColor;
-                ThemeService.NotifyThemeChanged();
-                break;
-
-            case "Primary Color":
-                customPrimaryColor = defaults.Theme.PrimaryColor;
-                GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.PrimaryColor), customPrimaryColor);
-                currentTheme = GiveAwayHelpers.GetCurrentTheme();
-                ThemeService.NotifyThemeChanged();
-                break;
-
-            case "Secondary Color":
-                customSecondaryColor = defaults.Theme.SecondaryColor;
-                GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.SecondaryColor), customSecondaryColor);
-                currentTheme = GiveAwayHelpers.GetCurrentTheme();
-                ThemeService.NotifyThemeChanged();
-                break;
-
-            case "Timer Expired Color":
-                customTimerExpiredColor = defaults.Theme.TimerExpiredColor;
-                GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.TimerExpiredColor), customTimerExpiredColor);
-                currentTheme = GiveAwayHelpers.GetCurrentTheme();
-                ThemeService.NotifyThemeChanged();
-                break;
-        }
-
-        QueueSettingsSave();
-    }
-
-    private void ConfirmReset()
-    {
-        // Delete user settings file
-        UserSettingsService.DeleteUserSettings();
-
-        // Apply default settings
-        var defaults = AppSettings.GetDefaults();
-        GiveAwayHelpers.ApplySettings(defaults);
-
-        // Update local UI state
-        firebotFilePath = defaults.FireBotFileFolder;
-        countdownTimerEnabled = defaults.CountdownTimerEnabled;
-        countdownHours = defaults.CountdownHours;
-        countdownMinutes = defaults.CountdownMinutes;
-        countdownSeconds = defaults.CountdownSeconds;
-        prizeSectionWidth = defaults.PrizeSectionWidthPercent;
-        prizeFontSize = defaults.PrizeFontSizeRem;
-        timerFontSize = defaults.TimerFontSizeRem;
-        entriesFontSize = defaults.EntriesFontSizeRem;
-
-        // Update theme state
-        currentTheme = GiveAwayHelpers.GetCurrentTheme();
-        selectedThemeName = currentTheme.Name;
-        customPrimaryColor = currentTheme.PrimaryColor;
-        customSecondaryColor = currentTheme.SecondaryColor;
-        customTimerExpiredColor = currentTheme.TimerExpiredColor;
-
-        // Notify theme change
-        ThemeService.NotifyThemeChanged();
-
-        // Reset UI state
-        showResetConfirm = false;
-        showDiff = false;
+        SettingsService.Update(s => s.PrizeSectionWidthPercent = prizeSectionWidth);
         UpdateSettingsDiff();
     }
 
+    private void CommitPrizeSectionWidthClamped()
+    {
+        prizeSectionWidth = Math.Clamp(prizeSectionWidth, 50, 90);
+        CommitPrizeSectionWidth();
+    }
+
+    private void CommitPrizeFontSize()
+    {
+        SettingsService.Update(s => s.PrizeFontSizeRem = prizeFontSize);
+        UpdateSettingsDiff();
+    }
+
+    private void CommitPrizeFontSizeClamped()
+    {
+        prizeFontSize = Math.Clamp(prizeFontSize, 1.0, 6.0);
+        CommitPrizeFontSize();
+    }
+
+    private void CommitTimerFontSize()
+    {
+        SettingsService.Update(s => s.TimerFontSizeRem = timerFontSize);
+        UpdateSettingsDiff();
+    }
+
+    private void CommitTimerFontSizeClamped()
+    {
+        timerFontSize = Math.Clamp(timerFontSize, 1.0, 6.0);
+        CommitTimerFontSize();
+    }
+
+    private void CommitEntriesFontSize()
+    {
+        SettingsService.Update(s => s.EntriesFontSizeRem = entriesFontSize);
+        UpdateSettingsDiff();
+    }
+
+    private void CommitEntriesFontSizeClamped()
+    {
+        entriesFontSize = Math.Clamp(entriesFontSize, 1.0, 6.0);
+        CommitEntriesFontSize();
+    }
+
+    // --- Other setting setters ---
+
     private void SetFirebotFilePath()
     {
-        GiveAwayHelpers.SetFireBotFileFolder(firebotFilePath);
-        QueueSettingsSave();
+        SettingsService.Update(s => s.FireBotFileFolder = firebotFilePath);
+        UpdateSettingsDiff();
     }
 
     private void SetCountdownTime()
     {
-        GiveAwayHelpers.SetCountdownTime(countdownHours, countdownMinutes, countdownSeconds);
-        QueueSettingsSave();
+        SettingsService.Update(s =>
+        {
+            s.CountdownHours = countdownHours;
+            s.CountdownMinutes = countdownMinutes;
+            s.CountdownSeconds = countdownSeconds;
+        });
+        UpdateSettingsDiff();
     }
 
     private void SetCountdownTimerEnabled()
     {
-        bool wasEnabled = GiveAwayHelpers.GetCountdownTimerEnabled();
-        GiveAwayHelpers.SetCountdownTimerEnabled(countdownTimerEnabled);
+        SettingsService.Update(s => s.CountdownTimerEnabled = countdownTimerEnabled);
 
-        // If timer was disabled, stop the current timer
-        if (wasEnabled && !countdownTimerEnabled)
+        if (!countdownTimerEnabled)
         {
-            // Timer will be stopped automatically by the GiveAway component when it detects the setting change
+            // Timer disabled - GiveAway.razor handles stopping via OnSettingsChanged
         }
-        // If timer was enabled, reset the timer
-        else if (!wasEnabled && countdownTimerEnabled)
+        else
         {
             TimerService.ResetTimer();
         }
 
-        QueueSettingsSave();
+        UpdateSettingsDiff();
     }
 
     private void ResetGiveawayTimer()
@@ -826,7 +997,7 @@
             resetSuccess = false;
             return;
         }
-        
+
         try
         {
             TimerService.ResetTimer();
@@ -840,59 +1011,12 @@
         }
     }
 
-    private void SetPrizeSectionWidth()
-    {
-        GiveAwayHelpers.SetPrizeSectionWidth(prizeSectionWidth);
-        QueueSettingsSave();
-    }
-
-    private void SetPrizeSectionWidthClamped()
-    {
-        prizeSectionWidth = Math.Clamp(prizeSectionWidth, 50, 90);
-        SetPrizeSectionWidth();
-    }
-
-    private void SetPrizeFontSize()
-    {
-        GiveAwayHelpers.SetPrizeFontSize(prizeFontSize);
-        QueueSettingsSave();
-    }
-
-    private void SetPrizeFontSizeClamped()
-    {
-        prizeFontSize = Math.Clamp(prizeFontSize, 1.0, 6.0);
-        SetPrizeFontSize();
-    }
-
-    private void SetTimerFontSize()
-    {
-        GiveAwayHelpers.SetTimerFontSize(timerFontSize);
-        QueueSettingsSave();
-    }
-
-    private void SetTimerFontSizeClamped()
-    {
-        timerFontSize = Math.Clamp(timerFontSize, 1.0, 6.0);
-        SetTimerFontSize();
-    }
-
-    private void SetEntriesFontSize()
-    {
-        GiveAwayHelpers.SetEntriesFontSize(entriesFontSize);
-        QueueSettingsSave();
-    }
-
-    private void SetEntriesFontSizeClamped()
-    {
-        entriesFontSize = Math.Clamp(entriesFontSize, 1.0, 6.0);
-        SetEntriesFontSize();
-    }
+    // --- Theme methods ---
 
     private void OnPresetThemeChanged()
     {
         if (selectedThemeName == "Custom")
         {
-            // When switching to Custom, apply current custom colors
             GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.PrimaryColor), customPrimaryColor);
             GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.SecondaryColor), customSecondaryColor);
             GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.TimerExpiredColor), customTimerExpiredColor);
@@ -907,7 +1031,8 @@
             customTimerExpiredColor = currentTheme.TimerExpiredColor;
         }
         ThemeService.NotifyThemeChanged();
-        QueueSettingsSave();
+        SettingsService.Update(s => s.Theme = ThemeSettings.FromThemeConfig(currentTheme));
+        UpdateSettingsDiff();
     }
 
     private void OnCustomColorChanged()
@@ -918,6 +1043,182 @@
         GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.TimerExpiredColor), customTimerExpiredColor);
         currentTheme = GiveAwayHelpers.GetCurrentTheme();
         ThemeService.NotifyThemeChanged();
-        QueueSettingsSave();
+        SettingsService.Update(s => s.Theme = ThemeSettings.FromThemeConfig(currentTheme));
+        UpdateSettingsDiff();
+    }
+
+    // --- Logging methods ---
+
+    private void SetLogLevel()
+    {
+        LogLevelSwitch.MinimumLevel = logLevel;
+        SettingsService.Update(s => s.Logging.MinimumLevel = logLevel);
+        UpdateSettingsDiff();
+    }
+
+    private void SetLogFilePath()
+    {
+        SettingsService.Update(s => s.Logging.LogFilePath = logFilePath);
+        UpdateSettingsDiff();
+    }
+
+    private void SetEnableFileLogging()
+    {
+        SettingsService.Update(s => s.Logging.EnableFileLogging = enableFileLogging);
+        UpdateSettingsDiff();
+    }
+
+    private void SetEnableConsoleLogging()
+    {
+        SettingsService.Update(s => s.Logging.EnableConsoleLogging = enableConsoleLogging);
+        UpdateSettingsDiff();
+    }
+
+    // --- Reset methods ---
+
+    private void ResetIndividualSetting(string settingName)
+    {
+        var defaults = AppSettings.GetDefaults();
+
+        switch (settingName)
+        {
+            case "Firebot File Path":
+                firebotFilePath = defaults.FireBotFileFolder;
+                SettingsService.Update(s => s.FireBotFileFolder = firebotFilePath);
+                break;
+
+            case "Timer Enabled":
+                countdownTimerEnabled = defaults.CountdownTimerEnabled;
+                SettingsService.Update(s => s.CountdownTimerEnabled = countdownTimerEnabled);
+                break;
+
+            case "Countdown Hours":
+                countdownHours = defaults.CountdownHours;
+                SettingsService.Update(s => s.CountdownHours = countdownHours);
+                break;
+
+            case "Countdown Minutes":
+                countdownMinutes = defaults.CountdownMinutes;
+                SettingsService.Update(s => s.CountdownMinutes = countdownMinutes);
+                break;
+
+            case "Countdown Seconds":
+                countdownSeconds = defaults.CountdownSeconds;
+                SettingsService.Update(s => s.CountdownSeconds = countdownSeconds);
+                break;
+
+            case "Prize Section Width":
+                prizeSectionWidth = defaults.PrizeSectionWidthPercent;
+                SettingsService.Update(s => s.PrizeSectionWidthPercent = prizeSectionWidth);
+                break;
+
+            case "Prize Font Size":
+                prizeFontSize = defaults.PrizeFontSizeRem;
+                SettingsService.Update(s => s.PrizeFontSizeRem = prizeFontSize);
+                break;
+
+            case "Timer Font Size":
+                timerFontSize = defaults.TimerFontSizeRem;
+                SettingsService.Update(s => s.TimerFontSizeRem = timerFontSize);
+                break;
+
+            case "Entries Font Size":
+                entriesFontSize = defaults.EntriesFontSizeRem;
+                SettingsService.Update(s => s.EntriesFontSizeRem = entriesFontSize);
+                break;
+
+            case "Theme":
+                GiveAwayHelpers.SetPresetTheme(defaults.Theme.Name);
+                currentTheme = GiveAwayHelpers.GetCurrentTheme();
+                selectedThemeName = currentTheme.Name;
+                customPrimaryColor = currentTheme.PrimaryColor;
+                customSecondaryColor = currentTheme.SecondaryColor;
+                customTimerExpiredColor = currentTheme.TimerExpiredColor;
+                ThemeService.NotifyThemeChanged();
+                SettingsService.Update(s => s.Theme = ThemeSettings.FromThemeConfig(currentTheme));
+                break;
+
+            case "Primary Color":
+                customPrimaryColor = defaults.Theme.PrimaryColor;
+                GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.PrimaryColor), customPrimaryColor);
+                currentTheme = GiveAwayHelpers.GetCurrentTheme();
+                ThemeService.NotifyThemeChanged();
+                SettingsService.Update(s => s.Theme = ThemeSettings.FromThemeConfig(currentTheme));
+                break;
+
+            case "Secondary Color":
+                customSecondaryColor = defaults.Theme.SecondaryColor;
+                GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.SecondaryColor), customSecondaryColor);
+                currentTheme = GiveAwayHelpers.GetCurrentTheme();
+                ThemeService.NotifyThemeChanged();
+                SettingsService.Update(s => s.Theme = ThemeSettings.FromThemeConfig(currentTheme));
+                break;
+
+            case "Timer Expired Color":
+                customTimerExpiredColor = defaults.Theme.TimerExpiredColor;
+                GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.TimerExpiredColor), customTimerExpiredColor);
+                currentTheme = GiveAwayHelpers.GetCurrentTheme();
+                ThemeService.NotifyThemeChanged();
+                SettingsService.Update(s => s.Theme = ThemeSettings.FromThemeConfig(currentTheme));
+                break;
+
+            case "Log Level":
+                logLevel = defaults.Logging.MinimumLevel;
+                LogLevelSwitch.MinimumLevel = logLevel;
+                SettingsService.Update(s => s.Logging.MinimumLevel = logLevel);
+                break;
+
+            case "Log File Path":
+                logFilePath = defaults.Logging.LogFilePath;
+                SettingsService.Update(s => s.Logging.LogFilePath = logFilePath);
+                break;
+
+            case "File Logging":
+                enableFileLogging = defaults.Logging.EnableFileLogging;
+                SettingsService.Update(s => s.Logging.EnableFileLogging = enableFileLogging);
+                break;
+
+            case "Console Logging":
+                enableConsoleLogging = defaults.Logging.EnableConsoleLogging;
+                SettingsService.Update(s => s.Logging.EnableConsoleLogging = enableConsoleLogging);
+                break;
+        }
+
+        UpdateSettingsDiff();
+    }
+
+    private void ConfirmReset()
+    {
+        SettingsService.ResetToDefaults();
+
+        // Reload local state from the now-reset service
+        var s = SettingsService.Current;
+        firebotFilePath = s.FireBotFileFolder;
+        countdownTimerEnabled = s.CountdownTimerEnabled;
+        countdownHours = s.CountdownHours;
+        countdownMinutes = s.CountdownMinutes;
+        countdownSeconds = s.CountdownSeconds;
+        prizeSectionWidth = s.PrizeSectionWidthPercent;
+        prizeFontSize = s.PrizeFontSizeRem;
+        timerFontSize = s.TimerFontSizeRem;
+        entriesFontSize = s.EntriesFontSizeRem;
+
+        currentTheme = GiveAwayHelpers.GetCurrentTheme();
+        selectedThemeName = currentTheme.Name;
+        customPrimaryColor = currentTheme.PrimaryColor;
+        customSecondaryColor = currentTheme.SecondaryColor;
+        customTimerExpiredColor = currentTheme.TimerExpiredColor;
+
+        // Reload logging fields
+        logLevel = s.Logging.MinimumLevel;
+        logFilePath = s.Logging.LogFilePath;
+        enableFileLogging = s.Logging.EnableFileLogging;
+        enableConsoleLogging = s.Logging.EnableConsoleLogging;
+        LogLevelSwitch.MinimumLevel = logLevel;
+
+        ThemeService.NotifyThemeChanged();
+        showResetConfirm = false;
+        showDiff = false;
+        UpdateSettingsDiff();
     }
 }

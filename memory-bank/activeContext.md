@@ -2,6 +2,17 @@
 
 ## Current Focus
 
+### [2026-02-27] Serilog Logging, Bug Fixes, and Settings Refactor (v2.3.0)
+- Added Serilog with console + rolling file sinks (daily rotation, 10MB cap, 7-day retention)
+- `LoggingLevelSwitch` enables runtime log level changes from Setup page without restart
+- Logging UI section on Setup page: log level dropdown, file path, file/console toggle checkboxes
+- **Timer Reset Bug Fix**: `FireBotFileReader` now uses sticky caching — returns last-known-good values on I/O failure
+- **Slider Jump Bug Fix**: Replaced `@bind:after` with `@onpointerup` on all sliders + added `<datalist>` tick marks
+- Created `ISettingsService` / `SettingsService` singleton replacing `GiveAwayHelpers` static fields for settings
+- Event-driven settings propagation via `OnSettingsChanged` replaces 1s polling from `GiveAwayHelpers`
+- Stripped `GiveAwayHelpers` to theme-only logic
+- Added `LoggingSettings` model with `LogEventLevel` enum for type-safe log level config
+
 ### [2026-01-22] Async Settings Persistence with Input Mode Toggle (v2.2.0)
 - Implemented channel-based async settings persistence to eliminate slider lag/snap-back
 - Created `SettingsPersistenceService` with System.Threading.Channels and 500ms debouncing

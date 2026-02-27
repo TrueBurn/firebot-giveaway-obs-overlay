@@ -6,7 +6,12 @@
       "mcp__context7__get-library-docs",
       "Bash(dotnet build:*)",
       "Skill(frontend-design)",
-      "Skill(moai-lang-csharp)"
+      "Skill(moai-lang-csharp)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "mcp__plugin_playwright_playwright__browser_console_messages",
+      "Bash(dotnet run:*)",
+      "Bash(curl:*)"
     ],
     "deny": []
   }

@@ -399,3 +399,6 @@ FodyWeavers.xsd
 
 # User-specific settings (persisted across restarts, git-ignored)
 usersettings.json
+
+# Screenshots from Playwright testing
+screenshots/

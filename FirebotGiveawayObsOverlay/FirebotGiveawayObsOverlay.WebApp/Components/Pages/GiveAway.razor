@@ -3,9 +3,11 @@
 @using FirebotGiveawayObsOverlay.WebApp.Extensions
 @using FirebotGiveawayObsOverlay.WebApp.Models
 @using FirebotGiveawayObsOverlay.WebApp.Services
+@using Serilog
 @using System.Timers
 @inject TimerService TimerService
 @inject ThemeService ThemeService
+@inject ISettingsService SettingsService
 
 @layout NoMenuLayout
 @page "/giveaway"
@@ -67,31 +69,40 @@
     private bool doesGiveawayHaveWinner = false;
     private int previousEntryCount = 0;
 
-    private int prizeSectionWidth = GiveAwayHelpers.GetPrizeSectionWidth();
-    private double prizeFontSize = GiveAwayHelpers.GetPrizeFontSize();
-    private double timerFontSize = GiveAwayHelpers.GetTimerFontSize();
-    private double entriesFontSize = GiveAwayHelpers.GetEntriesFontSize();
-    private bool isTimerEnabled = GiveAwayHelpers.GetCountdownTimerEnabled();
-    private ThemeConfig currentTheme = GiveAwayHelpers.GetCurrentTheme();
+    private int prizeSectionWidth;
+    private double prizeFontSize;
+    private double timerFontSize;
+    private double entriesFontSize;
+    private bool isTimerEnabled;
+    private ThemeConfig currentTheme = new();
 
     protected override async Task OnInitializedAsync()
     {
+        // Load initial settings from singleton service
+        var settings = SettingsService.Current;
+        prizeSectionWidth = settings.PrizeSectionWidthPercent;
+        prizeFontSize = settings.PrizeFontSizeRem;
+        timerFontSize = settings.TimerFontSizeRem;
+        entriesFontSize = settings.EntriesFontSizeRem;
+        isTimerEnabled = settings.CountdownTimerEnabled;
+        currentTheme = settings.Theme.ToThemeConfig();
+
+        Log.Debug("GiveAway overlay initialized with settings: timer={TimerEnabled}, width={Width}%",
+            isTimerEnabled, prizeSectionWidth);
+
         await GetLatestGiveAwayDetails();
         fileScanTimer.Elapsed += new ElapsedEventHandler(HandleFileScanTimer);
         countdownTimer.Elapsed += new ElapsedEventHandler(HandleCountdownTimer);
         StartFileScanTimer();
-        
-        // Only start countdown timer if enabled
+
         if (isTimerEnabled)
         {
             StartCountdownTimer();
         }
 
-        // Subscribe to timer reset events
         TimerService.OnTimerReset += HandleTimerReset;
-
-        // Subscribe to theme change events
         ThemeService.OnThemeChanged += HandleThemeChanged;
+        SettingsService.OnSettingsChanged += HandleSettingsChanged;
     }
 
     private void HandleTimerReset()
@@ -103,6 +114,35 @@
     private async void HandleThemeChanged()
     {
         currentTheme = GiveAwayHelpers.GetCurrentTheme();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async void HandleSettingsChanged()
+    {
+        var settings = SettingsService.Current;
+
+        // Update display settings immediately
+        prizeSectionWidth = settings.PrizeSectionWidthPercent;
+        prizeFontSize = settings.PrizeFontSizeRem;
+        timerFontSize = settings.TimerFontSizeRem;
+        entriesFontSize = settings.EntriesFontSizeRem;
+        currentTheme = settings.Theme.ToThemeConfig();
+
+        // Handle timer enabled/disabled changes
+        bool wasTimerEnabled = isTimerEnabled;
+        isTimerEnabled = settings.CountdownTimerEnabled;
+
+        if (wasTimerEnabled && !isTimerEnabled)
+        {
+            countdownTimer.Stop();
+            Log.Debug("Timer disabled via settings change");
+        }
+        else if (!wasTimerEnabled && isTimerEnabled && isGiveAwayRunning && !doesGiveawayHaveWinner)
+        {
+            ResetTimer();
+            Log.Debug("Timer re-enabled via settings change");
+        }
+
         await InvokeAsync(StateHasChanged);
     }
 
@@ -171,64 +211,40 @@
         // Timer management - only if timer is enabled
         if (isTimerEnabled)
         {
-            // If giveaway has a winner, pause the countdown timer
             if (doesGiveawayHaveWinner && countdownTimer.Enabled)
             {
                 countdownTimer.Stop();
+                Log.Information("Timer paused: winner detected");
             }
-            // If winner was cleared and giveaway is still running, reset and start the timer
             else if (hadWinnerBefore && !doesGiveawayHaveWinner && isGiveAwayRunning)
             {
                 ResetTimer();
+                Log.Information("Timer reset: winner cleared, giveaway still running");
             }
-            // If prize was added (and there was no prize before), reset and start the timer
             else if (!hadPrizeBefore && hasPrizeNow && !doesGiveawayHaveWinner)
             {
                 ResetTimer();
+                Log.Information("Timer reset: new giveaway started (prize detected)");
             }
-            // If giveaway is not running, reset the timer
             else if (!isGiveAwayRunning)
             {
                 ResetTimer();
+                Log.Debug("Timer reset: giveaway not running");
             }
         }
-
-        // Update the prize section width and font sizes from settings
-        prizeSectionWidth = GiveAwayHelpers.GetPrizeSectionWidth();
-        prizeFontSize = GiveAwayHelpers.GetPrizeFontSize();
-        timerFontSize = GiveAwayHelpers.GetTimerFontSize();
-        entriesFontSize = GiveAwayHelpers.GetEntriesFontSize();
-        
-        // Check for timer enabled state changes
-        bool wasTimerEnabled = isTimerEnabled;
-        isTimerEnabled = GiveAwayHelpers.GetCountdownTimerEnabled();
-
-        // Handle timer state changes
-        if (wasTimerEnabled && !isTimerEnabled)
-        {
-            // Timer was disabled - stop it
-            countdownTimer.Stop();
-        }
-        else if (!wasTimerEnabled && isTimerEnabled && isGiveAwayRunning && !doesGiveawayHaveWinner)
-        {
-            // Timer was enabled - reset and start it if giveaway is running
-            ResetTimer();
-        }
-
-        // Update theme
-        currentTheme = GiveAwayHelpers.GetCurrentTheme();
     }
     
     private void ResetTimer()
     {
-        // Always reset timer values, but only start if enabled
         countdownTimer.Stop();
-        var (hours, minutes, seconds) = GiveAwayHelpers.GetCountdownTime();
-        counter = TimeSpan.FromHours(hours).Add(TimeSpan.FromMinutes(minutes)).Add(TimeSpan.FromSeconds(seconds)).TotalSeconds;
+        var s = SettingsService.Current;
+        counter = TimeSpan.FromHours(s.CountdownHours)
+            .Add(TimeSpan.FromMinutes(s.CountdownMinutes))
+            .Add(TimeSpan.FromSeconds(s.CountdownSeconds))
+            .TotalSeconds;
         counterTimeSpan = TimeSpan.FromSeconds(counter);
         timerExpired = false;
-        
-        // Only start the timer if enabled and conditions are met
+
         if (isTimerEnabled && isGiveAwayRunning && !doesGiveawayHaveWinner)
         {
             countdownTimer.Start();
@@ -306,11 +322,8 @@
     {
         fileScanTimer.Dispose();
         countdownTimer.Dispose();
-
-        // Unsubscribe from timer reset events
         TimerService.OnTimerReset -= HandleTimerReset;
-
-        // Unsubscribe from theme change events
         ThemeService.OnThemeChanged -= HandleThemeChanged;
+        SettingsService.OnSettingsChanged -= HandleSettingsChanged;
     }
 }

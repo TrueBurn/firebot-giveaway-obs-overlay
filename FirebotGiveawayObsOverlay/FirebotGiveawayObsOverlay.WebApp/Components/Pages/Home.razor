@@ -4,113 +4,529 @@
 
 <PageTitle>Firebot Giveaway Overlay</PageTitle>
 
-<div class="container py-4">
-    <div class="text-center mb-5">
-        <h1 class="display-4 fw-bold">Firebot Giveaway Overlay</h1>
-        <p class="lead text-muted">A stylish, animated OBS overlay for your Twitch giveaways</p>
-    </div>
+<div class="home-page">
 
-    <div class="row g-4 mb-5">
-        <div class="col-md-6">
-            <div class="card h-100 border-primary">
-                <div class="card-body text-center">
-                    <h2 class="card-title h4">Overlay</h2>
-                    <p class="card-text">The display for OBS Browser Source. Shows prize, timer, entries, and winner.</p>
-                    <a href="/giveaway" class="btn btn-primary btn-lg" target="_blank">/giveaway</a>
-                    <p class="text-muted mt-2 small">Open in new tab for OBS</p>
-                </div>
-            </div>
+@* ═══════════════════════════════════════════════════════════════
+   HERO — Dark section with overlay aesthetic
+   ═══════════════════════════════════════════════════════════════ *@
+<div class="hero">
+    <div class="hero-inner">
+        <div class="hero-badge">OBS OVERLAY</div>
+        <h1 class="hero-title">Firebot Giveaway</h1>
+        <p class="hero-subtitle">Animated overlay for your Twitch giveaways — real-time entries, countdown timer, winner announcements</p>
+        <div class="hero-actions">
+            <a href="/setup" class="btn-hero btn-hero-primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0"/>
+                    <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52z"/>
+                </svg>
+                Configure Overlay
+            </a>
+            <a href="/giveaway" class="btn-hero btn-hero-secondary" target="_blank">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M0 1a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1zm4 0v6h8V1zm8 8H4v6h8zM1 1v2h2V1zm2 3H1v2h2zM1 7v2h2V7zm2 3H1v2h2zm-2 3v2h2v-2zM15 1h-2v2h2zm-2 3v2h2V4zm2 3h-2v2h2zm-2 3v2h2v-2zm2 3h-2v2h2z"/>
+                </svg>
+                Open Overlay
+            </a>
         </div>
-        <div class="col-md-6">
-            <div class="card h-100 border-success">
-                <div class="card-body text-center">
-                    <h2 class="card-title h4">Setup</h2>
-                    <p class="card-text">Configure themes, timer, fonts, layout, and Firebot file path.</p>
-                    <a href="/setup" class="btn btn-success btn-lg">/setup</a>
-                    <p class="text-muted mt-2 small">Customize your overlay</p>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="card mb-5">
-        <div class="card-header bg-dark text-white">
-            <h2 class="h5 mb-0">Quick Start: OBS Integration</h2>
-        </div>
-        <div class="card-body">
-            <ol class="mb-0">
-                <li class="mb-2">In OBS, click <strong>+</strong> in Sources panel and select <strong>Browser</strong></li>
-                <li class="mb-2">Set the URL to: <code class="bg-light px-2 py-1 rounded">http://localhost:5000/giveaway</code></li>
-                <li class="mb-2">Set dimensions: <strong>Width: 1200</strong>, <strong>Height: 300</strong></li>
-                <li class="mb-2">Add Custom CSS for transparency:
-                    <pre class="bg-light p-2 rounded mt-1 mb-0"><code>body { background-color: rgba(0, 0, 0, 0); margin: 0; overflow: hidden; }</code></pre>
-                </li>
-                <li>Position the overlay on your scene and you're ready!</li>
-            </ol>
-        </div>
-    </div>
-
-    <div class="row g-4 mb-5">
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h3 class="h5">7 Theme Presets</h3>
-                    <p class="card-text small">Warframe, Cyberpunk, Neon, Classic, Ocean, Fire, and Purple. Plus custom colors!</p>
-                </div>
+        @* Mini overlay preview *@
+        <div class="hero-preview">
+            <div class="preview-bar">
+                <span class="preview-prize">Nitain Extract x5</span>
+                <span class="preview-sep"></span>
+                <span class="preview-timer">00:59</span>
+                <span class="preview-dot">&middot;</span>
+                <span class="preview-entries">42 Entries</span>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h3 class="h5">Real-Time Updates</h3>
-                    <p class="card-text small">Entry count updates live as viewers join. Timer counts down automatically.</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h3 class="h5">Winner Animation</h3>
-                    <p class="card-text small">Automatic winner display with celebration styling when Firebot picks a winner.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card mb-5">
-        <div class="card-header">
-            <h2 class="h5 mb-0">How It Works</h2>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <h4 class="h6">Firebot Integration</h4>
-                    <p class="small">The overlay monitors your Firebot giveaway folder for:</p>
-                    <ul class="small">
-                        <li><strong>Prize</strong> - What you're giving away</li>
-                        <li><strong>Entries</strong> - Who has entered (real-time count)</li>
-                        <li><strong>Winner</strong> - Triggers winner display mode</li>
-                    </ul>
-                </div>
-                <div class="col-md-6">
-                    <h4 class="h6">Giveaway Workflow</h4>
-                    <ol class="small mb-0">
-                        <li>Start the overlay application</li>
-                        <li>Configure settings on the Setup page</li>
-                        <li>Add Browser Source in OBS</li>
-                        <li>Start giveaway in Firebot</li>
-                        <li>Overlay displays automatically!</li>
-                    </ol>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="text-center text-muted small">
-        <p class="mb-1">Firebot Giveaway Overlay v@(VersionService.GetDisplayVersion())</p>
-        <p class="mb-0">
-            <a href="https://github.com/trueburn/firebot-giveaway-obs-overlay" target="_blank" class="text-muted">GitHub</a>
-        </p>
     </div>
 </div>
 
+@* ═══════════════════════════════════════════════════════════════
+   GETTING STARTED — Numbered steps
+   ═══════════════════════════════════════════════════════════════ *@
+<div class="content-area">
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="me-2 align-text-bottom" viewBox="0 0 16 16">
+                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                    <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+                </svg>
+                Getting Started
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="steps-grid">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Add Browser Source in OBS</div>
+                        <div class="step-desc">Click <strong>+</strong> in Sources &rarr; <strong>Browser</strong></div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Set the URL</div>
+                        <div class="step-desc"><code class="step-code">http://localhost:5000/giveaway</code></div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Set dimensions</div>
+                        <div class="step-desc"><strong>1200</strong> &times; <strong>300</strong> px</div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Add transparency CSS</div>
+                        <div class="step-desc"><code class="step-code step-code-sm">body { background-color: rgba(0,0,0,0); margin: 0; overflow: hidden; }</code></div>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <div class="step-title">Configure &amp; go live</div>
+                        <div class="step-desc">Open <a href="/setup">Setup</a> to customize, then start your Firebot giveaway</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ═══════════════════════════════════════════════════════════════
+       FEATURES — Compact grid
+       ═══════════════════════════════════════════════════════════════ *@
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card h-100 feature-card">
+                <div class="card-body">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3m4 3a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3M5.5 7a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m.5 6a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3"/>
+                            <path d="M16 8c0 3.15-1.866 2.585-3.567 2.07C11.42 9.763 10.465 9.473 10 10c-.603.683-.475 1.819-.351 2.92C9.826 14.495 9.996 16 8 16a8 8 0 1 1 8-8m-8 7c.611 0 .654-.171.655-.176.078-.146.124-.464.07-1.119-.014-.168-.033-.353-.053-.541-.096-.879-.212-2.058.26-2.847.514-.857 1.363-.952 2.853-.526 1.249.357 2.655.761 3.59.345.88-.393 1.14-1.476 1.297-2.549A7 7 0 1 0 8 15"/>
+                        </svg>
+                    </div>
+                    <h6 class="fw-bold mb-1">7 Theme Presets</h6>
+                    <p class="text-muted small mb-0">Warframe, Cyberpunk, Neon, Classic, Ocean, Fire, Purple — plus full custom colors</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 feature-card">
+                <div class="card-body">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8.515 1.019A7 7 0 0 0 8 1V0a8 8 0 0 1 .589.022zm2.004.45a7 7 0 0 0-.985-.299l.219-.976q.576.129 1.126.342zm1.37.71a7 7 0 0 0-.439-.27l.493-.87a8 8 0 0 1 .979.654l-.615.789a7 7 0 0 0-.418-.302zm1.834 1.79a7 7 0 0 0-.653-.796l.724-.69q.406.429.747.91zm.744 1.352a7 7 0 0 0-.214-.468l.893-.45a8 8 0 0 1 .45 1.088l-.95.313a7 7 0 0 0-.179-.483m.53 2.507a7 7 0 0 0-.1-1.025l.985-.17q.1.58.116 1.17zm-.131 1.538q.05-.254.081-.51l.993.123a8 8 0 0 1-.23 1.155l-.964-.267q.069-.247.12-.501m-.952 2.379q.276-.436.486-.908l.914.405q-.253.566-.574 1.09zm-1.268 1.8q.332-.358.6-.752l.834.558a8 8 0 0 1-.751.932zm-1.573 1.352q.158-.117.305-.246l.664.748a8 8 0 0 1-.878.645l-.476-.872q.2-.109.385-.275m-1.958.87q.236-.042.464-.1l.264.961a8 8 0 0 1-1.068.175l-.068-.982q.2-.013.408-.054M8 15a7 7 0 0 0 .54-.033l.13.984A8 8 0 0 1 7.5 16v-1q.25 0 .5-.033m-1.234-.1a7 7 0 0 1-.475-.105L6.548 15.759a8 8 0 0 0 1.084.228l-.07-.983A6.7 6.7 0 0 1 7 14.897m-1.75-.378a7 7 0 0 1-.429-.218l.518-.87a7 7 0 0 0 .472.237l-.264.962a8 8 0 0 1-.297-.112"/>
+                            <path d="M8 1a7 7 0 1 0 4.95 11.95l.707.707A8.001 8.001 0 1 1 8 0z"/>
+                            <path d="M7.5 3a.5.5 0 0 1 .5.5v5.21l3.248 1.856a.5.5 0 0 1-.496.868l-3.5-2A.5.5 0 0 1 7 9V3.5a.5.5 0 0 1 .5-.5"/>
+                        </svg>
+                    </div>
+                    <h6 class="fw-bold mb-1">Live Updates</h6>
+                    <p class="text-muted small mb-0">Entry count animates in real-time. Countdown timer with auto-format for hours, minutes, seconds</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 feature-card">
+                <div class="card-body">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M2.5.5A.5.5 0 0 1 3 0h10a.5.5 0 0 1 .5.5q0 .807-.034 1.536a3 3 0 1 1-1.133 5.89c-.79 1.865-1.878 2.777-2.833 3.011v2.173l1.425.356c.194.048.377.135.537.255L13.3 15.1a.5.5 0 0 1-.3.9H3a.5.5 0 0 1-.3-.9l1.838-1.379c.16-.12.343-.207.537-.255L6.5 13.11v-2.173c-.955-.234-2.043-1.146-2.833-3.012a3 3 0 1 1-1.132-5.89A33 33 0 0 1 2.5.5"/>
+                        </svg>
+                    </div>
+                    <h6 class="fw-bold mb-1">Winner Reveal</h6>
+                    <p class="text-muted small mb-0">Full-screen winner announcement with animated styling when Firebot picks a winner</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 feature-card">
+                <div class="card-body">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5 4a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1zm-.5 2.5A.5.5 0 0 1 5 6h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5M5 8a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1zm0 2a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1z"/>
+                            <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zm10-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1"/>
+                        </svg>
+                    </div>
+                    <h6 class="fw-bold mb-1">Serilog Logging</h6>
+                    <p class="text-muted small mb-0">Console + rolling file logs. Change log level at runtime from the Setup page</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 feature-card">
+                <div class="card-body">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2"/>
+                        </svg>
+                    </div>
+                    <h6 class="fw-bold mb-1">Persistent Settings</h6>
+                    <p class="text-muted small mb-0">All config auto-saved to usersettings.json. View diffs, reset individual settings or all at once</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 feature-card">
+                <div class="card-body">
+                    <div class="feature-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M6 .5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1H9v1.07a7.001 7.001 0 0 1 3.274 12.474l.601.602a.5.5 0 0 1-.707.708l-.746-.746A6.97 6.97 0 0 1 8 16a6.97 6.97 0 0 1-3.422-.892l-.746.746a.5.5 0 0 1-.707-.708l.602-.602A7.001 7.001 0 0 1 7 2.07V1h-.5A.5.5 0 0 1 6 .5m2.5 13a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11"/>
+                            <path d="M8.5 5.5a.5.5 0 0 0-1 0v3.362l-1.429 2.38a.5.5 0 1 0 .858.515l1.5-2.5A.5.5 0 0 0 8.5 9z"/>
+                        </svg>
+                    </div>
+                    <h6 class="fw-bold mb-1">Reliable Monitoring</h6>
+                    <p class="text-muted small mb-0">Sticky-cached file reads — transient Firebot file locks never reset your timer</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ═══════════════════════════════════════════════════════════════
+       HOW IT WORKS — Visual flow
+       ═══════════════════════════════════════════════════════════════ *@
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="me-2 align-text-bottom" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8"/>
+                </svg>
+                How It Works
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="flow-diagram">
+                <div class="flow-node">
+                    <div class="flow-label">Firebot</div>
+                    <div class="flow-desc">Writes prize.txt, giveaway.txt, winner.txt</div>
+                </div>
+                <div class="flow-arrow">&rarr;</div>
+                <div class="flow-node">
+                    <div class="flow-label">This App</div>
+                    <div class="flow-desc">Monitors files every second, caches values</div>
+                </div>
+                <div class="flow-arrow">&rarr;</div>
+                <div class="flow-node">
+                    <div class="flow-label">OBS Overlay</div>
+                    <div class="flow-desc">Displays prize, timer, entries, winner</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ═══════════════════════════════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════════════════════════════ *@
+    <div class="text-center text-muted small pb-3">
+        <span>v@(VersionService.GetDisplayVersion())</span>
+        <span class="mx-2">&middot;</span>
+        <a href="https://github.com/trueburn/firebot-giveaway-obs-overlay" target="_blank" class="text-muted">GitHub</a>
+    </div>
+
+</div>
+</div>
+
+<style>
+    .home-page {
+        margin: -1rem;
+    }
+
+    /* ── Hero ── */
+    .hero {
+        background: linear-gradient(135deg, #0a0e17 0%, #111827 50%, #0f172a 100%);
+        padding: 3rem 1.5rem 2rem;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(ellipse at 20% 50%, rgba(0, 255, 249, 0.06) 0%, transparent 60%),
+            radial-gradient(ellipse at 80% 50%, rgba(255, 0, 200, 0.05) 0%, transparent 60%);
+        pointer-events: none;
+    }
+
+    .hero-inner {
+        max-width: 680px;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    .hero-badge {
+        display: inline-block;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.15em;
+        color: #00fff9;
+        border: 1px solid rgba(0, 255, 249, 0.3);
+        padding: 0.2rem 0.75rem;
+        border-radius: 2px;
+        margin-bottom: 1rem;
+    }
+
+    .hero-title {
+        font-size: 2.4rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #ffffff 0%, #94a3b8 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin-bottom: 0.5rem;
+        line-height: 1.1;
+    }
+
+    .hero-subtitle {
+        color: #94a3b8;
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
+        line-height: 1.5;
+    }
+
+    .hero-actions {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: center;
+        margin-bottom: 2rem;
+    }
+
+    .btn-hero {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.6rem 1.25rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+
+    .btn-hero-primary {
+        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+        color: #fff;
+        border: 1px solid rgba(13, 110, 253, 0.5);
+    }
+
+    .btn-hero-primary:hover {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+    }
+
+    .btn-hero-secondary {
+        background: transparent;
+        color: #cbd5e1;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
+    .btn-hero-secondary:hover {
+        color: #fff;
+        border-color: rgba(148, 163, 184, 0.6);
+        background: rgba(255, 255, 255, 0.05);
+        transform: translateY(-1px);
+    }
+
+    /* Mini overlay preview */
+    .hero-preview {
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    .preview-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        background: linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(15, 25, 35, 0.98) 100%);
+        border: 1px solid rgba(0, 255, 249, 0.15);
+        border-radius: 6px;
+        padding: 0.6rem 1.25rem;
+        box-shadow: 0 0 20px rgba(0, 255, 249, 0.08), 0 0 40px rgba(255, 0, 200, 0.04);
+    }
+
+    .preview-prize {
+        background: linear-gradient(45deg, #00fff9, #ff00c8, #00fff9);
+        background-size: 200% 200%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        font-weight: 700;
+        font-size: 0.9rem;
+        animation: shimmer 3s ease infinite;
+    }
+
+    @@keyframes shimmer {
+        0%, 100% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+    }
+
+    .preview-sep {
+        width: 1px;
+        height: 16px;
+        background: rgba(0, 255, 249, 0.3);
+    }
+
+    .preview-timer, .preview-entries {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.8rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .preview-dot {
+        color: rgba(255, 255, 255, 0.3);
+        font-size: 0.75rem;
+    }
+
+    /* ── Content Area ── */
+    .content-area {
+        max-width: 820px;
+        margin: 0 auto;
+        padding: 1.5rem 1rem 0;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .card-header .card-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #343a40;
+    }
+
+    /* ── Steps ── */
+    .steps-grid {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .step {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 0.85rem 1.25rem;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .step:last-child {
+        border-bottom: none;
+    }
+
+    .step-number {
+        flex-shrink: 0;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+        color: #fff;
+        font-size: 0.8rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .step-content {
+        min-width: 0;
+    }
+
+    .step-title {
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #212529;
+        margin-bottom: 0.15rem;
+    }
+
+    .step-desc {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+
+    .step-code {
+        background: #f1f3f5;
+        padding: 0.15rem 0.4rem;
+        border-radius: 3px;
+        font-size: 0.78rem;
+        color: #495057;
+        word-break: break-all;
+    }
+
+    .step-code-sm {
+        font-size: 0.7rem;
+    }
+
+    /* ── Feature cards ── */
+    .feature-card {
+        transition: transform 0.15s, box-shadow 0.15s;
+        border-color: #e9ecef;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .feature-card .card-body {
+        padding: 1rem;
+    }
+
+    .feature-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #e7f1ff, #dbeafe);
+        color: #0d6efd;
+        margin-bottom: 0.5rem;
+    }
+
+    /* ── Flow diagram ── */
+    .flow-diagram {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .flow-node {
+        text-align: center;
+        padding: 0.75rem 1rem;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        min-width: 160px;
+    }
+
+    .flow-label {
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #212529;
+        margin-bottom: 0.2rem;
+    }
+
+    .flow-desc {
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+
+    .flow-arrow {
+        font-size: 1.25rem;
+        color: #adb5bd;
+        font-weight: 300;
+    }
+</style>

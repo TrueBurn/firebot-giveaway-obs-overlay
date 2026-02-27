@@ -33,6 +33,8 @@ Download the latest version from the [Releases](https://github.com/trueburn/fire
 
 - **Persistent Settings** - All settings automatically saved and persist across restarts
 - **Settings Management** - View changes vs defaults, reset individual or all settings
+- **Serilog Logging** - Console + rolling file logging with runtime-configurable log level from Setup page
+- **Reliable File Monitoring** - Sticky cached reads prevent timer resets on transient file lock errors
 - 7 preset themes: Warframe, Cyberpunk, Neon, Classic, Ocean, Fire, Purple
 - Custom color picker for personalized themes
 - Animated effects and transitions
@@ -41,6 +43,7 @@ Download the latest version from the [Releases](https://github.com/trueburn/fire
 - Gradient color schemes with animated borders
 - Responsive layout with customizable dimensions
 - Configurable countdown timer (hours, minutes, seconds) with enable/disable option
+- Slider tick marks for visual step indicators
 - Easy setup page with live preview
 - Version display for easy troubleshooting
 

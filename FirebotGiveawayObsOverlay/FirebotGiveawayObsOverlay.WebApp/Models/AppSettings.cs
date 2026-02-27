@@ -1,3 +1,5 @@
+using Serilog.Events;
+
 namespace FirebotGiveawayObsOverlay.WebApp.Models;
 
 /// <summary>
@@ -16,6 +18,7 @@ public class AppSettings
     public double TimerFontSizeRem { get; set; } = 3.0;
     public double EntriesFontSizeRem { get; set; } = 2.5;
     public ThemeSettings Theme { get; set; } = new();
+    public LoggingSettings Logging { get; set; } = new();
 
     /// <summary>
     /// Creates a new instance with default values.
@@ -67,6 +70,18 @@ public class AppSettings
 
         if (Theme.TimerExpiredColor != other.Theme.TimerExpiredColor)
             diffs.Add(new("Timer Expired Color", other.Theme.TimerExpiredColor, Theme.TimerExpiredColor));
+
+        if (Logging.MinimumLevel != other.Logging.MinimumLevel)
+            diffs.Add(new("Log Level", other.Logging.MinimumLevel.ToString(), Logging.MinimumLevel.ToString()));
+
+        if (Logging.LogFilePath != other.Logging.LogFilePath)
+            diffs.Add(new("Log File Path", other.Logging.LogFilePath, Logging.LogFilePath));
+
+        if (Logging.EnableFileLogging != other.Logging.EnableFileLogging)
+            diffs.Add(new("File Logging", other.Logging.EnableFileLogging.ToString(), Logging.EnableFileLogging.ToString()));
+
+        if (Logging.EnableConsoleLogging != other.Logging.EnableConsoleLogging)
+            diffs.Add(new("Console Logging", other.Logging.EnableConsoleLogging.ToString(), Logging.EnableConsoleLogging.ToString()));
 
         return diffs;
     }
@@ -129,4 +144,15 @@ public class ThemeSettings
             SeparatorColor = config.SeparatorColor
         };
     }
+}
+
+/// <summary>
+/// Logging configuration settings for Serilog.
+/// </summary>
+public class LoggingSettings
+{
+    public LogEventLevel MinimumLevel { get; set; } = LogEventLevel.Information;
+    public string LogFilePath { get; set; } = "logs/overlay-.log";
+    public bool EnableFileLogging { get; set; } = true;
+    public bool EnableConsoleLogging { get; set; } = true;
 }

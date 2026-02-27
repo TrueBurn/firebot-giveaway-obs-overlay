@@ -11,20 +11,24 @@ This is an ASP.NET Core 10 Blazor Server application that provides an OBS overla
 - **Framework**: ASP.NET Core 10 (LTS) with Blazor Server and C# 14
 - **Frontend**: Razor components with Bootstrap 5.1 and custom CSS animations
 - **File Monitoring**: Real-time file system monitoring for Firebot integration
-- **Services**: Singleton services for timer and theme management with event-based communication
+- **Services**: Singleton services for settings, timer, and theme management with event-based communication
+- **Logging**: Serilog with console + rolling file sinks, runtime-configurable log level
 
 ### Key Components
 
 - `GiveAway.razor`: Main overlay component displaying prize, timer, entries, and winner announcements with dynamic theming
-- `Setup.razor`: Configuration page with theme selector, color pickers, and live preview
-- `FireBotFileReader`: Monitors and reads Firebot giveaway files (prize, entries, winner data)
+- `Setup.razor`: Configuration page with theme selector, color pickers, logging config, and live preview
+- `FireBotFileReader`: Monitors and reads Firebot giveaway files with sticky caching (returns cached values on I/O failure)
+- `ISettingsService` / `SettingsService`: Singleton in-memory settings store with event-driven change notification and debounced async persistence
 - `TimerService`: Manages countdown timer functionality with event notifications
 - `ThemeService`: Manages theme change notifications between pages
 - `VersionService`: Provides runtime access to assembly version information
-- `GiveAwayHelpers`: Static configuration helpers for runtime settings including theme management
+- `GiveAwayHelpers`: Static helpers for theme management only (settings moved to ISettingsService)
 - `ThemeConfig`: Theme model with preset themes and custom color support
-- `AppSettings`: Settings model with non-nullable properties for persistence
+- `AppSettings`: Settings model with non-nullable properties for persistence (includes `LoggingSettings`)
 - `UserSettingsService`: Loads/saves user settings to `usersettings.json`
+- `SettingsPersistenceService`: Channel-based debounced persistence queue
+- `BackgroundSettingsWriterService`: IHostedService for async disk writes
 - `giveaway.css`: Base styling with CSS custom properties for theming
 
 ### Project Structure
@@ -206,9 +210,10 @@ User settings are automatically saved and persist across application restarts:
 - `usersettings.json` is git-ignored so user preferences don't affect the repository
 
 **Key files:**
-- `Models/AppSettings.cs`: Settings model with non-nullable properties
+- `Models/AppSettings.cs`: Settings model with non-nullable properties (includes `LoggingSettings`)
+- `Services/ISettingsService.cs` / `SettingsService.cs`: Singleton in-memory settings with events and debounced persistence
 - `Services/UserSettingsService.cs`: Load/save operations for `usersettings.json`
-- `Helpers/GiveAwayHelpers.cs`: `GetCurrentSettings()` and `ApplySettings()` methods
+- `Helpers/GiveAwayHelpers.cs`: Theme-only helpers (`ApplySettings()` delegates to `SetFireBotFileFolder` + `InitializeTheme`)
 
 **Settings file location:** Same directory as executable (`./usersettings.json`)
 
@@ -241,6 +246,20 @@ The overlay features:
 Winner overlay uses solid black background (`rgb(0, 0, 0)`) without trophy emojis for clean appearance.
 
 ## Recent Project Changes
+
+### February 27, 2026 - Serilog Logging, Bug Fixes, and Settings Refactor (v2.3.0)
+- Added Serilog logging with console + rolling file sinks (daily rotation, 10MB cap, 7-day retention)
+- Runtime-configurable log level via `LoggingLevelSwitch` — changes from Setup page take effect immediately
+- Logging UI section on Setup page: log level dropdown, file path, enable/disable toggles for file and console sinks
+- **Timer Reset Bug Fix**: `FireBotFileReader` now uses sticky caching — returns last-known-good values on I/O failure instead of empty string, preventing `isGiveAwayRunning` from flickering and triggering `ResetTimer()`
+- **Slider Jump Bug Fix**: Replaced `@bind:after` with `@onpointerup` on all sliders — `oninput` provides visual feedback during drag, value only committed to `SettingsService` on pointer release
+- Added HTML5 `<datalist>` tick marks on all range sliders for visual step indicators
+- Created `ISettingsService` / `SettingsService` singleton — holds all settings in memory, fires `OnSettingsChanged` event for instant cross-page updates, queues debounced async persistence
+- Refactored `GiveAway.razor` to subscribe to `OnSettingsChanged` instead of polling `GiveAwayHelpers` every second
+- Refactored `Setup.razor` to use `SettingsService.Update()` for all setting changes
+- Stripped `GiveAwayHelpers` down to theme-only logic — removed all settings fields and getters/setters
+- Added `LoggingSettings` model with `LogEventLevel MinimumLevel`, `LogFilePath`, `EnableFileLogging`, `EnableConsoleLogging`
+- Comprehensive Serilog logging throughout: timer state transitions, file read failures, settings changes
 
 ### February 7, 2026 - Heisenbug Fix: Slider Value Snap-back (v2.2.1)
 - Fixed Blazor `@bind:after` timing race condition causing slider values to snap back in Release mode
