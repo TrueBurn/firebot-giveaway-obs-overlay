@@ -10,11 +10,13 @@ The project is a .NET web application with the following structure:
 
 - **FirebotGiveawayObsOverlay.WebApp**: The main web application
   - **Components**: Contains Razor components for the UI
-    - **Layout**: Layout components
-    - **Pages**: Page components including the main giveaway display
-  - **Extensions**: Extension methods
-  - **Helpers**: Helper classes including GiveAwayHelpers
-  - **Services**: Services including TimerService
+    - **Layout**: Layout components (MainLayout, NoMenuLayout, NavMenu)
+    - **Pages**: Page components (GiveAway, Setup + Setup.razor.cs code-behind, Home, Error)
+    - **Shared**: Reusable components (SliderSetting.razor)
+  - **Extensions**: Extension methods (TimeSpanExtensions)
+  - **Helpers**: Helper classes (GiveAwayHelpers theme-only, FireBotFileReader)
+  - **Models**: Data models (ThemeConfig, AppSettings, LoggingSettings)
+  - **Services**: Application services (TimerService, ThemeService, VersionService, ISettingsService/SettingsService, UserSettingsService, SettingsPersistenceService, BackgroundSettingsWriterService)
   - **wwwroot**: Static assets
     - **giveaway.css**: Styling for the giveaway overlay
     - **app.css**: General application styling

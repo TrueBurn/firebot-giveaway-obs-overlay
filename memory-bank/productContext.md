@@ -38,7 +38,7 @@ Firebot Giveaway OBS Overlay is a specialized streaming tool that provides a rea
 - File system monitoring for real-time updates
 - Responsive web design for various overlay sizes
 - Bootstrap-based styling with custom CSS animations
-- ASP.NET Core 8.0 with Blazor Server architecture
+- ASP.NET Core 10 with Blazor Server architecture
 
 ## Success Metrics
 

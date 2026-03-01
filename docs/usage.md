@@ -62,6 +62,24 @@ G:\Giveaway
 
 Ensure this matches your Firebot configuration. The application monitors this folder for real-time updates.
 
+### Firebot File Format
+
+The overlay reads three plain-text files from the configured folder. These files are created and updated by Firebot during a giveaway:
+
+| File | Contents | Example |
+|------|----------|---------|
+| `prize.txt` | Prize name (single line) | `Gaming Keyboard` |
+| `winner.txt` | Winner's username (single line) | `CoolStreamer42` |
+| `giveaway.txt` | Entered usernames (one per line) | `User1`<br>`User2`<br>`User3` |
+
+**How the overlay uses each file:**
+
+- **`prize.txt`** — When this file contains text, the overlay considers a giveaway "active" and displays the prize name. An empty file means no active giveaway.
+- **`winner.txt`** — When populated, the winner announcement overlay appears with the name shown. Empty means no winner yet.
+- **`giveaway.txt`** — Each non-empty line counts as one entry. The overlay displays the total count (e.g., "42 Entries"). Both Windows (`\r\n`) and Unix (`\n`) line endings are supported.
+
+**File locking:** If Firebot has a file locked while writing, the overlay will use the last successfully read value instead of showing blank data. This prevents flickering during rapid updates.
+
 ### Layout Settings
 
 **Prize Section Width**: Controls the horizontal space distribution between the prize display and timer/entries section. Range: 50-90%.

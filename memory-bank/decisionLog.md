@@ -330,6 +330,53 @@
 - Clean installs start with defaults from appsettings.json
 - Portable settings that can be shared between machines
 
+### [2026-03-01] Slider Fix: @onchange + Plain HTML oninput (4th Iteration)
+**Decision**: Replaced `@bind:event="oninput"` + `@onpointerup` with `value=` + `@onchange` + plain HTML `oninput` for JS-based label updates
+**Rationale**:
+- 4th slider bug iteration: v1 used `oninput` (glitchy), v2 used `onchange` (no feedback), v3 used `oninput` + `@onpointerup` (still flickered), v4 breaks the feedback loop entirely
+- Root cause: `@bind:event="oninput"` creates SignalR round-trip on every pixel of drag, server re-renders stale value back to DOM, browser snaps slider
+- `@onchange` fires once on mouse release — single SignalR round-trip, no feedback loop
+- Plain HTML `oninput` (lowercase, no `@`) runs JavaScript in-browser with zero server traffic for real-time visual feedback
+- `InvariantCulture` for double parsing prevents locale decimal separator issues
+**Implementation Details**:
+- Added `updateSliderLabel(slider, suffix)` JS function to App.razor
+- Sliders use `value="@field"` (one-way) + `@onchange="Handler"` + `oninput="updateSliderLabel(this,'rem')"`
+- `@onchange` handlers parse `ChangeEventArgs.Value`, clamp, update field, persist to SettingsService
+**Implications**:
+- No more flicker/snap-back during slider drag
+- Real-time label updates via JS while server stays quiet
+- This should be the final slider fix — root cause (SignalR feedback loop) is eliminated, not just mitigated
+
+### [2026-03-01] Code-Behind Pattern for Large Razor Pages
+**Decision**: Extracted Setup.razor @code block to Setup.razor.cs partial class
+**Rationale**:
+- Setup.razor was 1,224 lines — too large for single-file maintenance
+- Code-behind is the safest refactor: no behavior change, just file organization
+- Blazor's partial class support means .razor and .razor.cs are compiled together
+- `@inject` directives replaced with `[Inject]` property attributes in code-behind
+**Implications**:
+- Setup.razor now ~654 lines (markup + style), Setup.razor.cs ~401 lines (all C#)
+- Better IDE navigation and code organization
+- Pattern available for other large pages if needed
+
+### [2026-03-01] Reusable SliderSetting Component with Internal State
+**Decision**: Extracted repeated slider markup into `Components/Shared/SliderSetting.razor` component
+**Rationale**:
+- 4 slider blocks shared identical structure (~60 lines each, 240 total)
+- Component owns InputMode state (slider vs numeric toggle) — parent doesn't need to know
+- Component handles value parsing, clamping, and formatting internally
+- Single `EventCallback<double> ValueChanged` replaces 8 separate handler methods
+**Implementation Details**:
+- Parameters: Label, Suffix, ValueDisplay, Value, Min, Max, Step, DatalistId, DatalistContent (RenderFragment), ValueChanged, MarginClass
+- `FormatValue()` auto-detects integer vs decimal formatting from Step parameter
+- `HandleChange()` parses with InvariantCulture, clamps to Min/Max, invokes callback
+- Added `@using FirebotGiveawayObsOverlay.WebApp.Components.Shared` to _Imports.razor
+**Implications**:
+- 240 lines of repeated markup → ~60 lines of component usage + 86-line component
+- Adding new sliders requires only ~15 lines of markup + 1 callback method
+- Input mode toggle state is component-local, reducing parent complexity
+
+[2026-03-01 - Added slider fix, code-behind, and reusable component architectural decisions]
 [2026-01-22 - Added async settings persistence and input mode toggle architectural decisions]
 [2026-01-17 - Added user settings persistence architectural decisions]
 [2025-12-21 - Added release workflow, versioning, and documentation decisions]

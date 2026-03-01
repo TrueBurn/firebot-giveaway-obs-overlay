@@ -2,6 +2,16 @@
 
 ## Current Focus
 
+### [2026-03-01] Slider Flicker Fix + Setup.razor Refactoring
+- **Slider Flicker Fix (4th iteration)**: Replaced `@bind:event="oninput"` + `@onpointerup` with `value=` + `@onchange` + plain HTML `oninput` JS — breaks SignalR feedback loop that caused flicker/snap-back during drag
+- Added `updateSliderLabel()` JS function in `App.razor` for client-side label updates during drag (zero SignalR traffic)
+- Used `InvariantCulture` for double parsing in slider handlers
+- **Code-behind extraction**: Moved all C# code from Setup.razor to `Setup.razor.cs` partial class (401 lines)
+- **SliderSetting component**: Extracted reusable `Components/Shared/SliderSetting.razor` (86 lines) replacing 4 x ~60-line slider blocks
+- Component owns InputMode state internally, handles parsing/clamping, fires single `ValueChanged` callback
+- Setup.razor reduced from 1,224 → 654 lines (markup + style only)
+- Added `@using FirebotGiveawayObsOverlay.WebApp.Components.Shared` to `_Imports.razor`
+
 ### [2026-02-27] Serilog Logging, Bug Fixes, and Settings Refactor (v2.3.0)
 - Added Serilog with console + rolling file sinks (daily rotation, 10MB cap, 7-day retention)
 - `LoggingLevelSwitch` enables runtime log level changes from Setup page without restart
@@ -73,6 +83,16 @@
 - Updated configuration system to handle three-parameter time settings and timer state
 
 ## Recent Changes
+
+### [2026-03-01] Slider Flicker Fix + Setup.razor Refactoring
+- Replaced `@bind:event="oninput"` + `@onpointerup` with `value=` + `@onchange` on all 4 sliders
+- Added `updateSliderLabel()` JS in App.razor for real-time label updates during drag
+- Created `Setup.razor.cs` code-behind partial class (all C# code moved from @code block)
+- Created `Components/Shared/SliderSetting.razor` reusable component
+- Removed `@inject` directives from Setup.razor (replaced with `[Inject]` in code-behind)
+- Simplified from 8 slider handlers (4 slider + 4 numeric commit) to 4 unified `ValueChanged` callbacks
+- Added `Components/Shared` namespace to `_Imports.razor`
+- Build: 0 warnings, 0 errors
 
 ### [2026-01-22] Async Settings Persistence Implementation (v2.2.0)
 - Created `Services/SettingsPersistenceService.cs` with bounded channel (capacity 1, DropOldest mode)
@@ -171,6 +191,7 @@
 3. Animation speed/disable configuration
 4. Additional winner announcement styles
 
+[2026-03-01 - Updated with slider flicker fix and Setup.razor refactoring]
 [2026-01-22 - Updated with async settings persistence and input mode toggle (v2.2.0)]
 [2026-01-17 - Updated with user settings persistence system]
 [2025-12-22 - Updated with .NET 10 upgrade (v2.0.0)]

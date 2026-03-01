@@ -282,6 +282,47 @@
 - Simplifies testing and debugging of settings logic
 - Reduces risk of missing settings during load/save
 
+### [2026-03-01] Decoupled Slider Pattern (JS visual + Blazor commit)
+**Pattern**: Use plain HTML `oninput` for client-side visual feedback, Blazor `@onchange` for server-side commit
+**Implementation**:
+- Range input uses `value="@field"` (one-way binding) instead of `@bind`
+- `@onchange="Handler"` fires once on mouse release for server-side processing
+- `oninput="updateSliderLabel(this,'rem')"` (plain HTML, no @) runs JS in-browser during drag
+- JS function updates label text without any SignalR traffic
+- Server handler parses with InvariantCulture, clamps, updates state, persists
+**Benefits**:
+- Eliminates SignalR feedback loop that causes flicker/snap-back
+- Real-time visual feedback during drag via JS
+- Single server round-trip on release for clean state update
+- Works correctly with both integer and decimal step values
+
+### [2026-03-01] Code-Behind Partial Class Pattern
+**Pattern**: Separate Razor markup from C# code using .razor.cs partial class files
+**Implementation**:
+- `.razor` file contains only: directives, markup, `<style>` block
+- `.razor.cs` file contains: fields, lifecycle methods, event handlers, helper methods
+- `@inject` directives replaced with `[Inject]` property attributes
+- Namespace must match: `namespace X.Components.Pages;` + `public partial class Setup`
+**Benefits**:
+- Better IDE navigation (separate files for markup vs logic)
+- Reduces cognitive load when editing either markup or code
+- Standard Blazor pattern for large components
+
+### [2026-03-01] Reusable Component with Internal State Pattern
+**Pattern**: Extract repeated UI patterns into components that own their own view state
+**Implementation**:
+- Component accepts data via `[Parameter]` properties (value, min, max, step, labels)
+- Component owns UI-only state (e.g., InputMode toggle) internally
+- Single `EventCallback<T>` for notifying parent of value changes
+- Component handles parsing, validation, formatting — parent receives clean typed values
+- `RenderFragment` parameters for customizable sub-sections (e.g., datalist tick marks)
+**Benefits**:
+- Eliminates repeated markup (4 x 60 lines → 4 x 15 lines + 86-line component)
+- Reduces parent complexity (fewer fields, fewer handlers)
+- Consistent behavior across all instances
+- Adding new instances requires minimal code
+
+[2026-03-01 - Added decoupled slider, code-behind, and reusable component patterns]
 [2026-01-22 - Added async persistence, debouncing, input mode toggle, and background service patterns]
 [2026-01-17 - Added settings persistence and centralized application patterns]
 [2025-12-08 - Added theme system and cross-page communication patterns]

@@ -1,0 +1,86 @@
+@using System.Globalization
+
+<div class="slider-row @MarginClass">
+    <div class="slider-label">
+        <span>@Label</span>
+        <span class="slider-value">@ValueDisplay</span>
+    </div>
+    <div class="slider-controls">
+        <div class="slider-input-area">
+            @if (inputMode == Mode.Slider)
+            {
+                <input type="range"
+                       class="form-range"
+                       min="@Min.ToString(CultureInfo.InvariantCulture)"
+                       max="@Max.ToString(CultureInfo.InvariantCulture)"
+                       step="@Step.ToString(CultureInfo.InvariantCulture)"
+                       list="@DatalistId"
+                       value="@FormatValue()"
+                       @onchange="HandleChange"
+                       oninput="@($"updateSliderLabel(this,'{Suffix}')")" />
+                @if (DatalistContent != null)
+                {
+                    <datalist id="@DatalistId">
+                        @DatalistContent
+                    </datalist>
+                }
+            }
+            else
+            {
+                <input type="number"
+                       class="form-control form-control-sm"
+                       min="@Min.ToString(CultureInfo.InvariantCulture)"
+                       max="@Max.ToString(CultureInfo.InvariantCulture)"
+                       step="@Step.ToString(CultureInfo.InvariantCulture)"
+                       inputmode="@(Step >= 1 ? "numeric" : "decimal")"
+                       value="@FormatValue()"
+                       @onchange="HandleChange" />
+            }
+        </div>
+        <div class="btn-group btn-group-sm mode-toggle" role="group">
+            <button type="button"
+                    class="btn @(inputMode == Mode.Slider ? "btn-primary" : "btn-outline-secondary") btn-sm"
+                    @onclick="() => inputMode = Mode.Slider">
+                Slider
+            </button>
+            <button type="button"
+                    class="btn @(inputMode == Mode.Numeric ? "btn-primary" : "btn-outline-secondary") btn-sm"
+                    @onclick="() => inputMode = Mode.Numeric">
+                Value
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private enum Mode { Slider, Numeric }
+    private Mode inputMode = Mode.Slider;
+
+    [Parameter] public string Label { get; set; } = "";
+    [Parameter] public string Suffix { get; set; } = "";
+    [Parameter] public string ValueDisplay { get; set; } = "";
+    [Parameter] public double Value { get; set; }
+    [Parameter] public double Min { get; set; }
+    [Parameter] public double Max { get; set; }
+    [Parameter] public double Step { get; set; } = 1;
+    [Parameter] public string DatalistId { get; set; } = "";
+    [Parameter] public RenderFragment? DatalistContent { get; set; }
+    [Parameter] public EventCallback<double> ValueChanged { get; set; }
+    [Parameter] public string MarginClass { get; set; } = "mb-2";
+
+    private string FormatValue()
+    {
+        return Step >= 1
+            ? ((int)Value).ToString(CultureInfo.InvariantCulture)
+            : Value.ToString("0.0", CultureInfo.InvariantCulture);
+    }
+
+    private async Task HandleChange(ChangeEventArgs e)
+    {
+        if (double.TryParse(e.Value?.ToString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var val))
+        {
+            val = Math.Clamp(val, Min, Max);
+            await ValueChanged.InvokeAsync(val);
+        }
+    }
+}

@@ -17,6 +17,15 @@
 <body>
     <Routes />
     <script src="_framework/blazor.web.js"></script>
+    <script>
+        function updateSliderLabel(slider, suffix) {
+            var label = slider.closest('.slider-row').querySelector('.slider-value');
+            if (label) {
+                var val = parseFloat(slider.value);
+                label.textContent = suffix === '%' ? (val + '%') : (val.toFixed(1) + ' ' + suffix);
+            }
+        }
+    </script>
 </body>
 
 </html>

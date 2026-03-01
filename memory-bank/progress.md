@@ -213,10 +213,35 @@
 - ✅ Release build succeeded with 0 warnings, 0 errors
 - ✅ Updated CLAUDE.md, README.md, and memory bank documentation
 
+## 2026-03-01 - Slider Flicker Fix + Setup.razor Refactoring
+
+### [2026-03-01] - Slider Flicker Fix (4th Iteration)
+- ✅ Added `updateSliderLabel()` JS function to App.razor for client-side label updates
+- ✅ Replaced `@bind:event="oninput"` + `@onpointerup` with `value=` + `@onchange` + plain HTML `oninput` on all 4 sliders
+- ✅ Used `InvariantCulture` for double parsing/formatting in all slider handlers
+- ✅ Root cause fixed: SignalR feedback loop broken by decoupling visual feedback (JS) from state commit (Blazor @onchange)
+- ✅ Validated with successful dotnet build (0 warnings, 0 errors)
+
+### [2026-03-01] - Code-Behind Extraction
+- ✅ Created `Setup.razor.cs` partial class with all C# code (~401 lines)
+- ✅ Replaced `@inject` directives with `[Inject]` property attributes
+- ✅ Removed `@code` block from Setup.razor
+- ✅ Setup.razor reduced from 1,224 → 654 lines (markup + style)
+- ✅ Validated with successful dotnet build
+
+### [2026-03-01] - SliderSetting Reusable Component
+- ✅ Created `Components/Shared/SliderSetting.razor` (86 lines)
+- ✅ Replaced 4 x ~60-line slider blocks with `<SliderSetting>` component usage
+- ✅ Component owns InputMode state, handles parsing/clamping, fires single ValueChanged callback
+- ✅ Simplified from 8 handler methods (4 slider + 4 numeric commit) to 4 unified callbacks
+- ✅ Added `@using Components.Shared` to `_Imports.razor`
+- ✅ Validated with successful dotnet build (0 warnings, 0 errors)
+
 ## Upcoming Tasks
 
 ### Immediate
-- Memory bank and documentation complete
+- Version bump and release for slider fix + refactoring
+- Document Firebot .txt file format expectations
 
 ### Future Enhancements (from roadmap)
 - Option to adjust animation speeds or disable specific animations
@@ -226,6 +251,7 @@
 - Configurable overlay size and position
 - Mobile-responsive design for monitoring on different devices
 
+[2026-03-01 - Updated with slider flicker fix and Setup.razor refactoring]
 [2026-01-22 - Updated with async settings persistence and input mode toggle implementation (v2.2.0)]
 [2026-01-17 - Updated with user settings persistence system implementation]
 [2025-12-21 - Updated with GitHub releases, versioning, and documentation implementation]

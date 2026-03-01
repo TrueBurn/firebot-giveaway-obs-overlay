@@ -17,7 +17,8 @@ This is an ASP.NET Core 10 Blazor Server application that provides an OBS overla
 ### Key Components
 
 - `GiveAway.razor`: Main overlay component displaying prize, timer, entries, and winner announcements with dynamic theming
-- `Setup.razor`: Configuration page with theme selector, color pickers, logging config, and live preview
+- `Setup.razor` + `Setup.razor.cs`: Configuration page with theme selector, color pickers, logging config, and live preview (code-behind partial class pattern)
+- `SliderSetting.razor`: Reusable slider/numeric input component with internal InputMode state
 - `FireBotFileReader`: Monitors and reads Firebot giveaway files with sticky caching (returns cached values on I/O failure)
 - `ISettingsService` / `SettingsService`: Singleton in-memory settings store with event-driven change notification and debounced async persistence
 - `TimerService`: Manages countdown timer functionality with event notifications
@@ -37,11 +38,12 @@ This is an ASP.NET Core 10 Blazor Server application that provides an OBS overla
 FirebotGiveawayObsOverlay.WebApp/
 ├── Components/
 │   ├── Layout/          # Layout components (MainLayout, NoMenuLayout, NavMenu)
-│   └── Pages/           # Page components (GiveAway, Setup, Home, Error)
+│   ├── Pages/           # Page components (GiveAway, Setup + Setup.razor.cs, Home, Error)
+│   └── Shared/          # Reusable components (SliderSetting.razor)
 ├── Extensions/          # Extension methods (TimeSpanExtensions)
 ├── Helpers/            # Helper classes (GiveAwayHelpers, FireBotFileReader)
-├── Models/             # Data models (ThemeConfig, AppSettings)
-├── Services/           # Application services (TimerService, ThemeService, VersionService, UserSettingsService)
+├── Models/             # Data models (ThemeConfig, AppSettings, LoggingSettings)
+├── Services/           # Application services (TimerService, ThemeService, VersionService, ISettingsService, UserSettingsService, etc.)
 └── wwwroot/           # Static assets and CSS
 
 docs/                   # User documentation
@@ -226,13 +228,49 @@ The overlay is designed to be used as an OBS Browser Source:
 
 ## File Monitoring System
 
-The application monitors Firebot files for:
-- Prize information
-- Real-time entry count updates
-- Winner announcements
-- Giveaway status changes
+The application monitors three plain-text files that Firebot writes to during giveaways. Files are read from the configured `FireBotFileFolder` directory (default: `G:\Giveaway`).
 
-Files are read from the configured `FireBotFileFolder` directory.
+### Monitored Files
+
+| File | Format | Purpose |
+|------|--------|---------|
+| `prize.txt` | Single line of text | The prize name/description (e.g., "PlayStation 5") |
+| `winner.txt` | Single line of text | The winner's username (e.g., "StreamViewer123") |
+| `giveaway.txt` | One entry per line | List of entered usernames, newline-separated |
+
+### File Content Details
+
+**`prize.txt`**
+- Contains the current giveaway prize as plain text
+- Non-empty content = giveaway is active (`isGiveAwayRunning` becomes true)
+- Empty or missing = no active giveaway
+- Example: `Gaming Keyboard`
+
+**`winner.txt`**
+- Contains the winner's name as plain text
+- Non-empty content triggers the winner announcement overlay
+- Empty or missing = no winner yet
+- Example: `CoolStreamer42`
+
+**`giveaway.txt`**
+- Contains all giveaway entries, one username per line
+- Supports both Unix (`\n`) and Windows (`\r\n`) line endings
+- Empty lines are automatically filtered out
+- The entry count displayed on the overlay comes from the number of non-empty lines
+- Example:
+  ```
+  User1
+  User2
+  User3
+  ```
+
+### Sticky Caching
+
+`FireBotFileReader` implements sticky caching to prevent display glitches:
+- Successfully read values are cached in memory
+- If a file read fails (e.g., Firebot has the file locked), the last cached value is returned instead of empty
+- This prevents the timer from resetting or the overlay from flickering during transient I/O failures
+- Warnings are logged when cached values are used
 
 ## Styling and Animations
 
@@ -246,6 +284,21 @@ The overlay features:
 Winner overlay uses solid black background (`rgb(0, 0, 0)`) without trophy emojis for clean appearance.
 
 ## Recent Project Changes
+
+### March 1, 2026 - Slider Flicker Fix + Setup.razor Refactoring (v2.4.0)
+- **Slider Flicker Fix (4th iteration)**: Replaced `@bind:event="oninput"` + `@onpointerup` with `value=` + `@onchange` + plain HTML `oninput` JS
+  - Root cause: SignalR feedback loop from `@bind:event="oninput"` — server re-rendered stale values during drag
+  - `@onchange` fires once on mouse release (single round-trip), plain HTML `oninput` runs JS in-browser for real-time label updates
+  - Added `updateSliderLabel(slider, suffix)` JS function to `App.razor`
+  - Used `InvariantCulture` for all double parsing/formatting
+- **Code-behind extraction**: Moved all C# code from `Setup.razor` to `Setup.razor.cs` partial class
+  - `@inject` directives replaced with `[Inject]` property attributes
+  - Setup.razor: 654 lines (markup + style), Setup.razor.cs: 401 lines (all code)
+- **Reusable SliderSetting component**: Created `Components/Shared/SliderSetting.razor` (86 lines)
+  - Replaced 4 x ~60-line slider blocks with `<SliderSetting>` component usage
+  - Component owns InputMode state internally, handles parsing/clamping
+  - Single `EventCallback<double> ValueChanged` replaces 8 separate handler methods
+  - Added `@using Components.Shared` to `_Imports.razor`
 
 ### February 27, 2026 - Serilog Logging, Bug Fixes, and Settings Refactor (v2.3.0)
 - Added Serilog logging with console + rolling file sinks (daily rotation, 10MB cap, 7-day retention)
