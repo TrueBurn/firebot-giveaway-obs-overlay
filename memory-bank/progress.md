@@ -237,6 +237,13 @@
 - ✅ Added `@using Components.Shared` to `_Imports.razor`
 - ✅ Validated with successful dotnet build (0 warnings, 0 errors)
 
+### [2026-03-01] - Hotfix: Decimal Font Size CSS Bug + Debug Logging (v2.4.1)
+- ✅ Fixed `GetContainerStyle()` in GiveAway.razor — decimal font sizes rendered with culture-dependent formatting (e.g., `2,3rem` → invalid CSS → tiny fonts)
+- ✅ Format all font size doubles with `InvariantCulture` in CSS output
+- ✅ Added Debug-level Serilog logging to all setting change handlers in Setup.razor.cs
+- ✅ Covers: width, font sizes, file path, countdown time, timer enabled, theme, custom colors, log settings
+- ✅ Bumped version from 2.4.0 to 2.4.1
+
 ## Upcoming Tasks
 
 ### Immediate

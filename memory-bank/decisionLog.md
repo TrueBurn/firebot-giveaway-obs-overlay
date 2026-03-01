@@ -376,7 +376,21 @@
 - Adding new sliders requires only ~15 lines of markup + 1 callback method
 - Input mode toggle state is component-local, reducing parent complexity
 
-[2026-03-01 - Added slider fix, code-behind, and reusable component architectural decisions]
+### [2026-03-01] InvariantCulture for All CSS-Embedded Doubles
+**Decision**: Use `InvariantCulture` when formatting any double that ends up in CSS (inline styles, CSS custom properties)
+**Rationale**:
+- C# string interpolation `$"{doubleValue}rem"` uses the current thread's culture
+- Cultures with comma decimal separators (e.g., `de-DE`) produce `2,3rem` — invalid CSS
+- Even on English locales, ASP.NET Core can set thread culture from request headers
+- CSS always requires `.` as decimal separator
+**Implementation Details**:
+- `GiveAway.razor GetContainerStyle()`: format `prizeFontSize`, `timerFontSize`, `entriesFontSize` with `.ToString("0.0", CultureInfo.InvariantCulture)` before interpolation
+- `SliderSetting.razor FormatValue()`: already uses InvariantCulture (correct from initial implementation)
+**Implications**:
+- **Rule**: Any double rendered into CSS must use InvariantCulture — never rely on default formatting
+- This pattern applies to any future CSS property that uses numeric values
+
+[2026-03-01 - Added slider fix, code-behind, reusable component, and InvariantCulture CSS decisions]
 [2026-01-22 - Added async settings persistence and input mode toggle architectural decisions]
 [2026-01-17 - Added user settings persistence architectural decisions]
 [2025-12-21 - Added release workflow, versioning, and documentation decisions]

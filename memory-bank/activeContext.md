@@ -2,7 +2,7 @@
 
 ## Current Focus
 
-### [2026-03-01] Slider Flicker Fix + Setup.razor Refactoring
+### [2026-03-01] Slider Flicker Fix + Setup.razor Refactoring (v2.4.0) + Hotfix (v2.4.1)
 - **Slider Flicker Fix (4th iteration)**: Replaced `@bind:event="oninput"` + `@onpointerup` with `value=` + `@onchange` + plain HTML `oninput` JS — breaks SignalR feedback loop that caused flicker/snap-back during drag
 - Added `updateSliderLabel()` JS function in `App.razor` for client-side label updates during drag (zero SignalR traffic)
 - Used `InvariantCulture` for double parsing in slider handlers
@@ -11,6 +11,8 @@
 - Component owns InputMode state internally, handles parsing/clamping, fires single `ValueChanged` callback
 - Setup.razor reduced from 1,224 → 654 lines (markup + style only)
 - Added `@using FirebotGiveawayObsOverlay.WebApp.Components.Shared` to `_Imports.razor`
+- **Hotfix v2.4.1**: Fixed decimal font sizes rendering tiny — `GetContainerStyle()` in GiveAway.razor was formatting doubles with default culture (comma separator → invalid CSS). Fixed with `InvariantCulture`
+- **Hotfix v2.4.1**: Added Debug-level Serilog logging to all setting change handlers in Setup.razor.cs
 
 ### [2026-02-27] Serilog Logging, Bug Fixes, and Settings Refactor (v2.3.0)
 - Added Serilog with console + rolling file sinks (daily rotation, 10MB cap, 7-day retention)
