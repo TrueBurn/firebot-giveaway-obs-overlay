@@ -2,6 +2,7 @@ using FirebotGiveawayObsOverlay.WebApp.Helpers;
 using FirebotGiveawayObsOverlay.WebApp.Models;
 using FirebotGiveawayObsOverlay.WebApp.Services;
 using Microsoft.AspNetCore.Components;
+using Serilog;
 using Serilog.Events;
 
 namespace FirebotGiveawayObsOverlay.WebApp.Components.Pages;
@@ -105,6 +106,7 @@ public partial class Setup
     private void OnWidthChanged(double val)
     {
         prizeSectionWidth = (int)val;
+        Log.Debug("Setting changed: PrizeSectionWidth = {Value}%", prizeSectionWidth);
         SettingsService.Update(s => s.PrizeSectionWidthPercent = prizeSectionWidth);
         UpdateSettingsDiff();
     }
@@ -112,6 +114,7 @@ public partial class Setup
     private void OnPrizeFontChanged(double val)
     {
         prizeFontSize = val;
+        Log.Debug("Setting changed: PrizeFontSize = {Value} rem", prizeFontSize);
         SettingsService.Update(s => s.PrizeFontSizeRem = prizeFontSize);
         UpdateSettingsDiff();
     }
@@ -119,6 +122,7 @@ public partial class Setup
     private void OnTimerFontChanged(double val)
     {
         timerFontSize = val;
+        Log.Debug("Setting changed: TimerFontSize = {Value} rem", timerFontSize);
         SettingsService.Update(s => s.TimerFontSizeRem = timerFontSize);
         UpdateSettingsDiff();
     }
@@ -126,6 +130,7 @@ public partial class Setup
     private void OnEntriesFontChanged(double val)
     {
         entriesFontSize = val;
+        Log.Debug("Setting changed: EntriesFontSize = {Value} rem", entriesFontSize);
         SettingsService.Update(s => s.EntriesFontSizeRem = entriesFontSize);
         UpdateSettingsDiff();
     }
@@ -134,12 +139,15 @@ public partial class Setup
 
     private void SetFirebotFilePath()
     {
+        Log.Debug("Setting changed: FirebotFilePath = {Value}", firebotFilePath);
         SettingsService.Update(s => s.FireBotFileFolder = firebotFilePath);
         UpdateSettingsDiff();
     }
 
     private void SetCountdownTime()
     {
+        Log.Debug("Setting changed: CountdownTime = {Hours}h {Minutes}m {Seconds}s",
+            countdownHours, countdownMinutes, countdownSeconds);
         SettingsService.Update(s =>
         {
             s.CountdownHours = countdownHours;
@@ -151,6 +159,7 @@ public partial class Setup
 
     private void SetCountdownTimerEnabled()
     {
+        Log.Debug("Setting changed: CountdownTimerEnabled = {Value}", countdownTimerEnabled);
         SettingsService.Update(s => s.CountdownTimerEnabled = countdownTimerEnabled);
 
         if (!countdownTimerEnabled)
@@ -207,6 +216,7 @@ public partial class Setup
             customSecondaryColor = currentTheme.SecondaryColor;
             customTimerExpiredColor = currentTheme.TimerExpiredColor;
         }
+        Log.Debug("Setting changed: Theme = {Value}", selectedThemeName);
         ThemeService.NotifyThemeChanged();
         SettingsService.Update(s => s.Theme = ThemeSettings.FromThemeConfig(currentTheme));
         UpdateSettingsDiff();
@@ -219,6 +229,8 @@ public partial class Setup
         GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.SecondaryColor), customSecondaryColor);
         GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.TimerExpiredColor), customTimerExpiredColor);
         currentTheme = GiveAwayHelpers.GetCurrentTheme();
+        Log.Debug("Setting changed: CustomColors = Primary:{Primary} Secondary:{Secondary} TimerExpired:{TimerExpired}",
+            customPrimaryColor, customSecondaryColor, customTimerExpiredColor);
         ThemeService.NotifyThemeChanged();
         SettingsService.Update(s => s.Theme = ThemeSettings.FromThemeConfig(currentTheme));
         UpdateSettingsDiff();
@@ -228,6 +240,7 @@ public partial class Setup
 
     private void SetLogLevel()
     {
+        Log.Debug("Setting changed: LogLevel = {Value}", logLevel);
         LogLevelSwitch.MinimumLevel = logLevel;
         SettingsService.Update(s => s.Logging.MinimumLevel = logLevel);
         UpdateSettingsDiff();
@@ -235,18 +248,21 @@ public partial class Setup
 
     private void SetLogFilePath()
     {
+        Log.Debug("Setting changed: LogFilePath = {Value}", logFilePath);
         SettingsService.Update(s => s.Logging.LogFilePath = logFilePath);
         UpdateSettingsDiff();
     }
 
     private void SetEnableFileLogging()
     {
+        Log.Debug("Setting changed: EnableFileLogging = {Value}", enableFileLogging);
         SettingsService.Update(s => s.Logging.EnableFileLogging = enableFileLogging);
         UpdateSettingsDiff();
     }
 
     private void SetEnableConsoleLogging()
     {
+        Log.Debug("Setting changed: EnableConsoleLogging = {Value}", enableConsoleLogging);
         SettingsService.Update(s => s.Logging.EnableConsoleLogging = enableConsoleLogging);
         UpdateSettingsDiff();
     }

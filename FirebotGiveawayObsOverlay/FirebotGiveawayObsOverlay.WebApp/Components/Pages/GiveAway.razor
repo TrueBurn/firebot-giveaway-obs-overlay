@@ -267,11 +267,15 @@
 
     private string GetContainerStyle()
     {
+        var pf = prizeFontSize.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+        var tf = timerFontSize.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+        var ef = entriesFontSize.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
+
         return $@"--prize-width: {prizeSectionWidth}%;
                   --info-width: {100 - prizeSectionWidth}%;
-                  --prize-font-size: {prizeFontSize}rem;
-                  --timer-font-size: {timerFontSize}rem;
-                  --entries-font-size: {entriesFontSize}rem;
+                  --prize-font-size: {pf}rem;
+                  --timer-font-size: {tf}rem;
+                  --entries-font-size: {ef}rem;
                   background: linear-gradient(135deg, {currentTheme.BackgroundStart} 0%, {currentTheme.BackgroundEnd} 100%);
                   border-color: {currentTheme.BorderGlowColor};
                   box-shadow: 0 0 20px {currentTheme.PrimaryColor}33, 0 0 40px {currentTheme.SecondaryColor}1A, 0 0 60px {currentTheme.SecondaryColor}1A;
