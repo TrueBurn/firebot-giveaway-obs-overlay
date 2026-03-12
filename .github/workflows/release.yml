@@ -130,6 +130,15 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
+          body: |
+            ## Windows SmartScreen Notice
+            If Windows shows a "Windows protected your PC" warning:
+            1. **Before extracting**: Right-click the downloaded ZIP → Properties → check "Unblock" → Apply
+            2. **Or at the SmartScreen prompt**: Click "More info" → "Run anyway"
+
+            This warning appears because the executable is not yet code-signed. It is safe to run.
+
+            ---
           files: |
             ./artifacts/**/*.zip
         env:
