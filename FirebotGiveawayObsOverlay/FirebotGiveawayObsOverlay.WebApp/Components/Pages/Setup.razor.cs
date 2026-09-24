@@ -9,8 +9,7 @@ namespace FirebotGiveawayObsOverlay.WebApp.Components.Pages;
 
 public partial class Setup
 {
-    [Inject] private TimerService TimerService { get; set; } = default!;
-    [Inject] private ThemeService ThemeService { get; set; } = default!;
+    [Inject] private GiveawayStateService GiveawayState { get; set; } = default!;
     [Inject] private VersionService VersionService { get; set; } = default!;
     [Inject] private ISettingsService SettingsService { get; set; } = default!;
     [Inject] private Serilog.Core.LoggingLevelSwitch LogLevelSwitch { get; set; } = default!;
@@ -80,7 +79,7 @@ public partial class Setup
 
     private void UpdateSettingsDiff()
     {
-        var defaults = AppSettings.GetDefaults();
+        var defaults = SettingsService.Defaults;
         var current = SettingsService.Current;
         settingsDiff = current.GetDifferences(defaults);
         hasCustomSettings = settingsDiff.Count > 0;
@@ -160,16 +159,8 @@ public partial class Setup
     private void SetCountdownTimerEnabled()
     {
         Log.Debug("Setting changed: CountdownTimerEnabled = {Value}", countdownTimerEnabled);
+        // GiveawayStateService stops/restarts the countdown via OnSettingsChanged
         SettingsService.Update(s => s.CountdownTimerEnabled = countdownTimerEnabled);
-
-        if (!countdownTimerEnabled)
-        {
-            // Timer disabled - GiveAway.razor handles stopping via OnSettingsChanged
-        }
-        else
-        {
-            TimerService.ResetTimer();
-        }
 
         UpdateSettingsDiff();
     }
@@ -186,7 +177,7 @@ public partial class Setup
 
         try
         {
-            TimerService.ResetTimer();
+            GiveawayState.ResetTimer();
             resetMessage = "Timer reset successfully!";
             resetSuccess = true;
         }
@@ -217,7 +208,6 @@ public partial class Setup
             customTimerExpiredColor = currentTheme.TimerExpiredColor;
         }
         Log.Debug("Setting changed: Theme = {Value}", selectedThemeName);
-        ThemeService.NotifyThemeChanged();
         SettingsService.Update(s => s.Theme = ThemeSettings.FromThemeConfig(currentTheme));
         UpdateSettingsDiff();
     }
@@ -231,7 +221,6 @@ public partial class Setup
         currentTheme = GiveAwayHelpers.GetCurrentTheme();
         Log.Debug("Setting changed: CustomColors = Primary:{Primary} Secondary:{Secondary} TimerExpired:{TimerExpired}",
             customPrimaryColor, customSecondaryColor, customTimerExpiredColor);
-        ThemeService.NotifyThemeChanged();
         SettingsService.Update(s => s.Theme = ThemeSettings.FromThemeConfig(currentTheme));
         UpdateSettingsDiff();
     }
@@ -271,7 +260,7 @@ public partial class Setup
 
     private void ResetIndividualSetting(string settingName)
     {
-        var defaults = AppSettings.GetDefaults();
+        var defaults = SettingsService.Defaults;
 
         switch (settingName)
         {
@@ -327,7 +316,6 @@ public partial class Setup
                 customPrimaryColor = currentTheme.PrimaryColor;
                 customSecondaryColor = currentTheme.SecondaryColor;
                 customTimerExpiredColor = currentTheme.TimerExpiredColor;
-                ThemeService.NotifyThemeChanged();
                 SettingsService.Update(s => s.Theme = ThemeSettings.FromThemeConfig(currentTheme));
                 break;
 
@@ -335,7 +323,6 @@ public partial class Setup
                 customPrimaryColor = defaults.Theme.PrimaryColor;
                 GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.PrimaryColor), customPrimaryColor);
                 currentTheme = GiveAwayHelpers.GetCurrentTheme();
-                ThemeService.NotifyThemeChanged();
                 SettingsService.Update(s => s.Theme = ThemeSettings.FromThemeConfig(currentTheme));
                 break;
 
@@ -343,7 +330,6 @@ public partial class Setup
                 customSecondaryColor = defaults.Theme.SecondaryColor;
                 GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.SecondaryColor), customSecondaryColor);
                 currentTheme = GiveAwayHelpers.GetCurrentTheme();
-                ThemeService.NotifyThemeChanged();
                 SettingsService.Update(s => s.Theme = ThemeSettings.FromThemeConfig(currentTheme));
                 break;
 
@@ -351,7 +337,6 @@ public partial class Setup
                 customTimerExpiredColor = defaults.Theme.TimerExpiredColor;
                 GiveAwayHelpers.UpdateCustomColor(nameof(ThemeConfig.TimerExpiredColor), customTimerExpiredColor);
                 currentTheme = GiveAwayHelpers.GetCurrentTheme();
-                ThemeService.NotifyThemeChanged();
                 SettingsService.Update(s => s.Theme = ThemeSettings.FromThemeConfig(currentTheme));
                 break;
 
@@ -408,8 +393,6 @@ public partial class Setup
         enableFileLogging = s.Logging.EnableFileLogging;
         enableConsoleLogging = s.Logging.EnableConsoleLogging;
         LogLevelSwitch.MinimumLevel = logLevel;
-
-        ThemeService.NotifyThemeChanged();
         showResetConfirm = false;
         showDiff = false;
         UpdateSettingsDiff();

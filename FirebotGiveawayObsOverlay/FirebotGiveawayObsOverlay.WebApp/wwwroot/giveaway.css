@@ -1,4 +1,28 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600&display=swap');
+/* Orbitron is self-hosted (SIL OFL, see fonts/OFL-Orbitron.txt): no render-blocking third-party request,
+   and the overlay renders correctly when offline. */
+@font-face {
+    font-family: 'Orbitron';
+    font-style: normal;
+    font-weight: 400;
+    font-display: block;
+    src: url('fonts/orbitron-latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Orbitron';
+    font-style: normal;
+    font-weight: 500;
+    font-display: block;
+    src: url('fonts/orbitron-latin-500-normal.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Orbitron';
+    font-style: normal;
+    font-weight: 600;
+    font-display: block;
+    src: url('fonts/orbitron-latin-600-normal.woff2') format('woff2');
+}
 
 :root {
     --bg-blue-light: hsl(183 97% 83%);
@@ -84,6 +108,7 @@ a {
     );
     z-index: -1;
     animation: animatedBorder 4s linear infinite;
+    will-change: transform; /* keep the infinite rotation on the compositor */
     opacity: 0.3;
     border-radius: 1.5rem;
 }
@@ -570,3 +595,9 @@ a {
     box-shadow: 0 0 12px var(--separator-color, rgba(0, 255, 255, 0.6));
 }
 
+
+/* Never show Blazor's error/reconnect UI on stream */
+#blazor-error-ui,
+.overlay-reconnect {
+    display: none !important;
+}

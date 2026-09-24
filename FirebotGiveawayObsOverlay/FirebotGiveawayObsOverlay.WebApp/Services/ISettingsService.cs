@@ -14,6 +14,11 @@ public interface ISettingsService
     AppSettings Current { get; }
 
     /// <summary>
+    /// The defaults settings reset to: appsettings.json values (falling back to built-in defaults).
+    /// </summary>
+    AppSettings Defaults { get; }
+
+    /// <summary>
     /// Fired immediately when any setting is mutated.
     /// Subscribers (e.g. GiveAway overlay) use this for instant UI updates.
     /// </summary>
@@ -26,7 +31,7 @@ public interface ISettingsService
     void Update(Action<AppSettings> mutator);
 
     /// <summary>
-    /// Replaces in-memory settings with defaults, fires OnSettingsChanged,
+    /// Replaces in-memory settings with <see cref="Defaults"/>, fires OnSettingsChanged,
     /// and deletes usersettings.json.
     /// </summary>
     void ResetToDefaults();

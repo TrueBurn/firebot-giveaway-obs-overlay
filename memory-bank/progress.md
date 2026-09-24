@@ -258,6 +258,17 @@
 - Configurable overlay size and position
 - Mobile-responsive design for monitoring on different devices
 
+## [2026-09-24 09:10:00] - Performance & Stability Audit (completed)
+- [x] GiveawayStateService, FireBotFileReader rewrite, GiveAway.razor render optimisation
+- [x] Settings copy-on-write, atomic writes, reset fixes, logging settings applied at startup
+- [x] Silent overlay reconnect/self-heal, MapStaticAssets, self-hosted font
+- [x] Workstation GC, InvariantGlobalization, ReadyToRun releases
+- [x] GitHub Actions upgraded to latest majors, new CI workflow, Dependabot
+- [x] Version bumped 2.4.1 -> 2.5.0
+- [x] 29 unit tests, 22 Playwright e2e tests (stable across 3 repeats)
+- Benchmark (5 overlays, 30s): RSS 139->116MB, threads 27->22, WS frames 10.2->5.3/s, WS bytes 4.2->1.3KB/s, file reads ~15/s -> only on change
+
+[2026-09-24 - Added performance/stability audit progress]
 [2026-03-01 - Updated with slider flicker fix and Setup.razor refactoring]
 [2026-01-22 - Updated with async settings persistence and input mode toggle implementation (v2.2.0)]
 [2026-01-17 - Updated with user settings persistence system implementation]

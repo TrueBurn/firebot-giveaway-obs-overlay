@@ -30,14 +30,14 @@ FirebotGiveawayObsOverlay/
     ├── Extensions/
     │   └── TimeSpanExtensions.cs          # Time formatting helpers
     ├── Helpers/
-    │   ├── GiveAwayHelpers.cs             # Static configuration management
-    │   └── FireBotFileReader.cs           # File monitoring system
+    │   ├── GiveAwayHelpers.cs             # Static theme helpers
+    │   └── FireBotFileReader.cs           # Change-detecting, shared-read file reader
     ├── Models/
     │   ├── ThemeConfig.cs                 # Theme configuration model
     │   └── AppSettings.cs                 # Settings model for persistence
     ├── Services/
-    │   ├── TimerService.cs                # Countdown timer management
-    │   ├── ThemeService.cs                # Theme change notifications
+    │   ├── GiveawayStateService.cs        # Single file poller + server-side countdown (hosted service)
+    │   ├── ISettingsService.cs / SettingsService.cs  # Copy-on-write in-memory settings + change events
     │   ├── VersionService.cs              # Assembly version access
     │   ├── UserSettingsService.cs         # User settings persistence
     │   ├── SettingsPersistenceService.cs  # Debounced async persistence queue
@@ -47,7 +47,9 @@ FirebotGiveawayObsOverlay/
     │   └── PublishProfiles/               # Publish configurations
     ├── wwwroot/
     │   ├── app.css                        # Application styles
-    │   └── giveaway.css                   # Overlay-specific styles
+    │   ├── giveaway.css                   # Overlay-specific styles
+    │   ├── overlay-reconnect.js           # Silent reconnect/self-heal for the OBS overlay
+    │   └── fonts/                         # Self-hosted Orbitron (SIL OFL)
     ├── Program.cs                         # Application entry point
     └── appsettings.json                   # Configuration file
 ```
@@ -65,10 +67,10 @@ The main overlay component responsible for:
 - Applying theme colors dynamically
 
 **Key Features:**
-- Uses `NoMenuLayout` for clean OBS presentation
-- Subscribes to `ThemeService` for live theme updates
-- Implements file polling for Firebot integration
-- Handles timer state transitions (running, expired, disabled)
+- Uses `NoMenuLayout` for clean OBS presentation (Blazor error/reconnect UI is never shown on stream)
+- Thin view: subscribes to `GiveawayStateService.SnapshotChanged` and `ISettingsService.OnSettingsChanged`
+- Re-renders only when something visible changes; theme/layout style strings are built once per settings change
+- Timer digits are real elements (not `MarkupString`), so each tick only patches text nodes
 
 ### Setup.razor
 
@@ -91,35 +93,17 @@ Configuration interface providing:
 
 ## Services
 
-### TimerService
+### GiveawayStateService
 
-Singleton service managing countdown functionality:
+Singleton `BackgroundService` and the single source of truth for what overlays show:
 
-```csharp
-public class TimerService
-{
-    public event Action? OnTimerReset;
-    public void ResetTimer() => OnTimerReset?.Invoke();
-}
-```
+- Polls the Firebot folder every 250 ms with a `PeriodicTimer` (one poller for the whole app, no matter how many overlays are open)
+- Runs the countdown from a **deadline** (`TimeProvider`), not by decrementing a counter per tick, so it cannot drift and it survives OBS browser-source reloads
+- Publishes an immutable `GiveawaySnapshot` via `SnapshotChanged`, **only** when something visible changes (whole-second granularity)
+- Each subscriber is invoked in isolation; an exception from one circuit is logged and does not affect others
+- `ResetTimer()` is called by the Setup page's Reset button; settings changes (timer enable/disable) are observed through `ISettingsService.OnSettingsChanged`
 
-- Event-based communication between Setup and GiveAway pages
-- Notifies overlay when timer is reset from Setup page
-
-### ThemeService
-
-Singleton service for theme change notifications:
-
-```csharp
-public class ThemeService
-{
-    public event Action? OnThemeChanged;
-    public void NotifyThemeChanged() => OnThemeChanged?.Invoke();
-}
-```
-
-- Enables real-time theme updates without page refresh
-- Used by Setup page to notify GiveAway overlay
+Timer state machine (unchanged behaviour): new prize → reset + start; winner appears → pause; winner cleared while prize present → reset + start; prize removed → reset (idle at full duration); timer disabled → hidden/paused; re-enabled → reset.
 
 ### VersionService
 
@@ -286,9 +270,11 @@ Monitors and reads Firebot-generated files:
 - **Winner File**: Winner announcement data
 
 **Implementation:**
-- Polling-based file reading
-- Handles file not found gracefully
-- Parses various file formats
+- Instance class owned by `GiveawayStateService` (no static state)
+- Change detection: a file is only re-read when its last-write time or length changes, so polling is a cheap stat call
+- Opens files with `FileShare.ReadWrite | FileShare.Delete` so reads succeed while Firebot has the file open
+- Entry count is computed by enumerating lines over a span (no per-entry string allocations); blank/whitespace lines are ignored
+- Sticky cache: on I/O failure the last good value is kept; a warning is logged once per failure streak (no log spam)
 
 ## Theming Architecture
 
@@ -385,7 +371,7 @@ dotnet publish --configuration Release --runtime win-x64 --self-contained true -
 
 2. **Static GiveAwayHelpers**: Provides simple global state management without dependency injection complexity for settings.
 
-3. **Event-based Services**: TimerService and ThemeService use events for loose coupling between components.
+3. **Server-side giveaway state**: One `GiveawayStateService` polls files and runs the countdown for all overlays; components are thin subscribers. (Replaced the per-component timers and the `TimerService`/`ThemeService` event relays.)
 
 4. **Inline Styles for Themes**: Ensures theme changes apply immediately without CSS reload issues.
 
@@ -400,3 +386,15 @@ dotnet publish --configuration Release --runtime win-x64 --self-contained true -
 9. **Slider/Numeric Input Mode Toggle**: Provides both slider (visual feedback) and numeric input (precision) for range-based settings. Users can switch between modes with toggle buttons, combining ease of use with exact value entry when needed.
 
 10. **Slider oninput Binding**: Changed from `onchange` to `oninput` for real-time visual feedback during slider drag. Safe to use with async persistence pattern, as debouncing prevents high-frequency disk writes.
+
+11. **Copy-on-write settings**: `SettingsService.Update` clones, mutates and atomically swaps the settings object, so `Current` is always a consistent snapshot. Persistence writes to a temp file and atomically replaces `usersettings.json`. "Reset to Defaults" resets to the `appsettings.json` values and cancels any pending debounced save.
+
+12. **Content root = exe folder for published builds**: wwwroot, `appsettings.json` and relative log paths resolve next to the executable, so the app works regardless of the working directory it was launched from.
+
+13. **Runtime tuning**: Workstation GC (lower memory next to OBS/games), `InvariantGlobalization` (no ICU load; culture-proof CSS values), async Serilog sinks, `MapStaticAssets` (compressed, fingerprinted, cacheable assets), ReadyToRun release builds (faster startup).
+
+## Testing
+
+- **Unit tests** (`FirebotGiveawayObsOverlay.Tests`, xUnit v3 on Microsoft.Testing.Platform): file reader, countdown state machine (with `FakeTimeProvider`), settings persistence/debounce/reset. Run with `dotnet test` from `FirebotGiveawayObsOverlay/`.
+- **E2E tests** (`e2e/`, Playwright): publish the app, start it against a sandbox Firebot folder, and drive the overlay and Setup page in Chromium — live file updates, countdown behaviour (incl. reload persistence), winner flow, live theme/layout changes across tabs, input clamping, reset flow, no third-party requests, no console errors.
+

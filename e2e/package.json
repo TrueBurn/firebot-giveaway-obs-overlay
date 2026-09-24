@@ -1,0 +1,14 @@
+{
+  "name": "firebot-giveaway-overlay-e2e",
+  "private": true,
+  "description": "End-to-end UX tests for the Firebot Giveaway OBS Overlay (Playwright)",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "^24.0.0"
+  }
+}

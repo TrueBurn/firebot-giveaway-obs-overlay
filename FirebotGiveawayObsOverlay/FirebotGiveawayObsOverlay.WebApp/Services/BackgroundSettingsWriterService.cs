@@ -24,38 +24,19 @@ public class BackgroundSettingsWriterService : BackgroundService
     {
         _logger.LogInformation("Background settings writer service started");
 
-        try
+        // Deliberately not passing stoppingToken to ReadAllAsync: on shutdown StopAsync completes the channel,
+        // and we want to drain (write) whatever was flushed rather than abandon it.
+        await foreach (var settings in _persistenceService.Reader.ReadAllAsync(CancellationToken.None))
         {
-            await foreach (var settings in _persistenceService.Reader.ReadAllAsync(stoppingToken))
+            try
             {
-                try
-                {
-                    await _userSettingsService.SaveUserSettingsAsync(settings, stoppingToken);
-                    _logger.LogDebug("Settings saved to disk");
-                }
-                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-                {
-                    // Application is shutting down, try one final save
-                    _logger.LogInformation("Shutdown requested, performing final save");
-                    try
-                    {
-                        await _userSettingsService.SaveUserSettingsAsync(settings, CancellationToken.None);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to save settings during shutdown");
-                    }
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to save settings to disk");
-                }
+                await _userSettingsService.SaveUserSettingsAsync(settings, CancellationToken.None);
+                _logger.LogDebug("Settings saved to disk");
             }
-        }
-        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-        {
-            _logger.LogInformation("Background settings writer service stopping");
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to save settings to disk");
+            }
         }
 
         _logger.LogInformation("Background settings writer service stopped");
@@ -65,8 +46,8 @@ public class BackgroundSettingsWriterService : BackgroundService
     {
         _logger.LogInformation("Background settings writer service stopping, flushing pending settings");
 
-        // Flush any pending settings to the channel before stopping
-        _persistenceService.Flush();
+        // Flush pending settings and complete the channel so ExecuteAsync drains and exits
+        _persistenceService.Complete();
 
         await base.StopAsync(cancellationToken);
     }

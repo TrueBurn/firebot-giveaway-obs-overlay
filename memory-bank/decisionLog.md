@@ -390,6 +390,22 @@
 - **Rule**: Any double rendered into CSS must use InvariantCulture — never rely on default formatting
 - This pattern applies to any future CSS property that uses numeric values
 
+## [2026-09-24 09:10:00] - Server-side giveaway state + deadline countdown
+- Decision: move file polling and countdown from each GiveAway component into one `GiveawayStateService` (BackgroundService)
+- Rationale: per-circuit timers multiplied I/O, drifted (decrement per tick), restarted on OBS reload, used async void + off-context mutation (crash/race risk)
+- Removed `TimerService`/`ThemeService`; overlays subscribe to immutable snapshots
+
+## [2026-09-24 09:10:00] - Copy-on-write settings, atomic persistence, config-based defaults
+- `SettingsService.Update` clones+swaps; `usersettings.json` written via temp file + replace; reset uses appsettings.json defaults and cancels pending save
+
+## [2026-09-24 09:10:00] - Test strategy
+- xUnit v3 on Microsoft.Testing.Platform (global.json opt-in; VSTest unsupported for MTP on .NET 10 SDK)
+- Playwright e2e tests run against the *published* build (dotnet run in non-Development cannot serve static web assets)
+
+## [2026-09-24 09:10:00] - Content root anchored to exe folder for published builds
+- Found via e2e: launching the exe from another working directory served a blank app
+
+[2026-09-24 - Added server-side state, settings, testing and content-root decisions]
 [2026-03-01 - Added slider fix, code-behind, reusable component, and InvariantCulture CSS decisions]
 [2026-01-22 - Added async settings persistence and input mode toggle architectural decisions]
 [2026-01-17 - Added user settings persistence architectural decisions]

@@ -11,24 +11,24 @@ This is an ASP.NET Core 10 Blazor Server application that provides an OBS overla
 - **Framework**: ASP.NET Core 10 (LTS) with Blazor Server and C# 14
 - **Frontend**: Razor components with Bootstrap 5.1 and custom CSS animations
 - **File Monitoring**: Real-time file system monitoring for Firebot integration
-- **Services**: Singleton services for settings, timer, and theme management with event-based communication
+- **Services**: Singleton services for settings and giveaway state with event-based communication
+- **Giveaway state**: One server-side `GiveawayStateService` (hosted service) polls Firebot files and runs the countdown for all overlays
 - **Logging**: Serilog with console + rolling file sinks, runtime-configurable log level
 
 ### Key Components
 
-- `GiveAway.razor`: Main overlay component displaying prize, timer, entries, and winner announcements with dynamic theming
+- `GiveAway.razor`: Thin overlay view; subscribes to `GiveawayStateService.SnapshotChanged` + `ISettingsService.OnSettingsChanged`, renders only on visible change
 - `Setup.razor` + `Setup.razor.cs`: Configuration page with theme selector, color pickers, logging config, and live preview (code-behind partial class pattern)
 - `SliderSetting.razor`: Reusable slider/numeric input component with internal InputMode state
-- `FireBotFileReader`: Monitors and reads Firebot giveaway files with sticky caching (returns cached values on I/O failure)
-- `ISettingsService` / `SettingsService`: Singleton in-memory settings store with event-driven change notification and debounced async persistence
-- `TimerService`: Manages countdown timer functionality with event notifications
-- `ThemeService`: Manages theme change notifications between pages
+- `GiveawayStateService`: Singleton `BackgroundService`; 250ms `PeriodicTimer` poll, deadline-based countdown (`TimeProvider`), publishes immutable `GiveawaySnapshot`, `ResetTimer()` for the Setup page
+- `FireBotFileReader`: Instance (DI singleton) reader with change detection (mtime+length), `FileShare.ReadWrite|Delete` reads, span-based entry counting and sticky caching
+- `ISettingsService` / `SettingsService`: Copy-on-write in-memory settings (`Current` is an immutable snapshot), `Defaults` = appsettings.json values, isolated event dispatch, debounced async persistence
 - `VersionService`: Provides runtime access to assembly version information
 - `GiveAwayHelpers`: Static helpers for theme management only (settings moved to ISettingsService)
 - `ThemeConfig`: Theme model with preset themes and custom color support
 - `AppSettings`: Settings model with non-nullable properties for persistence (includes `LoggingSettings`)
-- `UserSettingsService`: Loads/saves user settings to `usersettings.json`
-- `SettingsPersistenceService`: Channel-based debounced persistence queue
+- `UserSettingsService`: Loads/saves user settings to `usersettings.json` (atomic temp-file + replace; path overridable via `UserSettingsPath` config)
+- `SettingsPersistenceService`: Channel-based debounced persistence queue (single reusable `ITimer`, `CancelPending()` used by reset)
 - `BackgroundSettingsWriterService`: IHostedService for async disk writes
 - `giveaway.css`: Base styling with CSS custom properties for theming
 
@@ -45,6 +45,10 @@ FirebotGiveawayObsOverlay.WebApp/
 ├── Models/             # Data models (ThemeConfig, AppSettings, LoggingSettings)
 ├── Services/           # Application services (TimerService, ThemeService, VersionService, ISettingsService, UserSettingsService, etc.)
 └── wwwroot/           # Static assets and CSS
+
+FirebotGiveawayObsOverlay.Tests/   # xUnit v3 unit tests (Microsoft.Testing.Platform)
+e2e/                               # Playwright e2e UX tests (tests/*.spec.ts, playwright.config.ts)
+global.json                        # SDK pin (10.0.x) + MTP test runner opt-in
 
 docs/                   # User documentation
 ├── getting-started.md  # Installation and first run guide
@@ -71,13 +75,21 @@ dotnet publish -c Release
 
 ### Testing
 ```bash
-# Run tests (if test project exists)
-dotnet test
-
-# Run tests from solution root
+# Unit tests (from solution folder)
 cd FirebotGiveawayObsOverlay
 dotnet test
+
+# E2E UX tests (Playwright CLI). Publishes the app, runs it on 127.0.0.1:5199 against e2e/.sandbox
+cd e2e
+npm ci
+npx playwright install chromium        # or set PW_CHROMIUM_PATH to an existing Chromium
+npx playwright test
 ```
+
+E2E tests rely on `data-testid` attributes in `GiveAway.razor` and `data-interactive` / `data-overlay-ready`
+markers (set from `RendererInfo.IsInteractive`) to know when the Blazor circuit is live. Keep them when editing markup.
+
+Config switches used by tests (also usable in production): `LaunchBrowser=false`, `UserSettingsPath=<file>`.
 
 ### Code Quality Validation
 **IMPORTANT**: Always run build and test after making changes to .cs files to ensure no breaking changes:
@@ -284,6 +296,18 @@ The overlay features:
 Winner overlay uses solid black background (`rgb(0, 0, 0)`) without trophy emojis for clean appearance.
 
 ## Recent Project Changes
+
+### September 24, 2026 - Performance & Stability Audit, Upgrades, E2E Tests (v2.5.0)
+- **Single server-side giveaway state**: New `GiveawayStateService` replaces per-overlay `System.Timers.Timer` polling + countdown. Countdown is deadline-based (no drift, survives OBS reloads, all overlays in sync). Removed `TimerService` / `ThemeService`.
+- **File reader**: change detection, shared-read file access (no lock failures while Firebot writes), zero-allocation entry counting, log-once-per-failure-streak
+- **Overlay rendering**: renders only on visible change; styles cached per settings change; timer as elements instead of `MarkupString`; async-void handlers and off-context state mutation removed
+- **Settings**: copy-on-write snapshots, isolated subscriber dispatch, atomic `usersettings.json` writes, reset cancels pending save, reset uses appsettings.json defaults (previously hard-coded defaults, which also lost the configured Firebot folder)
+- **Startup**: settings loaded before the server listens; user logging settings (sinks, path) now actually applied; async Serilog sinks; content root anchored to exe folder for published builds
+- **Overlay resilience**: infinite silent Blazor reconnection, hidden reconnect/error UI on the overlay, auto-reload when the server comes back (`wwwroot/overlay-reconnect.js`)
+- **Assets**: `MapStaticAssets` + `@Assets`/`ImportMap`; Orbitron self-hosted (removed Google Fonts `@import`)
+- **Runtime**: workstation GC, `InvariantGlobalization`, ReadyToRun for release builds
+- **Setup UX**: Firebot folder commits on change (not per keystroke), labels associated with inputs
+- **Tests**: xUnit v3 unit tests + Playwright e2e suite; new `ci.yml`; release workflow gated on tests, least-privilege permissions, injection-safe inputs; all actions on latest majors (checkout v7, setup-dotnet v6, upload-artifact v7, download-artifact v8, action-gh-release v3); Dependabot
 
 ### March 1, 2026 - Slider Flicker Fix + Setup.razor Refactoring (v2.4.0)
 - **Slider Flicker Fix (4th iteration)**: Replaced `@bind:event="oninput"` + `@onpointerup` with `value=` + `@onchange` + plain HTML `oninput` JS

@@ -35,6 +35,8 @@ Download the latest version from the [Releases](https://github.com/trueburn/fire
 - **Settings Management** - View changes vs defaults, reset individual or all settings
 - **Serilog Logging** - Console + rolling file logging with runtime-configurable log level from Setup page
 - **Reliable File Monitoring** - Sticky cached reads prevent timer resets on transient file lock errors
+- **Stream-Safe** - Countdown keeps going across OBS browser-source reloads; the overlay reconnects silently after app restarts and never shows error dialogs on stream
+- **Works Offline** - Fonts and assets are bundled; no third-party requests
 - 7 preset themes: Warframe, Cyberpunk, Neon, Classic, Ocean, Fire, Purple
 - Custom color picker for personalized themes
 - Animated effects and transitions
@@ -104,6 +106,23 @@ Built with ASP.NET Core 10, Blazor Server, and Bootstrap 5.1.
 cd FirebotGiveawayObsOverlay/FirebotGiveawayObsOverlay.WebApp
 dotnet run
 ```
+
+### Tests
+
+```bash
+# Unit tests
+cd FirebotGiveawayObsOverlay
+dotnet test
+
+# End-to-end UX tests (Playwright CLI) - publishes the app and drives it in Chromium
+cd e2e
+npm ci
+npx playwright install chromium
+npx playwright test          # add --headed / --ui to watch
+npx playwright show-report   # HTML report
+```
+
+CI (`.github/workflows/ci.yml`) runs the build, unit tests and Playwright suite on every push and pull request.
 
 ## License
 

@@ -13,13 +13,20 @@ on:
         required: false
         type: string
 
+# Least privilege by default; only the release job can write.
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 env:
-  DOTNET_VERSION: '10.0.x'
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
   PROJECT_PATH: 'FirebotGiveawayObsOverlay/FirebotGiveawayObsOverlay.WebApp'
   PROJECT_FILE: 'FirebotGiveawayObsOverlay/FirebotGiveawayObsOverlay.WebApp/FirebotGiveawayObsOverlay.WebApp.csproj'
+  SOLUTION: 'FirebotGiveawayObsOverlay/FirebotGiveawayObsOverlay.slnx'
 
 jobs:
   check-version:
@@ -30,92 +37,119 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Get version from csproj
         id: get_version
+        env:
+          # Passed via env (not ${{ }} in the script) to prevent shell injection from the dispatch input
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          if [ -n "${{ github.event.inputs.version }}" ]; then
-            VERSION="${{ github.event.inputs.version }}"
+          if [ -n "$INPUT_VERSION" ]; then
+            VERSION="$INPUT_VERSION"
           else
-            VERSION=$(grep -oP '(?<=<Version>)[^<]+' ${{ env.PROJECT_FILE }})
+            VERSION=$(grep -oP '(?<=<Version>)[^<]+' "$PROJECT_FILE")
           fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Invalid version '$VERSION' (expected semver like 1.2.3)"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Detected version: $VERSION"
 
       - name: Check if tag exists
         id: check_tag
+        env:
+          VERSION: ${{ steps.get_version.outputs.version }}
         run: |
-          VERSION="${{ steps.get_version.outputs.version }}"
           if git rev-parse "v$VERSION" >/dev/null 2>&1; then
             echo "Tag v$VERSION already exists, skipping release"
-            echo "should_release=false" >> $GITHUB_OUTPUT
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
           else
             echo "Tag v$VERSION does not exist, proceeding with release"
-            echo "should_release=true" >> $GITHUB_OUTPUT
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
           fi
 
-  build:
+  test:
     needs: check-version
     if: needs.check-version.outputs.should_release == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Build and unit test
+        run: |
+          dotnet build "$SOLUTION" --configuration Release
+          dotnet test --solution "$SOLUTION" --configuration Release --no-build
+
+  build:
+    needs: [check-version, test]
+    if: needs.check-version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     strategy:
       matrix:
         runtime: [win-x86, win-x64]
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Restore dependencies
-        run: dotnet restore ${{ env.PROJECT_PATH }}
-
-      - name: Build
-        run: |
-          dotnet build ${{ env.PROJECT_PATH }} \
-            --configuration Release \
-            --no-restore
+          global-json-file: global.json
 
       - name: Publish
+        # ReadyToRun precompiles the app so the overlay starts noticeably faster on stream PCs.
         run: |
-          dotnet publish ${{ env.PROJECT_PATH }} \
+          dotnet publish "$PROJECT_PATH" \
             --configuration Release \
             --runtime ${{ matrix.runtime }} \
             --self-contained true \
             -p:PublishSingleFile=true \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -p:PublishReadyToRun=true \
             -p:PublishTrimmed=false \
-            -p:PublishReadyToRun=false \
+            -p:DebugType=embedded \
             --output ./publish/${{ matrix.runtime }}
 
       - name: Create ZIP archive
+        env:
+          VERSION: ${{ needs.check-version.outputs.version }}
         run: |
           cd ./publish/${{ matrix.runtime }}
-          zip -r ../../FirebotGiveawayOverlay-${{ needs.check-version.outputs.version }}-${{ matrix.runtime }}.zip .
+          zip -r "../../FirebotGiveawayOverlay-$VERSION-${{ matrix.runtime }}.zip" .
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: FirebotGiveawayOverlay-${{ matrix.runtime }}
           path: FirebotGiveawayOverlay-${{ needs.check-version.outputs.version }}-${{ matrix.runtime }}.zip
+          if-no-files-found: error
 
   release:
     needs: [check-version, build]
     if: needs.check-version.outputs.should_release == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: ./artifacts
 
@@ -123,7 +157,7 @@ jobs:
         run: find ./artifacts -type f -name "*.zip"
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: v${{ needs.check-version.outputs.version }}
           name: Release v${{ needs.check-version.outputs.version }}
@@ -141,5 +175,6 @@ jobs:
             ---
           files: |
             ./artifacts/**/*.zip
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
