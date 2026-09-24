@@ -197,7 +197,7 @@
 
 [2026-09-24 09:10:00] - Full performance/stability audit, dependency + GitHub Actions upgrades, Playwright e2e suite.
 - Current focus: server-side `GiveawayStateService` (single poller + deadline countdown) is now the source of truth for overlays
-- Open question: version bump for this work (suggest 2.5.0) - not bumped yet, awaiting user
+- Released as v2.5.0 (version bumped in .csproj)
 - Open question: FileSystemWatcher could replace 250ms polling, but polling + stat-based change detection is simpler and robust on network drives
 
 [2026-09-24 - Updated with performance/stability audit and e2e testing]

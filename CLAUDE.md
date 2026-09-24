@@ -297,7 +297,7 @@ Winner overlay uses solid black background (`rgb(0, 0, 0)`) without trophy emoji
 
 ## Recent Project Changes
 
-### September 24, 2026 - Performance & Stability Audit, Upgrades, E2E Tests
+### September 24, 2026 - Performance & Stability Audit, Upgrades, E2E Tests (v2.5.0)
 - **Single server-side giveaway state**: New `GiveawayStateService` replaces per-overlay `System.Timers.Timer` polling + countdown. Countdown is deadline-based (no drift, survives OBS reloads, all overlays in sync). Removed `TimerService` / `ThemeService`.
 - **File reader**: change detection, shared-read file access (no lock failures while Firebot writes), zero-allocation entry counting, log-once-per-failure-streak
 - **Overlay rendering**: renders only on visible change; styles cached per settings change; timer as elements instead of `MarkupString`; async-void handlers and off-context state mutation removed

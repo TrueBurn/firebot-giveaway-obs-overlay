@@ -18,10 +18,10 @@
     <InvariantGlobalization>true</InvariantGlobalization>
 
     <!-- Version properties -->
-    <Version>2.4.1</Version>
-    <AssemblyVersion>2.4.1.0</AssemblyVersion>
-    <FileVersion>2.4.1.0</FileVersion>
-    <InformationalVersion>2.4.1</InformationalVersion>
+    <Version>2.5.0</Version>
+    <AssemblyVersion>2.5.0.0</AssemblyVersion>
+    <FileVersion>2.5.0.0</FileVersion>
+    <InformationalVersion>2.5.0</InformationalVersion>
 
     <!-- Product metadata -->
     <Product>Firebot Giveaway OBS Overlay</Product>

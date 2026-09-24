@@ -264,6 +264,7 @@
 - [x] Silent overlay reconnect/self-heal, MapStaticAssets, self-hosted font
 - [x] Workstation GC, InvariantGlobalization, ReadyToRun releases
 - [x] GitHub Actions upgraded to latest majors, new CI workflow, Dependabot
+- [x] Version bumped 2.4.1 -> 2.5.0
 - [x] 29 unit tests, 22 Playwright e2e tests (stable across 3 repeats)
 - Benchmark (5 overlays, 30s): RSS 139->116MB, threads 27->22, WS frames 10.2->5.3/s, WS bytes 4.2->1.3KB/s, file reads ~15/s -> only on change
 
