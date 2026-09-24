@@ -26,6 +26,30 @@ public class AppSettings
     public static AppSettings GetDefaults() => new();
 
     /// <summary>
+    /// Deep copy. Settings are treated as immutable snapshots once published by the settings service.
+    /// </summary>
+    public AppSettings Clone() => new()
+    {
+        FireBotFileFolder = FireBotFileFolder,
+        CountdownTimerEnabled = CountdownTimerEnabled,
+        CountdownHours = CountdownHours,
+        CountdownMinutes = CountdownMinutes,
+        CountdownSeconds = CountdownSeconds,
+        PrizeSectionWidthPercent = PrizeSectionWidthPercent,
+        PrizeFontSizeRem = PrizeFontSizeRem,
+        TimerFontSizeRem = TimerFontSizeRem,
+        EntriesFontSizeRem = EntriesFontSizeRem,
+        Theme = ThemeSettings.FromThemeConfig(Theme.ToThemeConfig()),
+        Logging = new LoggingSettings
+        {
+            MinimumLevel = Logging.MinimumLevel,
+            LogFilePath = Logging.LogFilePath,
+            EnableFileLogging = Logging.EnableFileLogging,
+            EnableConsoleLogging = Logging.EnableConsoleLogging,
+        }
+    };
+
+    /// <summary>
     /// Gets a list of differences between this settings and another.
     /// </summary>
     public List<SettingsDiff> GetDifferences(AppSettings other)

@@ -322,6 +322,13 @@
 - Consistent behavior across all instances
 - Adding new instances requires minimal code
 
+## [2026-09-24 09:10:00] - Single-owner background state + snapshot pub/sub
+- A hosted singleton owns mutable state; publishes immutable records; subscribers marshal via `InvokeAsync` and guard with a `disposed` flag
+- Event dispatch iterates `GetInvocationList()` with per-handler try/catch
+- Time-dependent logic takes `TimeProvider` (tests use `FakeTimeProvider`)
+- E2E readiness markers: `data-interactive` / `data-overlay-ready` from `RendererInfo.IsInteractive`; `data-testid` on overlay elements
+
+[2026-09-24 - Added background state owner, snapshot pub/sub, TimeProvider and e2e marker patterns]
 [2026-03-01 - Added decoupled slider, code-behind, and reusable component patterns]
 [2026-01-22 - Added async persistence, debouncing, input mode toggle, and background service patterns]
 [2026-01-17 - Added settings persistence and centralized application patterns]

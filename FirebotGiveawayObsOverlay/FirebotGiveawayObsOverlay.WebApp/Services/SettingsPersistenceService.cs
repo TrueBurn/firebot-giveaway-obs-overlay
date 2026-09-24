@@ -6,12 +6,13 @@ namespace FirebotGiveawayObsOverlay.WebApp.Services;
 /// <summary>
 /// Service for queuing settings saves with debouncing.
 /// UI updates memory immediately, then this service ensures eventual persistence to disk.
+/// Uses a single reusable timer (no Task/CancellationTokenSource allocated per keystroke).
 /// </summary>
-public class SettingsPersistenceService : IDisposable
+public sealed class SettingsPersistenceService : IDisposable
 {
     private readonly Channel<AppSettings> _channel;
-    private readonly object _debounceLock = new();
-    private CancellationTokenSource? _debounceCts;
+    private readonly Lock _lock = new();
+    private readonly ITimer _debounceTimer;
     private AppSettings? _pendingSettings;
     private bool _disposed;
 
@@ -20,7 +21,11 @@ public class SettingsPersistenceService : IDisposable
     /// </summary>
     public const int DebounceDelayMs = 500;
 
-    public SettingsPersistenceService()
+    public SettingsPersistenceService() : this(TimeProvider.System)
+    {
+    }
+
+    public SettingsPersistenceService(TimeProvider timeProvider)
     {
         // Bounded channel with capacity 1, drop oldest - only latest settings matter
         _channel = Channel.CreateBounded<AppSettings>(new BoundedChannelOptions(1)
@@ -29,6 +34,7 @@ public class SettingsPersistenceService : IDisposable
             SingleReader = true,
             SingleWriter = false
         });
+        _debounceTimer = timeProvider.CreateTimer(_ => Flush(), null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
     }
 
     /// <summary>
@@ -38,66 +44,41 @@ public class SettingsPersistenceService : IDisposable
 
     /// <summary>
     /// Queues settings for persistence with debouncing.
-    /// Multiple rapid calls will reset the timer; only the latest settings are saved.
+    /// Multiple rapid calls restart the delay; only the latest settings are saved.
     /// </summary>
-    /// <param name="settings">The settings to save.</param>
     public void QueueSave(AppSettings settings)
     {
-        if (_disposed) return;
-
-        lock (_debounceLock)
+        lock (_lock)
         {
-            // Store pending settings (always keep latest)
+            if (_disposed) return;
             _pendingSettings = settings;
+            _debounceTimer.Change(TimeSpan.FromMilliseconds(DebounceDelayMs), Timeout.InfiniteTimeSpan);
+        }
+    }
 
-            // Cancel any existing debounce timer
-            _debounceCts?.Cancel();
-            _debounceCts?.Dispose();
-            _debounceCts = new CancellationTokenSource();
-
-            var cts = _debounceCts;
-
-            // Start new debounce timer
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await Task.Delay(DebounceDelayMs, cts.Token);
-
-                    // If we weren't cancelled, write to channel
-                    AppSettings? settingsToWrite;
-                    lock (_debounceLock)
-                    {
-                        if (cts.Token.IsCancellationRequested || _pendingSettings == null)
-                            return;
-
-                        settingsToWrite = _pendingSettings;
-                        _pendingSettings = null;
-                    }
-
-                    // Write to channel (non-blocking due to DropOldest)
-                    _channel.Writer.TryWrite(settingsToWrite);
-                }
-                catch (OperationCanceledException)
-                {
-                    // Expected when debounce is reset
-                }
-            });
+    /// <summary>
+    /// Discards any pending (not yet flushed) save. Used when resetting to defaults.
+    /// </summary>
+    public void CancelPending()
+    {
+        lock (_lock)
+        {
+            _pendingSettings = null;
+            _debounceTimer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+            // Also drop anything already handed to the writer but not yet consumed
+            while (_channel.Reader.TryRead(out _)) { }
         }
     }
 
     /// <summary>
     /// Flushes any pending settings immediately to the channel.
-    /// Called during graceful shutdown.
+    /// Called by the debounce timer and during graceful shutdown.
     /// </summary>
     public void Flush()
     {
-        lock (_debounceLock)
+        lock (_lock)
         {
-            _debounceCts?.Cancel();
-            _debounceCts?.Dispose();
-            _debounceCts = null;
-
+            _debounceTimer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
             if (_pendingSettings != null)
             {
                 _channel.Writer.TryWrite(_pendingSettings);
@@ -106,22 +87,24 @@ public class SettingsPersistenceService : IDisposable
         }
     }
 
+    /// <summary>
+    /// Flushes pending settings and completes the channel so the writer can drain and exit.
+    /// </summary>
+    public void Complete()
+    {
+        Flush();
+        _channel.Writer.TryComplete();
+    }
+
     public void Dispose()
     {
-        if (_disposed) return;
-        _disposed = true;
-
-        // Flush any pending settings before shutdown
-        Flush();
-
-        // Complete the channel
-        _channel.Writer.TryComplete();
-
-        lock (_debounceLock)
+        lock (_lock)
         {
-            _debounceCts?.Cancel();
-            _debounceCts?.Dispose();
-            _debounceCts = null;
+            if (_disposed) return;
+            _disposed = true;
         }
+
+        Complete();
+        _debounceTimer.Dispose();
     }
 }

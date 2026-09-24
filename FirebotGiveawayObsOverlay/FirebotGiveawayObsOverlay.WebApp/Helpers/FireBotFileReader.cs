@@ -1,103 +1,165 @@
-using Serilog;
+using System.Text;
 
 namespace FirebotGiveawayObsOverlay.WebApp.Helpers;
 
 /// <summary>
-/// Reads Firebot giveaway files with sticky caching.
-/// When a file read fails (e.g. file locked by Firebot during write),
-/// the last successfully read value is returned instead of empty string.
-/// This prevents the giveaway timer from resetting on transient I/O failures.
+/// Snapshot of the three Firebot giveaway files.
 /// </summary>
-public static class FireBotFileReader
+public readonly record struct FirebotFileData(string Prize, string Winner, int EntryCount);
+
+/// <summary>
+/// Reads Firebot giveaway files with change detection and sticky caching.
+/// <list type="bullet">
+/// <item>Files are only re-read when their last-write time or length changes, so polling is a cheap stat call.</item>
+/// <item>Files are opened with <see cref="FileShare.ReadWrite"/> | <see cref="FileShare.Delete"/> so reads do not
+/// fail (or block Firebot) while Firebot holds the file open for writing.</item>
+/// <item>When a read fails, the last successfully read value is kept (sticky cache) so the overlay never flickers
+/// and the countdown never resets because of a transient I/O error.</item>
+/// </list>
+/// Not thread-safe: intended to be owned by a single poller (<see cref="Services.GiveawayStateService"/>).
+/// </summary>
+public sealed class FireBotFileReader
 {
-    private static readonly Serilog.ILogger _logger = Log.ForContext(typeof(FireBotFileReader));
+    public const string PrizeFileName = "prize.txt";
+    public const string WinnerFileName = "winner.txt";
+    public const string EntriesFileName = "giveaway.txt";
 
-    private static string _fireBotFileFolder = @"G:\Giveaway";
-    private static readonly string _prizeFile = "prize.txt";
-    private static readonly string _winnerFile = "winner.txt";
-    private static readonly string _entriesFile = "giveaway.txt";
+    private readonly ILogger<FireBotFileReader> _logger;
+    private readonly CachedFile _prize = new(PrizeFileName);
+    private readonly CachedFile _winner = new(WinnerFileName);
+    private readonly CachedFile _entries = new(EntriesFileName);
+    private string _folder = string.Empty;
 
-    // Sticky cache: last-known-good values survive transient file read failures
-    private static string _lastPrize = string.Empty;
-    private static string _lastWinner = string.Empty;
-    private static string[] _lastEntries = [];
-
-    public static void SetFireBotFileFolder(string folderPath)
+    public FireBotFileReader(ILogger<FireBotFileReader> logger)
     {
-        if (_fireBotFileFolder == folderPath) return;
-        _fireBotFileFolder = folderPath;
-        _logger.Information("Firebot file folder set to: {FolderPath}", folderPath);
-    }
-
-    public static string GetFireBotFileFolder() => _fireBotFileFolder;
-
-    public static async Task<string> GetPrizeAsync()
-    {
-        var result = await GetFireBotFileAsync(_prizeFile);
-        if (result != null)
-        {
-            _lastPrize = result;
-            return result;
-        }
-        _logger.Warning("Prize file read failed, using cached value: '{CachedPrize}'", _lastPrize);
-        return _lastPrize;
-    }
-
-    public static async Task<string> GetWinnerAsync()
-    {
-        var result = await GetFireBotFileAsync(_winnerFile);
-        if (result != null)
-        {
-            _lastWinner = result;
-            return result;
-        }
-        _logger.Warning("Winner file read failed, using cached value: '{CachedWinner}'", _lastWinner);
-        return _lastWinner;
-    }
-
-    public static async Task<string[]> GetEntriesAsync()
-    {
-        var result = await GetFireBotFileAsync(_entriesFile);
-        if (result != null)
-        {
-            _lastEntries = result.Split(
-                [Environment.NewLine, "\n"],
-                StringSplitOptions.RemoveEmptyEntries);
-            return _lastEntries;
-        }
-        _logger.Warning("Entries file read failed, using cached value ({CachedCount} entries)", _lastEntries.Length);
-        return _lastEntries;
+        _logger = logger;
     }
 
     /// <summary>
-    /// Reads a Firebot file. Returns the content string on success, or null on failure.
-    /// Null signals to callers that they should use the cached value.
+    /// Reads all three files from <paramref name="folder"/>, re-reading only the ones that changed.
     /// </summary>
-    private static async Task<string?> GetFireBotFileAsync(string fileName)
+    public FirebotFileData Read(string folder)
     {
-        string filePath = Path.Combine(_fireBotFileFolder, fileName);
+        if (!string.Equals(folder, _folder, StringComparison.Ordinal))
+        {
+            _logger.LogInformation("Firebot file folder set to: {FolderPath}", folder);
+            _folder = folder;
+            _prize.Invalidate();
+            _winner.Invalidate();
+            _entries.Invalidate();
+        }
+
+        var prize = Refresh(_prize, static text => (text.Trim(), 0));
+        var winner = Refresh(_winner, static text => (text.Trim(), 0));
+        var entries = Refresh(_entries, static text => (string.Empty, CountNonEmptyLines(text)));
+
+        return new FirebotFileData(prize.Text, winner.Text, entries.Count);
+    }
+
+    /// <summary>
+    /// Counts non-empty lines without allocating a string per entry.
+    /// Handles \n, \r\n and \r line endings.
+    /// </summary>
+    public static int CountNonEmptyLines(ReadOnlySpan<char> text)
+    {
+        int count = 0;
+        foreach (var line in text.EnumerateLines())
+        {
+            if (!line.IsWhiteSpace())
+            {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private (string Text, int Count) Refresh(CachedFile file, Func<string, (string Text, int Count)> parse)
+    {
+        string path = Path.Combine(_folder, file.Name);
         try
         {
-            if (File.Exists(filePath))
+            var info = new FileInfo(path);
+            if (!info.Exists)
             {
-                var content = await File.ReadAllTextAsync(filePath);
-                _logger.Debug("Read {FileName}: {Length} chars", fileName, content.Length);
-                return content;
+                // Missing file is normal (no active giveaway / no winner yet)
+                file.Set(DateTime.MinValue, -1, (string.Empty, 0));
+                return file.Value;
             }
 
-            // File doesn't exist - this is normal (e.g. no active giveaway)
-            return string.Empty;
+            if (file.IsCurrent(info.LastWriteTimeUtc, info.Length))
+            {
+                return file.Value;
+            }
+
+            string content = ReadShared(path);
+            file.Set(info.LastWriteTimeUtc, info.Length, parse(content));
+            _logger.LogDebug("Read {FileName}: {Length} chars", file.Name, content.Length);
+
+            if (file.FailureLogged)
+            {
+                _logger.LogInformation("Read of {FileName} recovered", file.Name);
+                file.FailureLogged = false;
+            }
         }
-        catch (IOException ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // File locked by Firebot during write - expected, use cache
-            _logger.Warning("File I/O error reading {FileName}: {Message}", fileName, ex.Message);
-            return null;
+            // File locked / mid-write — keep last known good value. Log once per failure streak to avoid log spam.
+            if (!file.FailureLogged)
+            {
+                _logger.LogWarning("Could not read {FileName} ({Message}); using cached value", file.Name, ex.Message);
+                file.FailureLogged = true;
+            }
         }
         catch (Exception ex)
         {
-            _logger.Error(ex, "Unexpected error reading {FileName}", fileName);
-            return null;
+            if (!file.FailureLogged)
+            {
+                _logger.LogError(ex, "Unexpected error reading {FileName}; using cached value", file.Name);
+                file.FailureLogged = true;
+            }
+        }
+
+        return file.Value;
+    }
+
+    private static string ReadShared(string path)
+    {
+        using var stream = new FileStream(
+            path,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.ReadWrite | FileShare.Delete,
+            bufferSize: 4096,
+            FileOptions.SequentialScan);
+        using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        return reader.ReadToEnd();
+    }
+
+    private sealed class CachedFile(string name)
+    {
+        private DateTime _lastWriteUtc = DateTime.MaxValue;
+        private long _length = long.MinValue;
+
+        public string Name { get; } = name;
+        public (string Text, int Count) Value { get; private set; } = (string.Empty, 0);
+        public bool FailureLogged { get; set; }
+
+        public bool IsCurrent(DateTime lastWriteUtc, long length) =>
+            lastWriteUtc == _lastWriteUtc && length == _length;
+
+        public void Set(DateTime lastWriteUtc, long length, (string Text, int Count) value)
+        {
+            _lastWriteUtc = lastWriteUtc;
+            _length = length;
+            Value = value;
+        }
+
+        public void Invalidate()
+        {
+            _lastWriteUtc = DateTime.MaxValue;
+            _length = long.MinValue;
+            Value = (string.Empty, 0);
+            FailureLogged = false;
         }
     }
 }

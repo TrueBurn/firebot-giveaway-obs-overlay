@@ -6,14 +6,19 @@ namespace FirebotGiveawayObsOverlay.WebApp.Services;
 /// <summary>
 /// Singleton in-memory settings store with event-driven change notification
 /// and debounced async persistence via SettingsPersistenceService.
+/// <para>
+/// Uses copy-on-write: <see cref="Current"/> always returns a snapshot that is never mutated afterwards,
+/// so readers on other circuits/threads can never observe a half-applied update.
+/// </para>
 /// </summary>
 public class SettingsService : ISettingsService
 {
     private readonly UserSettingsService _userSettingsService;
     private readonly SettingsPersistenceService _persistenceService;
     private readonly ILogger<SettingsService> _logger;
-    private readonly object _lock = new();
-    private AppSettings _current = new();
+    private readonly Lock _lock = new();
+    private volatile AppSettings _current = new();
+    private volatile AppSettings _defaults = new();
 
     public SettingsService(
         UserSettingsService userSettingsService,
@@ -25,55 +30,60 @@ public class SettingsService : ISettingsService
         _logger = logger;
     }
 
-    public AppSettings Current
-    {
-        get { lock (_lock) { return _current; } }
-    }
+    public AppSettings Current => _current;
+
+    public AppSettings Defaults => _defaults;
 
     public event Action? OnSettingsChanged;
 
     public void Update(Action<AppSettings> mutator)
     {
+        AppSettings updated;
         lock (_lock)
         {
-            mutator(_current);
+            updated = _current.Clone();
+            mutator(updated);
+            _current = updated;
         }
 
         _logger.LogDebug("Settings updated in memory");
 
-        // Apply to legacy GiveAwayHelpers (theme + file path that still use static state)
-        ApplyToLegacyHelpers();
+        // Apply to legacy GiveAwayHelpers (theme state that still uses static state)
+        GiveAwayHelpers.ApplySettings(updated);
 
-        // Fire change event for UI subscribers (GiveAway overlay, etc.)
-        OnSettingsChanged?.Invoke();
+        RaiseChanged();
 
-        // Queue debounced async persistence
-        _persistenceService.QueueSave(CloneCurrentSettings());
-
-        _logger.LogDebug("Settings change queued for persistence");
+        // Queue debounced async persistence. The snapshot is immutable, so no extra copy is needed.
+        _persistenceService.QueueSave(updated);
     }
 
     public void ResetToDefaults()
     {
+        var defaults = _defaults.Clone();
         lock (_lock)
         {
-            _current = AppSettings.GetDefaults();
+            _current = defaults;
         }
 
         _logger.LogInformation("Settings reset to defaults");
 
-        ApplyToLegacyHelpers();
+        // Drop any debounced save first, otherwise it would re-create usersettings.json after we delete it.
+        _persistenceService.CancelPending();
         _userSettingsService.DeleteUserSettings();
-        OnSettingsChanged?.Invoke();
+
+        GiveAwayHelpers.ApplySettings(defaults);
+        RaiseChanged();
     }
 
     public void LoadFromFile(AppSettings fallbackDefaults)
     {
+        _defaults = fallbackDefaults.Clone();
         var loaded = _userSettingsService.LoadUserSettings();
+        var settings = loaded ?? fallbackDefaults.Clone();
 
         lock (_lock)
         {
-            _current = loaded ?? fallbackDefaults;
+            _current = settings;
         }
 
         if (loaded != null)
@@ -85,46 +95,25 @@ public class SettingsService : ISettingsService
             _logger.LogInformation("No user settings found, using defaults from appsettings.json");
         }
 
-        ApplyToLegacyHelpers();
+        GiveAwayHelpers.ApplySettings(settings);
     }
 
-    /// <summary>
-    /// Syncs current settings to GiveAwayHelpers static state.
-    /// Needed because FireBotFileReader and theme logic still read from statics.
-    /// This will be removed when those are also migrated to DI.
-    /// </summary>
-    private void ApplyToLegacyHelpers()
+    private void RaiseChanged()
     {
-        var s = Current;
-        GiveAwayHelpers.ApplySettings(s);
-    }
+        var handlers = OnSettingsChanged;
+        if (handlers is null) return;
 
-    private AppSettings CloneCurrentSettings()
-    {
-        lock (_lock)
+        // Isolate subscribers: an exception in one overlay's handler must not break the Setup page that made the change.
+        foreach (var handler in handlers.GetInvocationList().Cast<Action>())
         {
-            // Create a fresh copy for persistence to avoid mutation during serialization
-            return new AppSettings
+            try
             {
-                FireBotFileFolder = _current.FireBotFileFolder,
-                CountdownTimerEnabled = _current.CountdownTimerEnabled,
-                CountdownHours = _current.CountdownHours,
-                CountdownMinutes = _current.CountdownMinutes,
-                CountdownSeconds = _current.CountdownSeconds,
-                PrizeSectionWidthPercent = _current.PrizeSectionWidthPercent,
-                PrizeFontSizeRem = _current.PrizeFontSizeRem,
-                TimerFontSizeRem = _current.TimerFontSizeRem,
-                EntriesFontSizeRem = _current.EntriesFontSizeRem,
-                Theme = ThemeSettings.FromThemeConfig(
-                    _current.Theme.ToThemeConfig()),
-                Logging = new LoggingSettings
-                {
-                    MinimumLevel = _current.Logging.MinimumLevel,
-                    LogFilePath = _current.Logging.LogFilePath,
-                    EnableFileLogging = _current.Logging.EnableFileLogging,
-                    EnableConsoleLogging = _current.Logging.EnableConsoleLogging,
-                }
-            };
+                handler();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Settings change subscriber threw");
+            }
         }
     }
 }

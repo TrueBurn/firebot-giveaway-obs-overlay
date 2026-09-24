@@ -8,7 +8,7 @@
 
 <PageTitle>Setup</PageTitle>
 
-<div class="setup-page">
+<div class="setup-page" data-interactive="@(RendererInfo.IsInteractive ? "true" : "false")">
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h3 class="mb-0">Overlay Setup</h3>
@@ -34,7 +34,7 @@
         <h6 class="text-uppercase text-muted small fw-bold mb-2 tracking-wide">Theme</h6>
         <div class="row mb-3">
             <div class="col-md-5">
-                <select class="form-select" @bind="selectedThemeName" @bind:after="OnPresetThemeChanged">
+                <select id="themeSelect" aria-label="Theme" class="form-select" @bind="selectedThemeName" @bind:after="OnPresetThemeChanged">
                     @foreach (var theme in presetThemes)
                     {
                         <option value="@theme.Name">@theme.Name</option>
@@ -247,8 +247,8 @@
 
         <div class="row g-2 mb-3 align-items-end">
             <div class="col">
-                <label class="form-label small mb-1">Hours</label>
-                <input type="number" required
+                <label class="form-label small mb-1" for="countdownHoursInput">Hours</label>
+                <input type="number" required id="countdownHoursInput"
                        placeholder="0"
                        class="form-control"
                        min="0"
@@ -260,8 +260,8 @@
             </div>
             <div class="col-auto pt-3 text-muted fw-bold">:</div>
             <div class="col">
-                <label class="form-label small mb-1">Minutes</label>
-                <input type="number" required
+                <label class="form-label small mb-1" for="countdownMinutesInput">Minutes</label>
+                <input type="number" required id="countdownMinutesInput"
                        placeholder="0"
                        class="form-control"
                        min="0"
@@ -273,8 +273,8 @@
             </div>
             <div class="col-auto pt-3 text-muted fw-bold">:</div>
             <div class="col">
-                <label class="form-label small mb-1">Seconds</label>
-                <input type="number" required
+                <label class="form-label small mb-1" for="countdownSecondsInput">Seconds</label>
+                <input type="number" required id="countdownSecondsInput"
                        placeholder="0"
                        class="form-control"
                        min="0"
@@ -303,13 +303,13 @@
         @* --- Firebot File Path --- *@
         <h6 class="text-uppercase text-muted small fw-bold mb-2 tracking-wide">Firebot Integration</h6>
         <div class="mb-1">
-            <label class="form-label small mb-1">Giveaway files folder</label>
+            <label class="form-label small mb-1" for="firebotFolderInput">Giveaway files folder</label>
             <input
-                type="text" required
+                type="text" required id="firebotFolderInput"
                 placeholder="e.g. G:\Giveaway"
                 class="form-control"
                 @bind="firebotFilePath"
-                @bind:event="oninput"
+                @bind:event="onchange"
                 @bind:after="SetFirebotFilePath" />
             <small class="form-text text-muted">Path where Firebot writes prize.txt, winner.txt, and giveaway.txt</small>
         </div>

@@ -193,6 +193,14 @@
 3. Animation speed/disable configuration
 4. Additional winner announcement styles
 
+## Performance & Stability Audit (Sept 2026)
+
+[2026-09-24 09:10:00] - Full performance/stability audit, dependency + GitHub Actions upgrades, Playwright e2e suite.
+- Current focus: server-side `GiveawayStateService` (single poller + deadline countdown) is now the source of truth for overlays
+- Open question: version bump for this work (suggest 2.5.0) - not bumped yet, awaiting user
+- Open question: FileSystemWatcher could replace 250ms polling, but polling + stat-based change detection is simpler and robust on network drives
+
+[2026-09-24 - Updated with performance/stability audit and e2e testing]
 [2026-03-01 - Updated with slider flicker fix and Setup.razor refactoring]
 [2026-01-22 - Updated with async settings persistence and input mode toggle (v2.2.0)]
 [2026-01-17 - Updated with user settings persistence system]

@@ -5,19 +5,30 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
-    <link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
-
-    <link rel="stylesheet" href="app.css" />
-    <link rel="stylesheet" href="FirebotGiveawayObsOverlay.WebApp.styles.css" />
+    <ResourcePreloader />
+    <link rel="stylesheet" href="@Assets["bootstrap/bootstrap.min.css"]" />
+    <link rel="stylesheet" href="@Assets["app.css"]" />
+    <link rel="stylesheet" href="@Assets["FirebotGiveawayObsOverlay.WebApp.styles.css"]" />
     <link rel="icon" type="image/png" href="favicon.png" />
-
+    <ImportMap />
     <HeadOutlet />
 </head>
 
 <body>
     <Routes />
-    <script src="_framework/blazor.web.js"></script>
+    <script src="@Assets["_framework/blazor.web.js"]" autostart="false"></script>
     <script>
+        // OBS browser sources must never show a reconnect dialog on stream and must recover on their own
+        // (app restart, PC sleep, network blip). Retry forever: quickly at first, then every 5s.
+        Blazor.start({
+            circuit: {
+                reconnectionOptions: {
+                    maxRetries: Number.MAX_SAFE_INTEGER,
+                    retryIntervalMilliseconds: (attempt) => attempt < 5 ? 1000 : 5000
+                }
+            }
+        });
+
         function updateSliderLabel(slider, suffix) {
             var label = slider.closest('.slider-row').querySelector('.slider-value');
             if (label) {

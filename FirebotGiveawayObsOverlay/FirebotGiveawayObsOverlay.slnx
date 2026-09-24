@@ -3,4 +3,5 @@
     <File Path="../README.md" />
   </Folder>
   <Project Path="FirebotGiveawayObsOverlay.WebApp/FirebotGiveawayObsOverlay.WebApp.csproj" />
+  <Project Path="FirebotGiveawayObsOverlay.Tests/FirebotGiveawayObsOverlay.Tests.csproj" />
 </Solution>

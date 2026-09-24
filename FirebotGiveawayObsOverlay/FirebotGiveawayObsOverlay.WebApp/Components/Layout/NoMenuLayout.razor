@@ -1,6 +1,9 @@
 ﻿@inherits LayoutComponentBase
 
-<link rel="stylesheet" href="giveaway.css" />
+<HeadContent>
+    <link rel="stylesheet" href="@Assets["giveaway.css"]" />
+    <link rel="preload" href="fonts/orbitron-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
+</HeadContent>
 
 <div class="page">
     <main class="main">
@@ -8,8 +11,10 @@
     </main>
 </div>
 
-<div id="blazor-error-ui">
-    An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
-</div>
+@* Overlay-only reconnect handling. Because this element has id="components-reconnect-modal", Blazor uses it
+   instead of its default visible dialog; it stays hidden so nothing ever appears on stream. The script below
+   silently reloads the page when the server comes back after a restart. *@
+@* Kept (hidden) so the script can detect a crashed circuit and self-heal instead of freezing. *@
+<div id="blazor-error-ui" data-testid="overlay-error-ui"></div>
+<div id="components-reconnect-modal" class="overlay-reconnect" hidden data-testid="overlay-reconnect"></div>
+<script src="@Assets["overlay-reconnect.js"]"></script>

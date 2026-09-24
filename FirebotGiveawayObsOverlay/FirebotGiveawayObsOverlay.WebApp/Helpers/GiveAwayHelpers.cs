@@ -3,23 +3,13 @@ using FirebotGiveawayObsOverlay.WebApp.Models;
 namespace FirebotGiveawayObsOverlay.WebApp.Helpers;
 
 /// <summary>
-/// Static helpers for theme management and Firebot file path delegation.
+/// Static helpers for theme management.
 /// Settings management has been moved to ISettingsService singleton.
 /// </summary>
 public static class GiveAwayHelpers
 {
     private static ThemeConfig _currentTheme = ThemeConfig.Presets.Warframe.Clone();
     private static volatile bool _useCustomTheme = false;
-
-    public static void SetFireBotFileFolder(string folderPath)
-    {
-        FireBotFileReader.SetFireBotFileFolder(folderPath);
-    }
-
-    public static string GetFireBotFileFolder()
-    {
-        return FireBotFileReader.GetFireBotFileFolder();
-    }
 
     public static ThemeConfig GetCurrentTheme()
     {
@@ -84,12 +74,11 @@ public static class GiveAwayHelpers
     }
 
     /// <summary>
-    /// Applies settings that GiveAwayHelpers still owns: file path and theme.
+    /// Applies the settings GiveAwayHelpers still owns: the theme.
     /// All other settings are managed by ISettingsService.
     /// </summary>
     public static void ApplySettings(AppSettings settings)
     {
-        SetFireBotFileFolder(settings.FireBotFileFolder);
         InitializeTheme(settings.Theme.ToThemeConfig());
     }
 

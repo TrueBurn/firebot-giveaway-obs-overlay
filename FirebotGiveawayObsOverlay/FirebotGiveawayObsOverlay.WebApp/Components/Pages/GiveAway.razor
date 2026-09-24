@@ -1,12 +1,8 @@
-﻿@using FirebotGiveawayObsOverlay.WebApp.Components.Layout
-@using FirebotGiveawayObsOverlay.WebApp.Helpers
-@using FirebotGiveawayObsOverlay.WebApp.Extensions
+﻿@using System.Globalization
+@using FirebotGiveawayObsOverlay.WebApp.Components.Layout
 @using FirebotGiveawayObsOverlay.WebApp.Models
 @using FirebotGiveawayObsOverlay.WebApp.Services
-@using Serilog
-@using System.Timers
-@inject TimerService TimerService
-@inject ThemeService ThemeService
+@inject GiveawayStateService GiveawayState
 @inject ISettingsService SettingsService
 
 @layout NoMenuLayout
@@ -16,39 +12,55 @@
 
 <PageTitle>Give Away</PageTitle>
 
-@if (isGiveAwayRunning)
+@* Zero-size readiness marker (used by e2e tests to know the live connection is up) *@
+<span hidden data-overlay-ready="@(RendererInfo.IsInteractive ? "true" : "false")"></span>
+
+@if (snapshot.IsRunning)
 {
-    <div class="container @(doesGiveawayHaveWinner ? "has-winner" : "")"
-         style="@GetContainerStyle()">
+    <div class="container @(snapshot.HasWinner ? "has-winner" : "")"
+         style="@containerStyle"
+         data-testid="giveaway-container">
         <div class="prize-section">
             <h1 class="title">
-                <span class="primarySpan" style="@GetPrimarySpanStyle()">@prize</span>
+                <span class="primarySpan" style="@gradientTextStyle" data-testid="prize">@snapshot.Prize</span>
             </h1>
         </div>
 
-        <div class="info-section" style="@GetSeparatorStyle()">
-            @if (isTimerEnabled)
+        <div class="info-section" style="@separatorStyle">
+            @if (snapshot.TimerEnabled)
             {
-                <h2 class="title-timer @(timerExpired ? "timer-flash" : "")" style="@GetTimerStyle()">
-                    @FormatTimerWithTheme(counterTimeSpan)
+                <h2 class="title-timer @(snapshot.TimerExpired ? "timer-flash" : "")"
+                    style="@(snapshot.TimerExpired ? timerExpiredStyle : null)"
+                    data-testid="timer">
+                    @{ var t = snapshot.Remaining; }
+                    @if (t.TotalHours >= 1)
+                    {
+                        <span class="timer-numbers" style="@timerNumberStyle">@(((int)t.TotalHours).ToString("D2", CultureInfo.InvariantCulture))</span><span class="timer-separator" style="@timerSeparatorStyle">:</span>
+                    }
+                    @if (t.TotalMinutes >= 1)
+                    {
+                        <span class="timer-numbers" style="@timerNumberStyle">@t.Minutes.ToString("D2", CultureInfo.InvariantCulture)</span><span class="timer-separator" style="@timerSeparatorStyle">:</span>
+                    }
+                    <span class="timer-numbers" style="@timerNumberStyle">@t.Seconds.ToString("D2", CultureInfo.InvariantCulture)</span>
                 </h2>
             }
 
-            <h2 class="title-entries" style="color: @currentTheme.TextColor;">
-                <span class="@(previousEntryCount != entries.Length ? "entry-count-animate" : "")"
-                      style="@GetPrimarySpanStyle()">
-                    @entries.Length
-                </span>
+            <h2 class="title-entries" style="@textColorStyle">
+                @* @key recreates the span when the count changes so the pulse animation replays every time *@
+                <span @key="snapshot.EntryCount"
+                      class="@(animateEntries ? "entry-count-animate" : "")"
+                      style="@gradientTextStyle"
+                      data-testid="entry-count">@snapshot.EntryCount</span>
                 Entries
             </h2>
         </div>
 
-        @if (doesGiveawayHaveWinner)
+        @if (snapshot.HasWinner)
         {
-            <div class="winner-overlay">
+            <div class="winner-overlay" data-testid="winner-overlay">
                 <h2 class="title-winner">
-                    <span class="winner-label" style="color: @currentTheme.TextColor;">Winner:</span>
-                    <span class="secondarySpan" style="@GetPrimarySpanStyle()">@winner</span>
+                    <span class="winner-label" style="@textColorStyle">Winner:</span>
+                    <span class="secondarySpan" style="@gradientTextStyle" data-testid="winner">@snapshot.Winner</span>
                 </h2>
             </div>
         }
@@ -56,278 +68,88 @@
 }
 
 @code {
-    private string prize = string.Empty;
-    private string winner = string.Empty;
-    private string[] entries = [];
-    private Timer fileScanTimer = new Timer(1000);
-    private Timer countdownTimer = new Timer(1000);
-    private double counter;
-    private TimeSpan counterTimeSpan = TimeSpan.FromMinutes(59).Add(TimeSpan.FromSeconds(59));
-    private bool timerExpired = false;
+    private GiveawaySnapshot snapshot = GiveawaySnapshot.Empty;
+    private bool animateEntries;
+    private bool disposed;
 
-    private bool isGiveAwayRunning = false;
-    private bool doesGiveawayHaveWinner = false;
-    private int previousEntryCount = 0;
+    // Styles are rebuilt only when settings change, not on every (once-per-second) render.
+    private string containerStyle = "";
+    private string gradientTextStyle = "";
+    private string separatorStyle = "";
+    private string textColorStyle = "";
+    private string timerNumberStyle = "";
+    private string timerSeparatorStyle = "";
+    private string timerExpiredStyle = "";
 
-    private int prizeSectionWidth;
-    private double prizeFontSize;
-    private double timerFontSize;
-    private double entriesFontSize;
-    private bool isTimerEnabled;
-    private ThemeConfig currentTheme = new();
-
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        // Load initial settings from singleton service
-        var settings = SettingsService.Current;
-        prizeSectionWidth = settings.PrizeSectionWidthPercent;
-        prizeFontSize = settings.PrizeFontSizeRem;
-        timerFontSize = settings.TimerFontSizeRem;
-        entriesFontSize = settings.EntriesFontSizeRem;
-        isTimerEnabled = settings.CountdownTimerEnabled;
-        currentTheme = settings.Theme.ToThemeConfig();
+        BuildStyles(SettingsService.Current);
+        snapshot = GiveawayState.Current;
 
-        Log.Debug("GiveAway overlay initialized with settings: timer={TimerEnabled}, width={Width}%",
-            isTimerEnabled, prizeSectionWidth);
-
-        await GetLatestGiveAwayDetails();
-        fileScanTimer.Elapsed += new ElapsedEventHandler(HandleFileScanTimer);
-        countdownTimer.Elapsed += new ElapsedEventHandler(HandleCountdownTimer);
-        StartFileScanTimer();
-
-        if (isTimerEnabled)
-        {
-            StartCountdownTimer();
-        }
-
-        TimerService.OnTimerReset += HandleTimerReset;
-        ThemeService.OnThemeChanged += HandleThemeChanged;
+        GiveawayState.SnapshotChanged += HandleSnapshotChanged;
         SettingsService.OnSettingsChanged += HandleSettingsChanged;
     }
 
-    private void HandleTimerReset()
+    private void HandleSnapshotChanged(GiveawaySnapshot next)
     {
-        ResetTimer();
-        InvokeAsync(StateHasChanged);
+        if (disposed) return;
+        _ = InvokeAsync(() =>
+        {
+            if (disposed) return;
+            animateEntries = next.EntryCount != snapshot.EntryCount;
+            snapshot = next;
+            StateHasChanged();
+        }).ContinueWith(static t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted);
     }
 
-    private async void HandleThemeChanged()
+    private void HandleSettingsChanged()
     {
-        currentTheme = GiveAwayHelpers.GetCurrentTheme();
-        await InvokeAsync(StateHasChanged);
-    }
-
-    private async void HandleSettingsChanged()
-    {
+        if (disposed) return;
         var settings = SettingsService.Current;
-
-        // Update display settings immediately
-        prizeSectionWidth = settings.PrizeSectionWidthPercent;
-        prizeFontSize = settings.PrizeFontSizeRem;
-        timerFontSize = settings.TimerFontSizeRem;
-        entriesFontSize = settings.EntriesFontSizeRem;
-        currentTheme = settings.Theme.ToThemeConfig();
-
-        // Handle timer enabled/disabled changes
-        bool wasTimerEnabled = isTimerEnabled;
-        isTimerEnabled = settings.CountdownTimerEnabled;
-
-        if (wasTimerEnabled && !isTimerEnabled)
+        _ = InvokeAsync(() =>
         {
-            countdownTimer.Stop();
-            Log.Debug("Timer disabled via settings change");
-        }
-        else if (!wasTimerEnabled && isTimerEnabled && isGiveAwayRunning && !doesGiveawayHaveWinner)
-        {
-            ResetTimer();
-            Log.Debug("Timer re-enabled via settings change");
-        }
-
-        await InvokeAsync(StateHasChanged);
+            if (disposed) return;
+            BuildStyles(settings);
+            StateHasChanged();
+        }).ContinueWith(static t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted);
     }
 
-    private void StartFileScanTimer()
-    {        
-        fileScanTimer.Start();
-    }
-
-    private void StartCountdownTimer()
+    private void BuildStyles(AppSettings settings)
     {
-        counter = counterTimeSpan.TotalSeconds;
-        countdownTimer.Start();
-    }
+        var theme = settings.Theme;
+        var inv = CultureInfo.InvariantCulture;
+        int width = settings.PrizeSectionWidthPercent;
 
-    public async void HandleFileScanTimer(object? source, ElapsedEventArgs e)
-    {
-        await GetLatestGiveAwayDetails();
-        await InvokeAsync(StateHasChanged);
-    }
+        containerStyle = string.Create(inv,
+            $"--prize-width: {width}%; --info-width: {100 - width}%; " +
+            $"--prize-font-size: {settings.PrizeFontSizeRem:0.0}rem; " +
+            $"--timer-font-size: {settings.TimerFontSizeRem:0.0}rem; " +
+            $"--entries-font-size: {settings.EntriesFontSizeRem:0.0}rem; " +
+            $"background: linear-gradient(135deg, {theme.BackgroundStart} 0%, {theme.BackgroundEnd} 100%); " +
+            $"border-color: {theme.BorderGlowColor}; " +
+            $"box-shadow: 0 0 20px {theme.PrimaryColor}33, 0 0 40px {theme.SecondaryColor}1A, 0 0 60px {theme.SecondaryColor}1A; " +
+            $"--theme-primary: {theme.PrimaryColor}; --theme-secondary: {theme.SecondaryColor};");
 
-    public async void HandleCountdownTimer(object? source, ElapsedEventArgs e)
-    {
-        if (counter > 0)
-        {
-            counter -= 1;
-            counterTimeSpan = TimeSpan.FromSeconds(counter);
-        }
-        else
-        {
-            timerExpired = true;
-        }
-        await InvokeAsync(StateHasChanged);
-    }
+        gradientTextStyle =
+            $"background: linear-gradient(45deg, {theme.PrimaryColor} 0%, {theme.SecondaryColor} 50%, {theme.PrimaryColor} 100%); " +
+            $"-webkit-background-clip: text; background-clip: text; color: transparent; " +
+            $"text-shadow: 0 0 10px {theme.PrimaryColor}80, 0 0 20px {theme.PrimaryColor}4D;";
 
-    private async Task GetLatestGiveAwayDetails()
-    {
-        Task<string> getPrizeTask = FireBotFileReader.GetPrizeAsync();
-        Task<string[]> getEntriesTask = FireBotFileReader.GetEntriesAsync();
-        Task<string> getWinnerTask = FireBotFileReader.GetWinnerAsync();
+        timerNumberStyle =
+            $"background: linear-gradient(45deg, {theme.PrimaryColor} 0%, {theme.SecondaryColor} 50%, {theme.PrimaryColor} 100%); " +
+            $"-webkit-background-clip: text; background-clip: text; color: transparent; " +
+            $"text-shadow: 0 0 5px {theme.PrimaryColor}66, 0 0 10px {theme.PrimaryColor}33;";
 
-        await Task.WhenAll(getPrizeTask, getEntriesTask, getWinnerTask).ConfigureAwait(false);
-
-        string newPrize = getPrizeTask.Result;
-        var newEntries = getEntriesTask.Result;
-        
-        // Check if prize status has changed
-        bool hadPrizeBefore = isGiveAwayRunning;
-        bool hasPrizeNow = !string.IsNullOrWhiteSpace(newPrize);
-        
-        // Update previous count before setting new entries
-        previousEntryCount = entries.Length;
-        entries = newEntries;
-        
-        string newWinner = getWinnerTask.Result;
-        
-        // Check if winner status has changed
-        bool hadWinnerBefore = doesGiveawayHaveWinner;
-        bool hasWinnerNow = !string.IsNullOrWhiteSpace(newWinner);
-        
-        // Update prize, winner and status flags
-        prize = newPrize;
-        winner = newWinner;
-        isGiveAwayRunning = hasPrizeNow;
-        doesGiveawayHaveWinner = hasWinnerNow;
-        
-        // Timer management - only if timer is enabled
-        if (isTimerEnabled)
-        {
-            if (doesGiveawayHaveWinner && countdownTimer.Enabled)
-            {
-                countdownTimer.Stop();
-                Log.Information("Timer paused: winner detected");
-            }
-            else if (hadWinnerBefore && !doesGiveawayHaveWinner && isGiveAwayRunning)
-            {
-                ResetTimer();
-                Log.Information("Timer reset: winner cleared, giveaway still running");
-            }
-            else if (!hadPrizeBefore && hasPrizeNow && !doesGiveawayHaveWinner)
-            {
-                ResetTimer();
-                Log.Information("Timer reset: new giveaway started (prize detected)");
-            }
-            else if (!isGiveAwayRunning)
-            {
-                ResetTimer();
-                Log.Debug("Timer reset: giveaway not running");
-            }
-        }
-    }
-    
-    private void ResetTimer()
-    {
-        countdownTimer.Stop();
-        var s = SettingsService.Current;
-        counter = TimeSpan.FromHours(s.CountdownHours)
-            .Add(TimeSpan.FromMinutes(s.CountdownMinutes))
-            .Add(TimeSpan.FromSeconds(s.CountdownSeconds))
-            .TotalSeconds;
-        counterTimeSpan = TimeSpan.FromSeconds(counter);
-        timerExpired = false;
-
-        if (isTimerEnabled && isGiveAwayRunning && !doesGiveawayHaveWinner)
-        {
-            countdownTimer.Start();
-        }
-    }
-
-    // Format timer to have colored numbers with colon separator
-    private MarkupString FormatTimer(TimeSpan time)
-    {
-        if (time.TotalHours >= 1)
-        {
-            return new MarkupString($"<span class='timer-numbers'>{time.Hours:D2}</span><span class='timer-separator'>:</span><span class='timer-numbers'>{time.Minutes:D2}</span><span class='timer-separator'>:</span><span class='timer-numbers'>{time.Seconds:D2}</span>");
-        }
-        else if (time.TotalMinutes >= 1)
-        {
-            return new MarkupString($"<span class='timer-numbers'>{time.Minutes:D2}</span><span class='timer-separator'>:</span><span class='timer-numbers'>{time.Seconds:D2}</span>");
-        }
-        return new MarkupString($"<span class='timer-numbers'>{time.Seconds:D2}</span>");
-    }
-
-    private string GetContainerStyle()
-    {
-        var pf = prizeFontSize.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
-        var tf = timerFontSize.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
-        var ef = entriesFontSize.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture);
-
-        return $@"--prize-width: {prizeSectionWidth}%;
-                  --info-width: {100 - prizeSectionWidth}%;
-                  --prize-font-size: {pf}rem;
-                  --timer-font-size: {tf}rem;
-                  --entries-font-size: {ef}rem;
-                  background: linear-gradient(135deg, {currentTheme.BackgroundStart} 0%, {currentTheme.BackgroundEnd} 100%);
-                  border-color: {currentTheme.BorderGlowColor};
-                  box-shadow: 0 0 20px {currentTheme.PrimaryColor}33, 0 0 40px {currentTheme.SecondaryColor}1A, 0 0 60px {currentTheme.SecondaryColor}1A;
-                  --theme-primary: {currentTheme.PrimaryColor};
-                  --theme-secondary: {currentTheme.SecondaryColor};";
-    }
-
-    private string GetPrimarySpanStyle()
-    {
-        return $@"background: linear-gradient(45deg, {currentTheme.PrimaryColor} 0%, {currentTheme.SecondaryColor} 50%, {currentTheme.PrimaryColor} 100%);
-                  -webkit-background-clip: text;
-                  background-clip: text;
-                  color: transparent;
-                  text-shadow: 0 0 10px {currentTheme.PrimaryColor}80, 0 0 20px {currentTheme.PrimaryColor}4D;";
-    }
-
-    private string GetTimerStyle()
-    {
-        if (timerExpired)
-        {
-            return $"color: {currentTheme.TimerExpiredColor};";
-        }
-        return "";
-    }
-
-    private string GetSeparatorStyle()
-    {
-        return $"--separator-color: {currentTheme.SeparatorColor}; --separator-secondary: {currentTheme.SecondaryColor};";
-    }
-
-    private MarkupString FormatTimerWithTheme(TimeSpan time)
-    {
-        var numberStyle = $"background: linear-gradient(45deg, {currentTheme.PrimaryColor} 0%, {currentTheme.SecondaryColor} 50%, {currentTheme.PrimaryColor} 100%); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 0 5px {currentTheme.PrimaryColor}66, 0 0 10px {currentTheme.PrimaryColor}33;";
-        var separatorStyle = $"color: {currentTheme.TextColor};";
-
-        if (time.TotalHours >= 1)
-        {
-            return new MarkupString($"<span class='timer-numbers' style='{numberStyle}'>{time.Hours:D2}</span><span class='timer-separator' style='{separatorStyle}'>:</span><span class='timer-numbers' style='{numberStyle}'>{time.Minutes:D2}</span><span class='timer-separator' style='{separatorStyle}'>:</span><span class='timer-numbers' style='{numberStyle}'>{time.Seconds:D2}</span>");
-        }
-        else if (time.TotalMinutes >= 1)
-        {
-            return new MarkupString($"<span class='timer-numbers' style='{numberStyle}'>{time.Minutes:D2}</span><span class='timer-separator' style='{separatorStyle}'>:</span><span class='timer-numbers' style='{numberStyle}'>{time.Seconds:D2}</span>");
-        }
-        return new MarkupString($"<span class='timer-numbers' style='{numberStyle}'>{time.Seconds:D2}</span>");
+        separatorStyle = $"--separator-color: {theme.SeparatorColor}; --separator-secondary: {theme.SecondaryColor};";
+        textColorStyle = $"color: {theme.TextColor};";
+        timerSeparatorStyle = textColorStyle;
+        timerExpiredStyle = $"color: {theme.TimerExpiredColor};";
     }
 
     public void Dispose()
     {
-        fileScanTimer.Dispose();
-        countdownTimer.Dispose();
-        TimerService.OnTimerReset -= HandleTimerReset;
-        ThemeService.OnThemeChanged -= HandleThemeChanged;
+        disposed = true;
+        GiveawayState.SnapshotChanged -= HandleSnapshotChanged;
         SettingsService.OnSettingsChanged -= HandleSettingsChanged;
     }
 }

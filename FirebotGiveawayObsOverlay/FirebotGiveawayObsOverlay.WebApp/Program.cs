@@ -8,103 +8,124 @@ using Serilog.Events;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-// Create a LoggingLevelSwitch so we can change log level at runtime from the UI
-var levelSwitch = new LoggingLevelSwitch(LogEventLevel.Information);
+// Published builds: anchor the content root (wwwroot, appsettings.json, relative log paths) to the exe folder,
+// not the current working directory. Otherwise launching from a shortcut with a different "Start in",
+// a Stream Deck / Firebot "run program" action, or a script serves a blank app.
+// (Build output has no wwwroot folder, so `dotnet run` keeps the default project-folder content root.)
+var publishedContentRoot = Directory.Exists(Path.Combine(AppContext.BaseDirectory, "wwwroot"))
+    ? AppContext.BaseDirectory
+    : null;
 
-Log.Logger = new LoggerConfiguration()
+WebApplicationBuilder builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = publishedContentRoot,
+});
+
+// Defaults from appsettings.json (AppSettings section), overridden by usersettings.json when present.
+// Loaded before the host starts so the very first request already sees the user's settings.
+var fallbackDefaults = builder.Configuration.GetSection("AppSettings").Get<AppSettings>() ?? new AppSettings();
+var userSettingsPath = builder.Configuration.GetValue<string>("UserSettingsPath");
+var effectiveUserSettingsPath = string.IsNullOrWhiteSpace(userSettingsPath)
+    ? Path.Combine(AppContext.BaseDirectory, UserSettingsService.DefaultFileName)
+    : Path.GetFullPath(userSettingsPath);
+var startupSettings = UserSettingsService.TryLoad(effectiveUserSettingsPath) ?? fallbackDefaults;
+
+// LoggingLevelSwitch lets the Setup page change the log level at runtime.
+// Sink/path options are applied here at startup (the UI notes they require a restart).
+var levelSwitch = new LoggingLevelSwitch(startupSettings.Logging.MinimumLevel);
+var loggerConfig = new LoggerConfiguration()
     .MinimumLevel.ControlledBy(levelSwitch)
     .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
     .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
     .MinimumLevel.Override("System", LogEventLevel.Warning)
-    .WriteTo.Console()
-    .WriteTo.File(
-        path: "logs/overlay-.log",
-        rollingInterval: RollingInterval.Day,
-        fileSizeLimitBytes: 10_485_760,
-        retainedFileCountLimit: 7,
-        rollOnFileSizeLimit: true)
-    .CreateLogger();
+    .Enrich.FromLogContext();
 
-WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+// Sinks run on a background thread so logging never blocks the poll loop or a Blazor circuit
+// (Windows console writes in particular are slow).
+loggerConfig.WriteTo.Async(sinks =>
+{
+    if (startupSettings.Logging.EnableConsoleLogging)
+    {
+        sinks.Console();
+    }
+    if (startupSettings.Logging.EnableFileLogging && !string.IsNullOrWhiteSpace(startupSettings.Logging.LogFilePath))
+    {
+        sinks.File(
+            path: Path.Combine(builder.Environment.ContentRootPath, startupSettings.Logging.LogFilePath),
+            rollingInterval: RollingInterval.Day,
+            fileSizeLimitBytes: 10_485_760,
+            retainedFileCountLimit: 7,
+            rollOnFileSizeLimit: true);
+    }
+});
+Log.Logger = loggerConfig.CreateLogger();
 
 builder.Host.UseSerilog();
 builder.Services.AddSingleton(levelSwitch);
 
-// Add services to the container.
 builder.Services
     .AddRazorComponents()
     .AddInteractiveServerComponents();
 
-// Add TimerService as a singleton
-builder.Services.AddSingleton<TimerService>();
-
-// Add ThemeService as a singleton
-builder.Services.AddSingleton<ThemeService>();
-
-// Add VersionService as a singleton
+builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<VersionService>();
+builder.Services.AddSingleton(sp => new UserSettingsService(
+    sp.GetRequiredService<ILogger<UserSettingsService>>(), effectiveUserSettingsPath));
 
-// Add UserSettingsService as a singleton
-builder.Services.AddSingleton<UserSettingsService>();
-
-// Add settings persistence services for async/debounced saving
+// Settings persistence: in-memory store + debounced async writer
 builder.Services.AddSingleton<SettingsPersistenceService>();
 builder.Services.AddHostedService<BackgroundSettingsWriterService>();
-
-// Add SettingsService as singleton (replaces GiveAwayHelpers for settings management)
 builder.Services.AddSingleton<ISettingsService, SettingsService>();
+
+// Single shared file poller + countdown for all overlays
+builder.Services.AddSingleton<FireBotFileReader>();
+builder.Services.AddSingleton<GiveawayStateService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<GiveawayStateService>());
 
 WebApplication app = builder.Build();
 
-// Configure the HTTP request pipeline.
+var settingsService = app.Services.GetRequiredService<ISettingsService>();
+settingsService.LoadFromFile(fallbackDefaults);
+levelSwitch.MinimumLevel = settingsService.Current.Logging.MinimumLevel;
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
 }
 
 app.Lifetime.ApplicationStarted.Register(() =>
 {
-    var settingsService = app.Services.GetRequiredService<ISettingsService>();
-
-    // Build fallback defaults from appsettings.json
-    var fallbackDefaults = new AppSettings
-    {
-        FireBotFileFolder = app.Configuration.GetValue("AppSettings:FireBotFileFolder", @"G:\Giveaway") ?? @"G:\Giveaway",
-        CountdownTimerEnabled = app.Configuration.GetValue<bool>("AppSettings:CountdownTimerEnabled", true),
-        CountdownHours = app.Configuration.GetValue<int>("AppSettings:CountdownHours", 0),
-        CountdownMinutes = app.Configuration.GetValue<int>("AppSettings:CountdownMinutes", 60),
-        CountdownSeconds = app.Configuration.GetValue<int>("AppSettings:CountdownSeconds", 0),
-        PrizeSectionWidthPercent = app.Configuration.GetValue<int>("AppSettings:PrizeSectionWidthPercent", 75),
-        PrizeFontSizeRem = app.Configuration.GetValue<double>("AppSettings:PrizeFontSizeRem", 3.5),
-        TimerFontSizeRem = app.Configuration.GetValue<double>("AppSettings:TimerFontSizeRem", 3.0),
-        EntriesFontSizeRem = app.Configuration.GetValue<double>("AppSettings:EntriesFontSizeRem", 2.5),
-        Theme = new ThemeSettings
-        {
-            Name = app.Configuration.GetValue<string>("AppSettings:Theme:Name", "Warframe") ?? "Warframe",
-            PrimaryColor = app.Configuration.GetValue<string>("AppSettings:Theme:PrimaryColor", "#00fff9") ?? "#00fff9",
-            SecondaryColor = app.Configuration.GetValue<string>("AppSettings:Theme:SecondaryColor", "#ff00c8") ?? "#ff00c8",
-            BackgroundStart = app.Configuration.GetValue<string>("AppSettings:Theme:BackgroundStart", "rgba(0, 0, 0, 0.9)") ?? "rgba(0, 0, 0, 0.9)",
-            BackgroundEnd = app.Configuration.GetValue<string>("AppSettings:Theme:BackgroundEnd", "rgba(15, 25, 35, 0.98)") ?? "rgba(15, 25, 35, 0.98)",
-            BorderGlowColor = app.Configuration.GetValue<string>("AppSettings:Theme:BorderGlowColor", "rgba(0, 255, 255, 0.15)") ?? "rgba(0, 255, 255, 0.15)",
-            TextColor = app.Configuration.GetValue<string>("AppSettings:Theme:TextColor", "#ffffff") ?? "#ffffff",
-            TimerExpiredColor = app.Configuration.GetValue<string>("AppSettings:Theme:TimerExpiredColor", "#ff3333") ?? "#ff3333",
-            SeparatorColor = app.Configuration.GetValue<string>("AppSettings:Theme:SeparatorColor", "rgba(0, 255, 255, 0.5)") ?? "rgba(0, 255, 255, 0.5)"
-        }
-    };
-
-    settingsService.LoadFromFile(fallbackDefaults);
-
-    // Apply LoggingLevelSwitch from loaded settings
-    var logLevelSwitch = app.Services.GetRequiredService<LoggingLevelSwitch>();
-    logLevelSwitch.MinimumLevel = settingsService.Current.Logging.MinimumLevel;
-
     Log.Information("Application started - version {Version}",
         app.Services.GetRequiredService<VersionService>().GetDisplayVersion());
 
-    // Launch browser with correct port
-    string url = "http://localhost:5000/giveaway";
+    if (app.Configuration.GetValue("LaunchBrowser", true))
+    {
+        LaunchBrowser("http://localhost:5000/giveaway");
+    }
+});
+
+app.UseAntiforgery();
+
+app.MapStaticAssets();
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
+
+try
+{
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
+
+static void LaunchBrowser(string url)
+{
     try
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -124,25 +145,6 @@ app.Lifetime.ApplicationStarted.Register(() =>
     {
         Log.Warning(ex, "Failed to open browser");
     }
-});
-
-//app.UseHttpsRedirection();
-
-app.UseStaticFiles();
-app.UseAntiforgery();
-
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
-
-try
-{
-    app.Run();
 }
-catch (Exception ex)
-{
-    Log.Fatal(ex, "Application terminated unexpectedly");
-}
-finally
-{
-    Log.CloseAndFlush();
-}
+
+public partial class Program;

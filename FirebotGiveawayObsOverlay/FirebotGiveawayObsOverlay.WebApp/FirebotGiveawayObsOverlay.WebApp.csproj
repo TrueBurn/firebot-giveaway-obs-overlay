@@ -4,6 +4,18 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <!-- Runtime tuning for a small, always-on desktop app that runs next to OBS and games:
+         workstation GC uses far less memory and fewer threads than the server GC the Web SDK defaults to,
+         DATAS/concurrent GC keeps pauses short. -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+    <TieredPGO>true</TieredPGO>
+    <!-- All formatting is culture-invariant (CSS values must be "2.5rem", never "2,5rem"),
+         so skip loading ICU entirely: smaller footprint and no locale-dependent output bugs. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
 
     <!-- Version properties -->
     <Version>2.4.1</Version>
@@ -19,8 +31,13 @@
 
   <ItemGroup>
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.Async" Version="2.1.0" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="FirebotGiveawayObsOverlay.Tests" />
   </ItemGroup>
 
 </Project>
